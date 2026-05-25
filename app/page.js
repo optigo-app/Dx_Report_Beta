@@ -1,0 +1,46 @@
+// app/page.js
+"use client";
+
+import { Suspense, useEffect } from "react";
+import { CircularProgress } from "@mui/material";
+import RouterContent from "@/Components/RouterContent";
+
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <div
+          style={{
+            height: "100vh",
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <CircularProgress />
+        </div>
+      }
+    >
+      <RouterContent />
+    </Suspense>
+  );
+}
+
+// find . -mindepth 1 -delete
+
+// pm2 list 
+// npm i -f
+// npm run build && pm2 restart "90099" && pm2 save 
+
+// Dx metal loss report
+// Dxreport - R50B3 - 6006    - 27
+// Dxreport - local76 - 6010  - 33  
+
+// Dxreport - local77 - 6011  - 31
+
+// R76 - 5008
+// R76BETA - 5009
+// R76LIVE - 5012
+
+// R77BETA - 5015
