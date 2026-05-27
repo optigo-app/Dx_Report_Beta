@@ -21,6 +21,7 @@ export default function Print1JewelleryBook({
   const itemsPerPage = 1000;
   const [currentPage, setCurrentPage] = useState(1);
   const preloadedImages = useRef(new Set());
+  const [hideShowFields, setHideShowFields] = useState({});
   const visibleItems = useMemo(() => {
     const startIdx = (currentPage - 1) * itemsPerPage;
     const endIdx = startIdx + itemsPerPage;
@@ -42,6 +43,21 @@ export default function Print1JewelleryBook({
   ]);
 
   // Preload images for next page in background
+
+  useEffect(() => {
+    if (Array.isArray(printViewData)) {
+      const initialState = {};
+
+      printViewData.forEach((item) => {
+        if (item.IsHideShowOption) {
+          initialState[item.value] = true;
+        }
+      });
+
+      setHideShowFields(initialState);
+    }
+  }, [printViewData]);
+
   useEffect(() => {
     const preloadNextPageImages = () => {
       const nextPage = currentPage + 1;
@@ -68,6 +84,13 @@ export default function Print1JewelleryBook({
     const timer = setTimeout(preloadNextPageImages, 500);
     return () => clearTimeout(timer);
   }, [currentPage, visibleItemsMain, itemsPerPage]);
+
+  const handleHideShowChange = (field) => {
+    setHideShowFields((prev) => ({
+      ...prev,
+      [field]: !prev[field],
+    }));
+  };
 
   const getPageNumbers = () => {
     const pages = [];
@@ -138,39 +161,44 @@ export default function Print1JewelleryBook({
           margin: "2px",
         }}
       >
-        {sortedPrintData.map((iteImage, index) => (
-          <div
-            key={index}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              justifyContent: index % 2 === 0 ? "flex-start" : "flex-end",
-            }}
-          >
-            {iteImage.lable &&
-              <span
-                style={{
-                  fontSize: `${iteImage.fontsizel}px` || "12px",
-                  fontWeight: iteImage.fontweightl || 500,
-                  color: "#555",
-                }}
-              >
-                {iteImage.lable}
-              </span>
-            }
-
-            <span
+        {sortedPrintData
+          .filter((iteImage) => {
+            if (!iteImage.IsHideShowOption) return true;
+            return hideShowFields[iteImage.value];
+          })
+          .map((iteImage, index) => (
+            <div
+              key={index}
               style={{
-                fontSize: `${iteImage.fontsizev}px` || "12px",
-                fontWeight: iteImage.fontweightv || 500,
-                color: "#000",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                justifyContent: index % 2 === 0 ? "flex-start" : "flex-end",
               }}
             >
-              {e?.[iteImage.value] || "-"}
-            </span>
-          </div>
-        ))}
+              {iteImage.lable &&
+                <span
+                  style={{
+                    fontSize: `${iteImage.fontsizel}px` || "12px",
+                    fontWeight: iteImage.fontweightl || 500,
+                    color: "#555",
+                  }}
+                >
+                  {iteImage.lable}
+                </span>
+              }
+
+              <span
+                style={{
+                  fontSize: `${iteImage.fontsizev}px` || "12px",
+                  fontWeight: iteImage.fontweightv || 500,
+                  color: "#000",
+                }}
+              >
+                {e?.[iteImage.value] || "-"}
+              </span>
+            </div>
+          ))}
       </div>
 
       <div className="w-100 spaclftTpm d-flex" style={{ display: 'flex', justifyContent: 'space-between', marginInline: '5px' }}>
@@ -313,7 +341,6 @@ export default function Print1JewelleryBook({
     </p>
   ) : (
     <>
-      {/* Screen View - Navigation and Controls */}
       <div className="screen-view no-print" style={{ width: "100%" }}>
         <div
           style={{
@@ -326,11 +353,19 @@ export default function Print1JewelleryBook({
           }}
           className="hideData"
         >
-          <div style={{ display: "flex", justifyContent: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              flexWrap: "wrap",
+              gap: "15px",
+              paddingTop: "5px",
+              width: '70%'
+            }}
+          >
             <label
               htmlFor="WithImage"
               className="inline-flex items-center cursor-pointer gap-2 fil_sec"
-              style={{ marginLeft: "30%" }}
             >
               <input
                 type="checkbox"
@@ -339,8 +374,25 @@ export default function Print1JewelleryBook({
                 name="WithImage"
                 id="WithImage"
               />
-              with Image
+              With Image
             </label>
+
+            {/* Dynamic Hide/Show Fields */}
+            {sortedPrintData
+              ?.filter((x) => x.IsHideShowOption)
+              ?.map((item, index) => (
+                <label
+                  key={index}
+                  className="inline-flex items-center cursor-pointer gap-2 fil_sec"
+                >
+                  <input
+                    type="checkbox"
+                    checked={hideShowFields[item.value] ?? true}
+                    onChange={() => handleHideShowChange(item.value)}
+                  />
+                  {item.lable || item.value}
+                </label>
+              ))}
           </div>
 
           <div className="pagination">

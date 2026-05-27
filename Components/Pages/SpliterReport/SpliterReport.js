@@ -93,7 +93,8 @@ export default function SpliterReport({
   spliterReportFirstPanelFilter,
   // NEW PROP: second option field name for the second panel toggle
   // e.g. spliterReportSecondPanelSecondoption = "Employee"
-  spliterReportSecondPanelSecondoption
+  spliterReportSecondPanelSecondoption,
+  authActionDropdownMaster
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -1002,6 +1003,7 @@ export default function SpliterReport({
             setIsPageChanging={setIsPageChanging}
             isFormulaBasedSummary={isFormulaBasedSummary}
             summaryViewData={summaryViewData}
+            authActionDropdownMaster={authActionDropdownMaster}
           />
         </div>
       </Box>

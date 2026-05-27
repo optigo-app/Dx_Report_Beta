@@ -199,7 +199,8 @@ export default function ReportHome({
   spliterReportSecondPanelSecondoption,
   svgIconData,
   otherPrintOptionShow,
-  otherPrintOptionShowData
+  otherPrintOptionShowData,
+  authActionDropdownMaster
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -359,11 +360,11 @@ export default function ReportHome({
       };
 
       let response;
-      if (spNumber == 35) {
-        response = sampleData;
-      } else {
-        response = await ReportCallApi(body, spNumber);
-      }
+      // if (spNumber == 35) {
+      //   response = sampleData;
+      // } else {
+      response = await ReportCallApi(body, spNumber);
+      // }
 
       if (Master === "-1") {
         const filtersArray = [];
@@ -611,7 +612,7 @@ export default function ReportHome({
                     className="Btn_Show_Report"
                     disableElevation
                     onClick={handleSave}
-                    disabled={isLoading}  
+                    disabled={isLoading}
                   >
                     {isLoading ? (
                       <>
@@ -784,6 +785,7 @@ export default function ReportHome({
                   svgIconData={svgIconData}
                   otherPrintOptionShow={otherPrintOptionShow}
                   otherPrintOptionShowData={otherPrintOptionShowData}
+                  authActionDropdownMaster={authActionDropdownMaster}
                 />
                 :
                 <MainReport
@@ -814,6 +816,8 @@ export default function ReportHome({
                   svgIconData={svgIconData}
                   otherPrintOptionShow={otherPrintOptionShow}
                   otherPrintOptionShowData={otherPrintOptionShowData}
+                  reportId={reportId}
+                  authActionDropdownMaster={authActionDropdownMaster}
                 />
               }
             </div>

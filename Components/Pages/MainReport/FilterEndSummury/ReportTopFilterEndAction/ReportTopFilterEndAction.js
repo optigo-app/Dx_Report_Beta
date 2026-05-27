@@ -1704,9 +1704,6 @@ const ReportTopFilterEndAction = ({
           ?.includes(String(col.ColId))
       )
       ?.map(col => col.FieldName);
-
-    console.log(fieldNames);
-
     const actionIds = rows
       ?.map(row =>
         fieldNames
@@ -1715,8 +1712,6 @@ const ReportTopFilterEndAction = ({
           ?.join("/")
       )
       ?.join(",");
-
-    console.log(actionIds);
     const body = {
       con: JSON.stringify({
         id: "",

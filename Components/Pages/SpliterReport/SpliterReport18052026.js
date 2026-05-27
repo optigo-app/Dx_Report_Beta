@@ -96,7 +96,6 @@ export default function SpliterReport({
   spliterReportFirstPanelFilter,
   spliterReportSecondPanelSecondoption
 }) {
-  console.log('spliterReportSecondPanelSecondoption: ', spliterReportSecondPanelSecondoption);
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
   const [masterData, setMasterData] = useState();

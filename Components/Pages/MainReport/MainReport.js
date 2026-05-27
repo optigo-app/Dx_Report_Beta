@@ -14,15 +14,19 @@ import {
   DialogContent,
   DialogTitle,
   Drawer,
+  FormControl,
   Grid,
   IconButton,
+  InputLabel,
+  MenuItem,
   Paper,
   Popover,
+  Select,
   Typography,
 } from "@mui/material";
 import { DragDropContext } from "@hello-pangea/dnd";
 import { useSearchParams } from "next/navigation";
-import { AlertTriangle, CheckCircle2, Eye, Menu, ShieldAlert, X, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CheckSquare, Eye, Menu, ShieldAlert, Square, ToggleLeft, ToggleRight, X, XCircle } from "lucide-react";
 import { GoCopy } from "react-icons/go";
 import Warper from "@/Components/warper";
 import { CallApi } from "@/API/CallApi/CallApi";
@@ -53,6 +57,7 @@ import { IoWarningOutline } from "react-icons/io5";
 import { MdDoNotDisturb } from "react-icons/md";
 import { IoMdAddCircleOutline } from "react-icons/io";
 import { GiReturnArrow } from "react-icons/gi";
+import { ReportCallApi } from "@/API/ReportCommonAPI/ReportCallApi";
 
 const ICON_LIST = [
   {
@@ -99,6 +104,27 @@ const CustomLoadingOverlay = () => {
   );
 };
 
+const authIconGroups = [
+  {
+    id: 1,
+    group: "CheckBox",
+    activeIcon: <CheckSquare size={20} color="#22c55e" strokeWidth={2.5} />,
+    inactiveIcon: <Square size={20} color="#ef4444" strokeWidth={2.5} />,
+  },
+  {
+    id: 2,
+    group: "Toggle Button",
+    activeIcon: <ToggleRight size={20} color="#22c55e" strokeWidth={2.5} />,
+    inactiveIcon: <ToggleLeft size={20} color="#ef4444" strokeWidth={2.5} />,
+  },
+  {
+    id: 3,
+    group: "Status",
+    activeIcon: <CheckCircle2 size={20} color="#22c55e" strokeWidth={2.5} />,
+    inactiveIcon: <XCircle size={20} color="#ef4444" strokeWidth={2.5} />,
+  },
+];
+
 export default function MainReport({
   OtherKeyData,
   masterData,
@@ -127,8 +153,10 @@ export default function MainReport({
   summaryViewData,
   svgIconData,
   otherPrintOptionShow,
-  otherPrintOptionShowData
+  otherPrintOptionShowData,
+  authActionDropdownMaster
 }) {
+  console.log('authActionDropdownMaster: ', authActionDropdownMaster);
   const noFoundImg = "./images/noFound.jpg";
   const [isLoading, setIsLoading] = useState(isLoadingChek);
   const [showImageView, setShowImageView] = useState(false);
@@ -205,11 +233,19 @@ export default function MainReport({
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [selectedAuthRow, setSelectedAuthRow] = useState(null);
   const [selectedAuthCol, setSelectedAuthCol] = useState(null);
+  const [authLoadingCell, setAuthLoadingCell] = useState(null); // keep state only
+  const authLoadingCellRef = useRef(null); // keep ref too
+
+  const filteredRowsRef = useRef(null);
 
   useEffect(() => {
     window.$ = $;
     window.jQuery = $;
   }, []);
+
+  useEffect(() => {
+    authLoadingCellRef.current = authLoadingCell;
+  }, [authLoadingCell]);
 
   const isOldHome = window.location.pathname
     .toLowerCase()
@@ -587,26 +623,122 @@ export default function MainReport({
   }, [grupEnChekBox]);
 
 
-  const handleToggleAuth = () => {
+  const handleToggleAuth = async () => {
     if (!selectedAuthRow || !selectedAuthCol) return;
 
     const fieldName = selectedAuthCol.FieldName;
+    const rowId = selectedAuthRow.id;
+    const currentVal = String(selectedAuthRow[fieldName]) === "1" ? 0 : 1;
 
-    const updatedRows = filteredRows.map((row) => {
-      if (row.id === selectedAuthRow.id) {
-        return {
-          ...row,
-          [fieldName]:
-            String(row[fieldName]) === "1" ? 0 : 1,
-        };
-      }
-      return row;
-    });
+    // ── get the linked data field name and its value from the row ──
+    const authDataFieldName = selectedAuthCol.IsAuthActionData; // e.g. "UserId"
+    const recordId = selectedAuthRow[authDataFieldName];        // e.g. "rudra_cust@gmail.com"
 
-    setFilteredRows(updatedRows);
     setAuthModalOpen(false);
     setSelectedAuthRow(null);
     setSelectedAuthCol(null);
+
+    authLoadingCellRef.current = { rowId, fieldName };
+    setAuthLoadingCell({ rowId, fieldName });
+
+    // ── get reportId from sessionStorage ──
+    const keyPrefix = `${pid}_`;
+    const matchingKey = Object.keys(sessionStorage).find((key) =>
+      key.startsWith(keyPrefix)
+    );
+    const reportId = matchingKey ? matchingKey.split("_")[1] : "";
+    let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
+
+    const body = {
+      con: JSON.stringify({
+        id: "",
+        mode: "ToggelAction",
+        appuserid: AllData?.LUId,
+        IPAddress: clientIpAddress,
+        FormName: "DynamicReport ( data )",
+      }),
+      p: JSON.stringify({
+        ReportId: reportId,          // report id from session
+        IsActionData: fieldName,  // field name e.g. "UserId"
+        State: currentVal,           // 0 or 1
+        RecordID: recordId,          // actual value e.g. "rudra_cust@gmail.com"
+      }),
+      f: "DynamicReport ( data )",
+    };
+
+    try {
+      const response = await ReportCallApi(body, spNumber);
+      console.log('ToggleAuth response:',);
+      if (response?.rd[0]?.stat == 1) {
+
+      }
+    } catch (err) {
+      console.error("ToggleAuth API failed:", err);
+    }
+
+    setTimeout(() => {
+      authLoadingCellRef.current = null;
+      setAuthLoadingCell(null);
+
+      setFilteredRows((prev) =>
+        prev.map((row) => {
+          if (row.id === rowId) {
+            const { __authTick, ...rest } = row;
+            return { ...rest, [fieldName]: currentVal };
+          }
+          return row;
+        })
+      );
+    }, 2000);
+  };
+
+  const handleAuthDropdownChange = async (params, col, newValue) => {
+    const row = params?.row;
+    if (!row || !col) return;
+
+    const fieldName = col?.FieldName;
+    const recordIdField = col?.IsAuthActionData; // same idea as your toggle logic
+
+    const recordId = recordIdField ? row[recordIdField] : row?.id;
+
+    // get reportId from sessionStorage
+    const keyPrefix = `${pid}_`;
+    const matchingKey = Object.keys(sessionStorage).find((key) =>
+      key.startsWith(keyPrefix)
+    );
+
+    const reportId = matchingKey ? matchingKey.split("_")[1] : "";
+    const AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
+
+    const body = {
+      con: JSON.stringify({
+        id: "",
+        mode: "DropdownSave",
+        appuserid: AllData?.LUId,
+        IPAddress: clientIpAddress,
+        FormName: "DynamicReport ( data )",
+      }),
+      p: JSON.stringify({
+        ReportId: reportId,
+        TargetDisplayName: col?.IsAuthActionDropdownMaster,   // or col.IsAuthActionDropdownMaster if needed
+        DropdownValue: newValue,
+        RecordID: recordId,
+      }),
+      f: "DynamicReport ( data )",
+    };
+
+    try {
+      const response = await ReportCallApi(body, spNumber);
+      if (response?.rd?.[0]?.stat == 1) {
+        setFilteredRows((prev) =>
+          prev.map((r) =>
+            r.id === row.id ? { ...r, [fieldName]: newValue } : r
+          )
+        );
+      }
+    } catch (err) {
+      console.error("DropdownSave API failed:", err);
+    }
   };
 
   useEffect(() => {
@@ -681,6 +813,10 @@ export default function MainReport({
           ViewButtonDataArray: col?.ViewButtonDataArray,
           IsRightBase: col?.IsRightBase,
           IsPrintColumn: col?.IsPrintColumn,
+          IsAuthAction: col?.IsAuthAction,
+          IsAuthActionIcon: col?.IsAuthActionIcon,
+          IsAuthActionData: col?.IsAuthActionData,
+          IsAuthActionDropdown: col?.IsAuthActionDropdown,
           filterTypes: [
             toBool(col.NormalFilter) && "NormalFilter",
             toBool(col.MultiSelection) && "MultiSelection",
@@ -706,15 +842,98 @@ export default function MainReport({
               );
             }
 
-            if (col?.IsAuthAction == "True") {
+            if (col?.IsAuthActionDropdown) {
+              const dropdownOptions = authActionDropdownMaster?.filter(
+                (item) =>
+                  item.SourceTable === col?.IsAuthActionDropdownMaster
+              );
+
+              const selectedValue =
+                params?.row?.[col?.FieldName];
+
+              return (
+                <FormControl
+                  size="small"
+                  sx={{
+                    width: "80%",
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "14px",
+                      backgroundColor: "#e9e4e4",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      minHeight: "25px",
+                      height: "25px",
+                      marginTop: "5px",
+                      padding: '0px'
+                    },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      border: "none",
+                    },
+                  }}
+                >
+                  <Select
+                    displayEmpty
+                    value={selectedValue || ""}
+                    onChange={(e) =>
+                      handleAuthDropdownChange(params, col, e.target.value)
+                    }
+                    MenuProps={{
+                      PaperProps: {
+                        sx: {
+                          borderRadius: "18px",
+                          mt: 1,
+                          maxHeight: 320,
+                        },
+                      },
+                    }}
+                    renderValue={(selected) => {
+                      if (!selected) {
+                        return (
+                          <span style={{ color: "#666" }}>
+                            Select Status
+                          </span>
+                        );
+                      }
+                      const selectedItem = dropdownOptions?.find(
+                        (x) => x.DropdownValue == selected
+                      );
+                      return selectedItem?.DropdownText || selected;
+                    }}
+                  >
+                    <MenuItem value="">--Select--</MenuItem>
+
+                    {dropdownOptions?.map((item, index) => (
+                      <MenuItem
+                        key={index}
+                        value={item.DropdownValue}
+                      >
+                        {item.DropdownText}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              );
+            }
+
+            if (col?.IsAuthAction) {
+              const isLoading =
+                authLoadingCellRef.current?.rowId === params.row.id &&
+                authLoadingCellRef.current?.fieldName === col.FieldName;
+
+              const liveValue = params.row[col.FieldName];
               const isActive =
-                String(displayValue) === "1" ||
-                displayValue === 1 ||
-                displayValue === true;
+                String(liveValue) === "1" ||
+                liveValue === 1 ||
+                liveValue === true;
+
+              const selectedIconGroup = authIconGroups.find(
+                (x) => x.id === Number(col?.IsAuthActionIcon)
+              );
 
               return (
                 <div
                   onClick={() => {
+                    if (isLoading) return;
                     setSelectedAuthRow(params.row);
                     setSelectedAuthCol(col);
                     setAuthModalOpen(true);
@@ -725,21 +944,21 @@ export default function MainReport({
                     justifyContent: "center",
                     width: "100%",
                     height: "100%",
-                    cursor: "pointer",
+                    cursor: isLoading ? "default" : "pointer",
                   }}
                 >
-                  {isActive ? (
-                    <CheckCircle2
-                      size={20}
-                      color="#22c55e"
-                      strokeWidth={2.5}
-                    />
+                  {isLoading ? (
+                    <div className="auth_dot_loader">
+                      <span /><span /><span /><span />
+                    </div>
+                  ) : isActive ? (
+                    selectedIconGroup?.activeIcon || (
+                      <CheckCircle2 size={20} color="#22c55e" strokeWidth={2.5} />
+                    )
                   ) : (
-                    <XCircle
-                      size={20}
-                      color="#ef4444"
-                      strokeWidth={2.5}
-                    />
+                    selectedIconGroup?.inactiveIcon || (
+                      <XCircle size={20} color="#ef4444" strokeWidth={2.5} />
+                    )
                   )}
                 </div>
               );
@@ -834,8 +1053,8 @@ export default function MainReport({
                 </span>
               );
             }
-            // if (col.ColumnType === "Date") {
 
+            // if (col.ColumnType === "Date") {
             //   let formattedDate = "-";
             //   if (
             //     params.value &&
@@ -2470,6 +2689,17 @@ export default function MainReport({
                     zIndex: 1300,
                     position: "relative",
                   },
+
+                  "& .MuiDataGrid-cell:focus": {
+                    outline: 'none !important'
+                  },
+
+                  "& .MuiDataGrid-cell:focus-within": {
+                    outline: 'none !important'
+                  }
+
+
+
                 }}
               />
               {menuState.open && (

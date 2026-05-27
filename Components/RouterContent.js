@@ -28,6 +28,7 @@ export default function RouterContent() {
   const [spliterReportShow, setSpliterReportShow] = useState(false);
   const [isFormulaBasedSummary, setIsFormulaBasedSummary] = useState(false);
   const [spliterReportFirstPanel, setSpliterReportFirstPanel] = useState();
+  const [authActionDropdownMaster, setAuthActionDropdownMaster] = useState();
   const [spliterReportFirstPanelFilter, setSpliterReportFirstPanelFilter] = useState();
   const [spliterReportSecondPanelSecondoption, setSpliterReportSecondPanelSecondoption] = useState();
   const [spliterReportFirstPanelShowAll, setSpliterReportFirstPanelShowAll] = useState();
@@ -133,7 +134,7 @@ export default function RouterContent() {
         setColorMaster(response?.rd2);
         setCurrencyMaster(response?.rd3);
         setOtherPrintOptionShowData(response?.rd5)
-
+        setAuthActionDropdownMaster(response?.rd6)
         const masterName = response?.rd?.[0]?.PrintMasterName;
         const matched = response?.rd4?.find(
           (item) => item.PrintMaster === masterName
@@ -248,6 +249,7 @@ export default function RouterContent() {
         svgIconData={svgIconData}
         otherPrintOptionShow={otherPrintOptionShow}
         otherPrintOptionShowData={otherPrintOptionShowData}
+        authActionDropdownMaster={authActionDropdownMaster}
       />
     </Suspense>
   );

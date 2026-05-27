@@ -95,8 +95,6 @@ export default function SpliterReport({
   summaryViewData,
   spliterReportFirstPanelFilter
 }) {
-  console.log('spliterReportFirstPanelFilter: ', spliterReportFirstPanelFilter);
-
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
   const [masterData, setMasterData] = useState();

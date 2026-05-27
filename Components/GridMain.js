@@ -41,8 +41,11 @@ const GridMain = ({
   spliterReportSecondPanelSecondoption,
   svgIconData,
   otherPrintOptionShow,
-  otherPrintOptionShowData
+  otherPrintOptionShowData,
+  authActionDropdownMaster
 }) => {
+
+  // metal loss summury
 
   // useEffect(() => {
   //   Cookies.set(
@@ -137,6 +140,7 @@ const GridMain = ({
       svgIconData={svgIconData}
       otherPrintOptionShow={otherPrintOptionShow}
       otherPrintOptionShowData={otherPrintOptionShowData}
+      authActionDropdownMaster={authActionDropdownMaster}
     />
   );
 };
