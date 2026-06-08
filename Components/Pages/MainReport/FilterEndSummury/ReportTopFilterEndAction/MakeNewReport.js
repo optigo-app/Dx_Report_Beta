@@ -57,9 +57,13 @@ const MakeNewReport = ({
 
     const handleConfirmDelete = async () => {
         if (!selectedDeleteReport) return;
+        let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
+
         const body = {
             con: JSON.stringify({
                 mode: "DeleteSubReportData",
+                appuserid: AllData?.LUId,
+                IPAddress: clientIpAddress,
             }),
             p: JSON.stringify({
                 SubReportId: selectedDeleteReport.SubReportId,
@@ -506,7 +510,7 @@ const MakeNewReport = ({
                                         right: "-10px",
                                     }}
                                 >
-                                    <Trash style={{ width: '15px',  }} />
+                                    <Trash style={{ width: '15px', }} />
                                 </IconButton>
                             </Button>
                         );

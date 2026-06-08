@@ -6,6 +6,7 @@ import React, {
   useRef,
 } from "react";
 import "./Print1JewelleryBook.css";
+import { Box, Card, Stack, Typography } from "@mui/material";
 
 export default function Print1JewelleryBook({
   visibleItemsMain,
@@ -134,31 +135,162 @@ export default function Print1JewelleryBook({
     )
     : [];
 
-  const renderCard = (e, i, isPrint = false) => (
-    <div key={i} className="col1 brbxAll spfntbH pagBrkIns">
-      {e?.Customer ? (
-        <div className="w-100 brBtom spaclftTpm spacBtom spfntHead">
-          {e?.Customer}
-        </div>
-      ) : (
-        <div className="minheit brBtom"></div>
-      )}
-      {withImage && e?.ImageName !== "" && (
-        <div className="w-100 brBtom imgwdtheit">
-          <img
-            src={`${e?.ImgUrl}`}
-            loading={isPrint ? "eager" : "lazy"}
-            alt="Design_Image"
-            onError={handleImageError}
-          />
-        </div>
-      )}
+  const filteredData = sortedPrintData.filter((item) => {
+    if (!item.IsHideShowOption) return true;
+    return hideShowFields[item.value];
+  });
 
-      <div
+  const rows = [];
+  for (let i = 0; i < filteredData.length; i += 2) {
+    rows.push({
+      left: filteredData[i],
+      right: filteredData[i + 1],
+    });
+  }
+
+  const renderCard = (e, i, isPrint = false) => (
+    <div key={i} className="col1" style={{ width: '18%' }}>
+      <div className="brbxAll spfntbH pagBrkIns">
+        {e?.Customer ? (
+          <div className="w-100 brBtom spaclftTpm spacBtom spfntHead">
+            {e?.Customer}
+          </div>
+        ) : (
+          <div className="minheit brBtom"></div>
+        )}
+        {withImage && e?.ImageName !== "" && (
+          <div className="w-100 brBtom imgwdtheit">
+            <img
+              src={`${e?.ImgUrl}`}
+              loading={isPrint ? "eager" : "lazy"}
+              alt="Design_Image"
+              onError={handleImageError}
+            />
+          </div>
+        )}
+
+        <Stack>
+          {rows.map((row, index) => (
+            <Stack
+              key={index}
+              direction="row"
+              justifyContent="space-between"
+              style={{ padding: '2px', display: 'flex', justifyContent: 'space-between' }}
+            >
+              {/* Left */}
+              <Box sx={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}>
+                <Stack direction="row" justifyContent="space-between">
+                  <span
+                    style={{
+                      fontSize: `${row.left?.fontsizel}px` || "12px",
+                      fontWeight: row.left?.fontweightl || 500,
+                      color: "#555",
+                      whiteSpace: "nowrap",
+                    }}
+                    className="printLabelData"
+                  >
+                    {row.left?.lable}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: `${row.left?.fontsizev}px` || "12px",
+                      fontWeight: row.left.fontweightv || 500,
+                      color: "#000",
+                      whiteSpace: "nowrap",
+                    }}
+                    className="printLabelData"
+                  >
+                    {e?.[row.left?.value]}
+                  </span>
+                </Stack>
+              </Box>
+
+              {/* Right */}
+              <Box sx={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}>
+                {row.right && (
+                  <Stack direction="row" justifyContent="space-between">
+                    <span
+                      style={{
+                        fontSize: `${row.right.fontsizel}px` || "12px",
+                        fontWeight: row.right.fontweightl || 500,
+                        color: "#555",
+                        whiteSpace: "nowrap",
+                      }}
+                      className="printLabelData">{row.right?.lable}</span>
+                    <span
+                      style={{
+                        fontSize: `${row.fontsizel}px` || "12px",
+                        fontWeight: row.fontweightl || 500,
+                        color: "#555",
+                        whiteSpace: "nowrap",
+                      }}
+                      className="printLabelData">{e?.[row.right?.value]}</span>
+                  </Stack>
+                )}
+              </Box>
+            </Stack>
+          ))}
+        </Stack>
+
+        {/* <Card sx={{ p: 2 }}>
+          <Stack spacing={1.5}>
+            {sortedPrintData
+              .filter((iteImage) => {
+                console.log(iteImage ,"iteImage")
+                if (!iteImage.IsHideShowOption) return true;
+                return hideShowFields[iteImage.value];
+              })
+              .map((iteImage, index) => (
+                <Box
+                  key={index}
+                  direction="row" justifyContent="space-between">
+
+                  {iteImage.lable && (
+                    <span
+                      style={{
+                        fontSize: `${iteImage.fontsizel}px` || "12px",
+                        fontWeight: iteImage.fontweightl || 500,
+                        color: "#555",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                      }}
+                      className="printLabelData"
+                    >
+                      {iteImage.lable}
+                    </span>
+                  )}
+                  <span
+                    style={{
+                      fontSize: `${iteImage.fontsizev}px` || "12px",
+                      fontWeight: iteImage.fontweightv || 500,
+                      color: "#000",
+                      wordBreak: "break-word",
+                      minWidth: 0,
+                    }}
+                    className="printLabelData"
+                  >
+                    {e?.[iteImage.value]}
+                  </span>
+                </Box>
+              ))}
+          </Stack>
+        </Card> */}
+
+        {/* <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "2px 4px",
           margin: "2px",
+          width: "98%",
         }}
       >
         {sortedPrintData
@@ -172,164 +304,186 @@ export default function Print1JewelleryBook({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "4px",
                 justifyContent: index % 2 === 0 ? "flex-start" : "flex-end",
+                overflow: "hidden",
               }}
             >
-              {iteImage.lable &&
+              {iteImage.lable && (
                 <span
                   style={{
                     fontSize: `${iteImage.fontsizel}px` || "12px",
                     fontWeight: iteImage.fontweightl || 500,
                     color: "#555",
+                    whiteSpace: "nowrap",
                   }}
+                  className="printLabelData"
                 >
                   {iteImage.lable}
                 </span>
-              }
-
+              )}
               <span
                 style={{
                   fontSize: `${iteImage.fontsizev}px` || "12px",
                   fontWeight: iteImage.fontweightv || 500,
                   color: "#000",
+                  whiteSpace: "nowrap",
                 }}
+                className="printLabelData"
               >
-                {e?.[iteImage.value] || "-"}
+                {e?.[iteImage.value]}
               </span>
             </div>
           ))}
-      </div>
+      </div> */}
 
-      <div className="w-100 spaclftTpm d-flex" style={{ display: 'flex', justifyContent: 'space-between', marginInline: '5px' }}>
-        <div className=" spfntBld spbrWord spfntHead">{e?.designno}</div>
-        <p
-          style={{
-            margin: 0,
-            fontSize: "13px",
-            lineHeight: "16px",
-          }}
-        >
-          {e?.designcount !== undefined && (
-            <span>
-              Order: <strong>{e.designcount}</strong>
-            </span>
-          )}
-          {e?.designcount !== undefined && e?.salescount !== undefined && ", "}
-          {e?.salescount !== undefined && (
-            <span>
-              Sale: <strong>{e.salescount}</strong>
-            </span>
-          )}
-        </p>
-      </div>
-
-      <div className="w-100 disflxCen spaclftTpm">
-        <div className="wdth_45 spbrWord">{e?.Status}</div>
-        {e?.Manufacturer ? <div className="spfntBld">|</div> : null}
-        <div className="wdth_55 spacrighTpm spbrWord">{e?.Manufacturer}</div>
-      </div>
-
-      <div className="w-100 disflxCen spaclftTpm">
-        {e?.Metal_Type && (
-          <div className="wdth_45 spbrWord">{e?.Metal_Type}</div>
-        )}
-        {e?.Metal_Type ? <div> |</div> : null}
-        <div
-          className={`${e?.Metal_Type !== "" ? "wdth_55 spacrighTpm" : "w-100 spfntlft"
-            } spbrWord`}
-        >
-          {e?.Sr_JobNo}
-        </div>
-      </div>
-
-      <div className="w-100 disflxCen spaclftTpm">
-        {e?.Metal_Color && (
-          <div className="wdth_45 spbrWord">{e?.Metal_Color}</div>
-        )}
-        {e?.Metal_Color ? <div>|</div> : null}
-        {e?.Gross_Wt && (
-          <div
-            className={`${e?.Metal_Color !== "" ? "wdth_55 spacrighTpm" : "w-100 spfntlft"
-              } spbrWord`}
+        <div className="w-100 spaclftTpm d-flex" style={{ display: 'flex', justifyContent: 'space-between', marginInline: '5px' }}>
+          <div className=" spfntBld spbrWord spfntHead">{e?.designno}</div>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "13px",
+              lineHeight: "16px",
+            }}
           >
-            G.WT: {fixedValues(e?.Gross_Wt, 3)} gm
-          </div>
-        )}
-      </div>
-
-      {
-        e?.Diam_Ctw || e?.CS_Ctw ? (
-          <div className="w-100 disflxCen spaclftTpm">
-            <div className="wdth_45 spbrWord">
-              DIA: {e?.Diam_Ctw ? `${fixedValues(e?.Diam_Ctw, 3)}` : null}
-            </div>
-
-            {e?.CS_Ctw || e?.Misc_Ctw ? <div>|</div> : null}
-            <div
-              className={`${e?.Misc_Ctw !== "" ? "wdth_55 spacrighTpm" : "w-100 spfntlft"
-                } spbrWord`}
-            >
-              N.WT: {fixedValues(e?.Metal_Wt, 3)} gm
-            </div>
-          </div>
-        ) : null
-      }
-
-      <div className="w-100 disflxCen spaclftTpm">
-        {e?.Misc_Ctw ? (
-          <div className="w-100 disflx spaclftTpm spbrWord">
-            MISC: {fixedValues(e?.Misc_Ctw, 3)}
-          </div>
-        ) : null}
-        <div className="wdth_55 spacrighTpm spbrWord">
-          {e?.CS_Ctw
-            ? `CS: ${fixedValues(e?.CS_Ctw, 3)}`
-            : e?.Misc_Ctw
-              ? `MISC: ${fixedValues(e?.Misc_Ctw, 3)}`
-              : null}
+            {e?.designcount !== undefined && (
+              <span>
+                Order: <strong>{e.designcount}</strong>
+              </span>
+            )}
+            {e?.designcount !== undefined && e?.salescount !== undefined && ", "}
+            {e?.salescount !== undefined && (
+              <span>
+                Sale: <strong>{e.salescount}</strong>
+              </span>
+            )}
+          </p>
         </div>
-      </div>
 
-      {
-        e?.Inwardno ? (
-          <div className="w-100 disflx spaclftTpm spbrWord">
-            Inward: {e?.Inwardno}
-          </div>
-        ) : null
-      }
+        {
+          e?.Status || e?.Manufacturer && (
+            <div className="w-100 disflxCen spaclftTpm">
+              <div className="wdth_45 spbrWord">{e?.Status}</div>
+              {e?.Manufacturer ? <div className="spfntBld">|</div> : null}
+              <div className="wdth_55 spacrighTpm spbrWord">{e?.Manufacturer}</div>
+            </div>
+          )
+        }
 
-      {
-        e?.Status === "Sold" && (
-          <div className="w-100 spbrWord disflx spaclftTpm">
-            Sale: {e?.InvoiceNo}
-          </div>
-        )
-      }
+        {
+          e?.Metal_Type || e?.Sr_JobNo && (
+            <div className="w-100 disflxCen spaclftTpm">
+              {e?.Metal_Type && (
+                <div className="wdth_45 spbrWord">{e?.Metal_Type}</div>
+              )}
+              {e?.Metal_Type ? <div> |</div> : null}
+              <div
+                className={`${e?.Metal_Type !== "" ? "wdth_55 spacrighTpm" : "w-100 spfntlft"
+                  } spbrWord`}
+              >
+                {e?.Sr_JobNo}
+              </div>
+            </div>
+          )
+        }
 
-      {
-        e?.Status === "In Memo" && (
-          <div className="w-100 disflx spbrWord spaclftTpm">
-            Memo: {e?.InvoiceNo}
-          </div>
-        )
-      }
 
-      {
-        e?.Status === "In Repair" && (
-          <div className="w-100 disflx spaclftTpm spbrWord">
-            Repair: {e?.InvoiceNo}
-          </div>
-        )
-      }
+        {
+          e?.Metal_Color || e?.Gross_Wt && (
+            <div className="w-100 disflxCen spaclftTpm">
+              {e?.Metal_Color && (
+                <div className="wdth_45 spbrWord">{e?.Metal_Color}</div>
+              )}
+              {e?.Metal_Color ? <div>|</div> : null}
+              {e?.Gross_Wt && (
+                <div
+                  className={`${e?.Metal_Color !== "" ? "wdth_55 spacrighTpm" : "w-100 spfntlft"
+                    } spbrWord`}
+                >
+                  G.WT: {fixedValues(e?.Gross_Wt, 3)} gm
+                </div>
+              )}
+            </div>
+          )
+        }
 
-      {
-        e?.Status === "Purchase Return" && (
-          <div className="w-100 disflx spaclftTpm spbrWord">
-            Pur. Return: {e?.InvoiceNo}
-          </div>
-        )
-      }
+        {
+          e?.Diam_Ctw || e?.CS_Ctw && (
+            <div className="w-100 disflxCen spaclftTpm">
+              <div className="wdth_45 spbrWord">
+                DIA: {e?.Diam_Ctw ? `${fixedValues(e?.Diam_Ctw, 3)}` : null}
+              </div>
+
+              {e?.CS_Ctw || e?.Misc_Ctw ? <div>|</div> : null}
+              <div
+                className={`${e?.Misc_Ctw !== "" ? "wdth_55 spacrighTpm" : "w-100 spfntlft"
+                  } spbrWord`}
+              >
+                N.WT: {fixedValues(e?.Metal_Wt, 3)} gm
+              </div>
+            </div>
+          )
+        }
+
+        {
+          e?.Misc_Ctw || e?.CS_Ctw && (
+            <div className="w-100 disflxCen spaclftTpm">
+              {e?.Misc_Ctw ? (
+                <div className="w-100 disflx spaclftTpm spbrWord">
+                  MISC: {fixedValues(e?.Misc_Ctw, 3)}
+                </div>
+              ) : null}
+              <div className="wdth_55 spacrighTpm spbrWord">
+                {e?.CS_Ctw
+                  ? `CS: ${fixedValues(e?.CS_Ctw, 3)}`
+                  : e?.Misc_Ctw
+                    ? `MISC: ${fixedValues(e?.Misc_Ctw, 3)}`
+                    : null}
+              </div>
+            </div>
+          )
+        }
+
+        {
+          e?.Inwardno ? (
+            <div className="w-100 disflx spaclftTpm spbrWord">
+              Inward: {e?.Inwardno}
+            </div>
+          ) : null
+        }
+
+        {
+          e?.Status === "Sold" && (
+            <div className="w-100 spbrWord disflx spaclftTpm">
+              Sale: {e?.InvoiceNo}
+            </div>
+          )
+        }
+
+        {
+          e?.Status === "In Memo" && (
+            <div className="w-100 disflx spbrWord spaclftTpm">
+              Memo: {e?.InvoiceNo}
+            </div>
+          )
+        }
+
+        {
+          e?.Status === "In Repair" && (
+            <div className="w-100 disflx spaclftTpm spbrWord">
+              Repair: {e?.InvoiceNo}
+            </div>
+          )
+        }
+
+        {
+          e?.Status === "Purchase Return" && (
+            <div className="w-100 disflx spaclftTpm spbrWord">
+              Pur. Return: {e?.InvoiceNo}
+            </div>
+          )
+        }
+      </div >
     </div >
   );
 
@@ -390,7 +544,7 @@ export default function Print1JewelleryBook({
                     checked={hideShowFields[item.value] ?? true}
                     onChange={() => handleHideShowChange(item.value)}
                   />
-                  {item.lable || item.value}
+                  {item.lable?.replace(/-$/, "")}
                 </label>
               ))}
           </div>

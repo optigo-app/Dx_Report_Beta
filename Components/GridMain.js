@@ -42,10 +42,10 @@ const GridMain = ({
   svgIconData,
   otherPrintOptionShow,
   otherPrintOptionShowData,
-  authActionDropdownMaster
-}) => {
-
-  // metal loss summury
+  authActionDropdownMaster,
+  isPrintColumn,
+  isPrintColumnData
+}) => {  
 
   // useEffect(() => {
   //   Cookies.set(
@@ -141,6 +141,8 @@ const GridMain = ({
       otherPrintOptionShow={otherPrintOptionShow}
       otherPrintOptionShowData={otherPrintOptionShowData}
       authActionDropdownMaster={authActionDropdownMaster}
+      isPrintColumn={isPrintColumn}
+      isPrintColumnData={isPrintColumnData}
     />
   );
 };

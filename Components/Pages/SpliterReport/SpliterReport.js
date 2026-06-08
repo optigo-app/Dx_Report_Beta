@@ -91,10 +91,9 @@ export default function SpliterReport({
   isFormulaBasedSummary,
   summaryViewData,
   spliterReportFirstPanelFilter,
-  // NEW PROP: second option field name for the second panel toggle
-  // e.g. spliterReportSecondPanelSecondoption = "Employee"
   spliterReportSecondPanelSecondoption,
-  authActionDropdownMaster
+  authActionDropdownMaster,
+  isPrintColumn
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -185,7 +184,8 @@ export default function SpliterReport({
     fetchData();
   }, [pid, reportId, largeData, filterState.dateRange]);
 
-  const fetchReportData = async (filters = {}, Master, allData = false) => {
+  const fetchReportData = async (filters = {}, Master, allData = false, dateOverride = null) => {
+
     try {
       setIsLoading(true);
       let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
@@ -198,13 +198,16 @@ export default function SpliterReport({
       const responseMaster = await ReportCallApi(masterDataBody, spNumber);
       if (responseMaster) setMasterData(responseMaster);
 
+      const startDate = dateOverride?.startDate ?? filterState.dateRange.startDate;
+      const endDate = dateOverride?.endDate ?? filterState.dateRange.endDate;
+
       const body = {
         con: JSON.stringify({ mode: "GetFullReport", appuserid: AllData?.LUId, IPAddress: clientIpAddress }),
         p: JSON.stringify({
           ReportId: reportId,
           IsMaster: Master,
-          FilterStartDate: allData ? "" : formatToYYYYMMDD(filterState.dateRange.startDate),
-          FilterEndDate: allData ? "" : formatToYYYYMMDD(filterState.dateRange.endDate),
+          FilterStartDate: allData ? "" : formatToYYYYMMDD(startDate),
+          FilterEndDate: allData ? "" : formatToYYYYMMDD(endDate),
           ...(filters.FilterHeader && { FilterHeader: filters.FilterHeader }),
           ...(filters.FilterValue && { FilterValue: filters.FilterValue }),
         }),
@@ -694,13 +697,39 @@ export default function SpliterReport({
                         variant="contained"
                         size="small"
                         onClick={() => {
-                          setFilterState({ dateRange: { startDate: "", endDate: "" } });
-                          fetchReportData("", 0, true);
+                          const monthCount = Number(spliterReportMonthRestiction) || 1;
+
+                          const endDate = new Date();
+
+                          // Current month + previous months
+                          // Example:
+                          // monthCount = 2
+                          // => current month + previous 2 months
+                          const startDate = new Date();
+                          startDate.setMonth(startDate.getMonth() - monthCount);
+                          startDate.setDate(1); // optional: start from 1st day
+
+                          setFilterState({
+                            dateRange: { startDate, endDate }
+                          });
+
+                          fetchReportData(
+                            {},
+                            0,
+                            false,
+                            { startDate, endDate }
+                          );
                         }}
                         sx={{
-                          minWidth: 'auto', padding: '17px 12px', fontSize: '0.95rem',
-                          height: '30px', textTransform: 'none', borderRadius: '5px',
-                          bgcolor: '#6f53ff', color: 'white', '&:hover': { bgcolor: '#6f53ff' }
+                          minWidth: 'auto',
+                          padding: '17px 12px',
+                          fontSize: '0.95rem',
+                          height: '30px',
+                          textTransform: 'none',
+                          borderRadius: '5px',
+                          bgcolor: '#6f53ff',
+                          color: 'white',
+                          '&:hover': { bgcolor: '#6f53ff' }
                         }}
                       >
                         All
@@ -1004,6 +1033,7 @@ export default function SpliterReport({
             isFormulaBasedSummary={isFormulaBasedSummary}
             summaryViewData={summaryViewData}
             authActionDropdownMaster={authActionDropdownMaster}
+            isPrintColumn={isPrintColumn}
           />
         </div>
       </Box>

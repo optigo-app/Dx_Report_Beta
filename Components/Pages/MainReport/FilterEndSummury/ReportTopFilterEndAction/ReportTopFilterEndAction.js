@@ -254,8 +254,13 @@ const ReportTopFilterEndAction = ({
 
   const handleOpenPrintPreview = async () => {
     const sorted = getSortedRows();
+    const filteredData =
+      selectionModel?.length > 0
+        ? sorted.filter((row) => selectionModel.includes(row.id))
+        : sorted;
+
     setShowPrintView(true);
-    setPrintData(sorted);
+    setPrintData(filteredData);
   };
 
   useEffect(() => {
@@ -798,9 +803,6 @@ const ReportTopFilterEndAction = ({
                     minHeight: "38px !important",
                     padding: "0 8px",
                     cursor: "pointer",
-
-
-
                     "& .MuiAccordionSummary-content": {
                       margin: 0,
                       alignItems: "center",
@@ -1701,9 +1703,10 @@ const ReportTopFilterEndAction = ({
       ?.filter(col =>
         data?.GridColumnName
           ?.split(",")
-          ?.includes(String(col.ColId))
+          ?.includes(String(col.FieldName))
       )
       ?.map(col => col.FieldName);
+
     const actionIds = rows
       ?.map(row =>
         fieldNames
@@ -1712,6 +1715,7 @@ const ReportTopFilterEndAction = ({
           ?.join("/")
       )
       ?.join(",");
+
     const body = {
       con: JSON.stringify({
         id: "",
@@ -1801,10 +1805,7 @@ const ReportTopFilterEndAction = ({
       </Dialog>
 
       <div style={{ width: '100%' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-
-
-
+        <div className="otherReportOptions" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
           {!isLoading && otherPrintOptionShow &&
             <div style={{ margin: '0px 0px 5px 5px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               {otherPrintOptionShowData?.map((data, index) => {

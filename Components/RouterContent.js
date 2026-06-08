@@ -13,6 +13,9 @@ const GridMain = lazy(() => import("@/Components/GridMain"));
 const ReportListPage = lazy(() =>
   import("@/Components/Pages/ReportListPage/ReportListPage")
 );
+const MultiReportPage = lazy(() =>
+  import("@/Components/Pages/MultiReport/MultiReportPage")
+);
 
 export default function RouterContent() {
   const searchParams = useSearchParams();
@@ -21,12 +24,15 @@ export default function RouterContent() {
   const newToken = searchParams.get("Token");
 
   const [tokenMissing, setTokenMissing] = useState(false);
+  const [showMultiReport, setShowMultiReport] = useState(false);
   const [reportId, setReportId] = useState(null);
   const [spNumber, setSpNumber] = useState(null);
   const [largeData, setLargeData] = useState(false);
   const [dateOptionsShow, setLargeDataShow] = useState(false);
   const [spliterReportShow, setSpliterReportShow] = useState(false);
   const [isFormulaBasedSummary, setIsFormulaBasedSummary] = useState(false);
+  const [isPrintColumn, setIsPrintColumn] = useState(false);
+  const [isPrintColumnData, setIsPrintColumnData] = useState(false);
   const [spliterReportFirstPanel, setSpliterReportFirstPanel] = useState();
   const [authActionDropdownMaster, setAuthActionDropdownMaster] = useState();
   const [spliterReportFirstPanelFilter, setSpliterReportFirstPanelFilter] = useState();
@@ -60,6 +66,7 @@ export default function RouterContent() {
     getClientIpAddress();
   }, []);
 
+
   useEffect(() => {
     const initializeAndFetchReport = async () => {
       if (!newToken) {
@@ -69,12 +76,20 @@ export default function RouterContent() {
 
       try {
         let parsedData;
-        const storedJson = sessionStorage.getItem(newToken);
-        if (storedJson) {
-          parsedData = JSON.parse(storedJson);
+        const fromSession = sessionStorage.getItem(newToken);
+        const fromLocal = fromSession ? null : localStorage.getItem(newToken);
+
+        if (fromSession) {
+          // LUId already decoded by the API path — use as-is, no atob
+          parsedData = JSON.parse(fromSession);
+          sessionStorage.setItem("reportVarible", JSON.stringify(parsedData));
+        } else if (fromLocal) {
+          // LUId was re-encoded (btoa) by parent's syncSessionForIframes — decode once
+          parsedData = JSON.parse(fromLocal);
           if (parsedData?.LUId) {
             parsedData.LUId = atob(parsedData.LUId);
           }
+          sessionStorage.setItem(newToken, JSON.stringify(parsedData));
           sessionStorage.setItem("reportVarible", JSON.stringify(parsedData));
         } else {
           const tokenBody = {
@@ -83,8 +98,8 @@ export default function RouterContent() {
 
           const APIURL =
             window.location.hostname === "localhost" ||
-            window.location.hostname === "dxreport.web" ||
-            window.location.hostname === "nzen"
+              window.location.hostname === "dxreport.web" ||
+              window.location.hostname === "nzen"
               ? "http://nzen/jo/api-lib/App/CentralCrossDomainToken"
               : "https://vw.optigoapps.com/linkedapp/App/CentralCrossDomainToken";
 
@@ -122,8 +137,21 @@ export default function RouterContent() {
           f: "DynamicReport (get column data)",
         };
 
+        const bodyMulti = {
+          con: JSON.stringify({
+            id: "",
+            mode: "IsMultireport",
+            appuserid: AllData?.LUId,
+            IPAddress: clientIpAddress,
+          }),
+          p: JSON.stringify({ PageId: pid }),
+          f: "DynamicReport (get column data)",
+        };
+
+        const responseMulti = await CallApi(bodyMulti);
         const response = await CallApi(body);
         // const response = sampleData;
+        setShowMultiReport(responseMulti?.rd[0]?.IsMultireport);
 
         if (response?.Status === "400") {
           setTokenMissing(true);
@@ -154,6 +182,8 @@ export default function RouterContent() {
           setReportName(data.ReportName);
           setSpliterReportFirstPanelShowAll(data?.SpliterFirstPanelAll);
           setSpliterReportAllDataButton(data?.SpliterReportAllDataButton);
+          setIsPrintColumn(data?.IsPrintColumn);
+          setIsPrintColumnData(data?.MainPrintColumn);
           setOtherPrintOptionShow(data?.otherPrintOptionShow);
           setSpliterReportSecondPanelShowAll(data?.SpliterSecondPanelAll);
           setSvgIconData(JSON.parse(data.SvgIconFilter));  // New.............
@@ -173,7 +203,6 @@ export default function RouterContent() {
           const key = `${pid}_${data.ReportId}`;
           sessionStorage.setItem(key, data.ReportId);
         }
-
         setReady(true);
       } catch (err) {
         console.error("Error:", err);
@@ -194,6 +223,20 @@ export default function RouterContent() {
         }
       >
         <ReportListPage />
+      </Suspense>
+    );
+  }
+
+  if (showMultiReport) {
+    return (
+      <Suspense
+        fallback={
+          <div style={{ height: "100vh", width: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
+            <CircularProgress />
+          </div>
+        }
+      >
+        <MultiReportPage />
       </Suspense>
     );
   }
@@ -250,6 +293,8 @@ export default function RouterContent() {
         otherPrintOptionShow={otherPrintOptionShow}
         otherPrintOptionShowData={otherPrintOptionShowData}
         authActionDropdownMaster={authActionDropdownMaster}
+        isPrintColumn={isPrintColumn}
+        isPrintColumnData={isPrintColumnData}
       />
     </Suspense>
   );

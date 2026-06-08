@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Cookies from "js-cookie";
 import {
-  GridPagination,
   useGridApiContext,
   useGridSelector,
   gridPageSelector,
@@ -9,8 +8,6 @@ import {
 } from "@mui/x-data-grid";
 import { Checkbox, FormControlLabel, IconButton, MenuItem, Select, TextField } from "@mui/material";
 import { FirstPage, KeyboardArrowLeft, KeyboardArrowRight, LastPage } from "@mui/icons-material";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { GripHorizontal } from "lucide-react";
 
 export async function readAndDecodeCookie(cookieName) {
   const rawCookie = Cookies.get(cookieName);
@@ -115,28 +112,12 @@ export const CustomPagination = () => {
         gap: 16,
       }}
     >
-      {/* ✅ Page navigation */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 14 }}>Rows per page:</span>
         <Select
           value={pageSize}
           onChange={handlePageSizeChange}
           size="small"
-          // MenuProps={{
-          //   anchorOrigin: { vertical: "top", horizontal: "left" },
-          //   transformOrigin: { vertical: "bottom", horizontal: "left" },
-          //   PaperProps: {
-          //     style: {
-          //       maxHeight: 160,
-          //       marginBottom: "4px",
-          //     },
-          //   },
-          //   slotProps: {
-          //     root: {
-          //       style: { zIndex: 1400 },
-          //     },
-          //   },
-          // }}
           sx={{
             height: "28px",
             width: "68px",
@@ -149,6 +130,10 @@ export const CustomPagination = () => {
             "& .MuiOutlinedInput-notchedOutline": {
               borderWidth: "0.5px",
             },
+
+            "& .MuiPaper-root": {
+              marginBottom: "-50px !important"
+            }
           }}
         >
           {[20, 30, 50, 100].map((size) => (

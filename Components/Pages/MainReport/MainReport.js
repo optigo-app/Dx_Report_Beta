@@ -154,9 +154,10 @@ export default function MainReport({
   svgIconData,
   otherPrintOptionShow,
   otherPrintOptionShowData,
-  authActionDropdownMaster
+  authActionDropdownMaster,
+  isPrintColumn,
+  isPrintColumnData
 }) {
-  console.log('authActionDropdownMaster: ', authActionDropdownMaster);
   const noFoundImg = "./images/noFound.jpg";
   const [isLoading, setIsLoading] = useState(isLoadingChek);
   const [showImageView, setShowImageView] = useState(false);
@@ -269,7 +270,7 @@ export default function MainReport({
       return "OLD";
     }
 
-    if (url.includes("/home.do")) {
+    if (url.includes("/home.do") || url.includes("/Home.do")) {
       return "NEW";
     }
     return "UNKNOWN";
@@ -445,17 +446,35 @@ export default function MainReport({
 
   const fetchData = async () => {
     try {
-      if (OtherKeyData == null) {
-        return;
-      }
+      if (OtherKeyData == null) return;
+
       setAllRowData(OtherKeyData?.rd3);
       setAllColumIdWiseName(OtherKeyData?.rd2);
       setMasterKeyData(OtherKeyData?.rd[0]);
-      let rd1;
-      rd1 = OtherKeyData?.rd1 ? [...OtherKeyData.rd1] : [];
+
+      let rd1 = OtherKeyData?.rd1 ? [...OtherKeyData.rd1] : [];
       rd1.sort((a, b) => (a.DisplayOrder ?? 999) - (b.DisplayOrder ?? 999));
-      setAllColumData(rd1);
-      setAllColumDataBack(rd1);
+      setAllColumData((prevColumData) => {
+        if (prevColumData && prevColumData.length > 0) {
+          return rd1.map((col) => {
+            const prevCol = prevColumData.find(
+              (p) => p.FieldName === col.FieldName
+            );
+            if (prevCol) {
+              return {
+                ...col,
+                IsVisible: prevCol.IsVisible,       // ✅ keep user's visibility
+                DisplayOrder: prevCol.DisplayOrder,  // ✅ keep user's order
+              };
+            }
+            return col;
+          });
+        }
+        return rd1;
+      });
+
+      setAllColumDataBack(rd1); // ✅ back keeps original untouched
+
       const grupCheckboxMap = (rd1 || [])
         .filter((col) => col?.GrupChekBox == "True")
         .reduce((acc, col) => {
@@ -659,7 +678,7 @@ export default function MainReport({
       }),
       p: JSON.stringify({
         ReportId: reportId,          // report id from session
-        IsActionData: fieldName,  // field name e.g. "UserId"
+        IsActionData: fieldName,     // field name e.g. "UserId"
         State: currentVal,           // 0 or 1
         RecordID: recordId,          // actual value e.g. "rudra_cust@gmail.com"
       }),
@@ -812,7 +831,6 @@ export default function MainReport({
           ViewButton: col?.ViewButton,
           ViewButtonDataArray: col?.ViewButtonDataArray,
           IsRightBase: col?.IsRightBase,
-          IsPrintColumn: col?.IsPrintColumn,
           IsAuthAction: col?.IsAuthAction,
           IsAuthActionIcon: col?.IsAuthActionIcon,
           IsAuthActionData: col?.IsAuthActionData,
@@ -825,11 +843,20 @@ export default function MainReport({
             toBool(col.SelectDropdownFilter) && "selectDropdownFilter",
             toBool(col.ServerSideFilter) && "ServerSideFilter",
           ].filter(Boolean),
-
+          ...(col.ColumnType === "Date" && {
+            sortComparator: (v1, v2) => {
+              const toMs = (val) => {
+                if (!val || val === "-" || val == null) return 0;
+                const d = new Date(val);
+                return isNaN(d.getTime()) ? 0 : d.getTime();
+              };
+              return toMs(v1) - toMs(v2);
+            },
+          }),
           renderCell: (params) => {
             const displayValue = params.value;
 
-            if (col?.IsPrintColumn == true) {
+            if (isPrintColumn == col?.FieldName) {
               return (
                 <>
                   <IconButton
@@ -1448,11 +1475,11 @@ export default function MainReport({
               <p style={{ minWidth: '60px' }}>
                 {original}
               </p>
+
               {DynamicIcon && (
                 <DynamicIcon
-                  size={18}
-                  color="#7367F0"
-                  style={{ flexShrink: 0 }}
+                  size={16}
+                  style={{ flexShrink: 0, color: 'white', backgroundColor: '#7367F0', padding: '5px', borderRadius: '50px' }}
                 />
               )}
             </div>
@@ -1532,7 +1559,6 @@ export default function MainReport({
         return true;
       })
     ];
-
     setColumns(visibleColumns);
     setColumnsHide([srColumn, ...columnDataWithIcon]);
   }, [allColumData, paginationModel, selectionModel, svgIconData]);
@@ -1607,25 +1633,25 @@ export default function MainReport({
     }
   }, [apiRef]);
 
-  const originalRows =
-    allColumIdWiseName &&
-    allRowData?.map((row, index) => {
+  const originalRows = useMemo(() => {
+    if (!allColumIdWiseName || !allRowData) return [];
+
+    return allRowData.map((row, index) => {
       const formattedRow = {};
       Object.keys(row).forEach((key) => {
         const colName = allColumIdWiseName[0][key];
         const colDef = allColumData?.find((c) => c.FieldName === colName);
         if (colDef?.MasterId && colDef.MasterId !== 0) {
           const rawValue = row[key];
-          const mappedValue =
-            masterValueMap[colDef.MasterId]?.[rawValue] ?? rawValue;
+          const mappedValue = masterValueMap[colDef.MasterId]?.[rawValue] ?? rawValue;
           formattedRow[colName] = mappedValue;
         } else {
           formattedRow[colName] = row[key];
         }
       });
-
       return { id: index, ...formattedRow };
     });
+  }, [allRowData, allColumIdWiseName, allColumData, masterValueMap]); // ✅ allColumData here
 
   const isFirstLoad = useRef(true);
 
@@ -1862,7 +1888,8 @@ export default function MainReport({
     selectedColors,
     selectedCurrency,
     grupEnChekBox,
-    svgFilter
+    svgFilter,
+    originalRows
   ]);
 
   const handleCellClick = (params, colId) => {
@@ -1887,7 +1914,7 @@ export default function MainReport({
         const { VariableName, VariableValue, IsStatic, IsEncoded } = item;
         if (IsStatic === "True") {
           if (IsEncoded == "True") {
-            return `${VariableName}=${encodeURIComponent(VariableValue)}`;
+            return `${VariableName}=${btoa(VariableValue)}`;
           } else {
             return `${VariableName}=${VariableValue}`;
           }
@@ -2148,11 +2175,12 @@ export default function MainReport({
       }),
       p: JSON.stringify({
         EventName: printMasterData?.PrintMaster,
-        invoiceno: rowData?.Bill,
+        invoiceno: rowData?.[isPrintColumnData],
         printname: printN,
       }),
       f: "DynamicReport ( Save User Activity Log )",
     };
+
     try {
       const response = await CallApi(body);
       if (window?.parent?.postMessage) {
@@ -2485,7 +2513,7 @@ export default function MainReport({
           ref={gridRef}
           style={{
             height: "100%",
-            margin: homeType == "NEW" ? "5px 10px 5px 10px" : "5px 10px 50px 10px",
+            margin: homeType == "NEW" ? "5px 10px 5px 10px" : "5px 10px 5px 10px",
             overflow: "auto",
             transition: "opacity 0.3s",
             opacity: isPageChanging ? 0.5 : 1,
@@ -2582,7 +2610,7 @@ export default function MainReport({
 
               {pid == 18418 &&
                 <Grid container spacing={3}>
-                  <Grid item md={8} xs={12}>
+                  <Grid item md={8} xs={12} style={{ width: '65%' }}>
                     <ChartCard>
                       <PersonWiseDailyCallCount
                         filteredRows={filteredRows}
@@ -2592,7 +2620,7 @@ export default function MainReport({
                     </ChartCard>
                   </Grid>
 
-                  <Grid item md={4} xs={12}>
+                  <Grid item md={2} xs={12} style={{ width: '30%' }}>
                     <ChartCard>
                       <PieChartView
                         filteredRows={filteredRows}
@@ -2623,6 +2651,8 @@ export default function MainReport({
                 // getRowClassName={(params) =>
                 //   params.row.IsClub === 1 ? "yellow-row" : ""
                 // }
+                sortingOrder={["asc", "desc"]}
+                sortingMode="client"
                 sortModel={sortModel}
                 onSortModelChange={(model) => {
                   if (!model.length) return;
@@ -2661,8 +2691,7 @@ export default function MainReport({
                   pagination: CustomPagination,
                   loadingOverlay: CustomLoadingOverlay,
                 }}
-                sortingOrder={["asc", "desc"]}
-                sortingMode="client"
+
                 paginationModel={paginationModel}
                 onPaginationModelChange={handlePaginationChange}
                 onColumnWidthChange={(params) => {

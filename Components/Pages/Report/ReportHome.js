@@ -200,7 +200,9 @@ export default function ReportHome({
   svgIconData,
   otherPrintOptionShow,
   otherPrintOptionShowData,
-  authActionDropdownMaster
+  authActionDropdownMaster,
+  isPrintColumn,
+  isPrintColumnData
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -786,6 +788,8 @@ export default function ReportHome({
                   otherPrintOptionShow={otherPrintOptionShow}
                   otherPrintOptionShowData={otherPrintOptionShowData}
                   authActionDropdownMaster={authActionDropdownMaster}
+                  isPrintColumn={isPrintColumn}
+                  isPrintColumnData={isPrintColumnData}
                 />
                 :
                 <MainReport
@@ -818,6 +822,8 @@ export default function ReportHome({
                   otherPrintOptionShowData={otherPrintOptionShowData}
                   reportId={reportId}
                   authActionDropdownMaster={authActionDropdownMaster}
+                  isPrintColumn={isPrintColumn}
+                  isPrintColumnData={isPrintColumnData}
                 />
               }
             </div>

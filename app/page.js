@@ -27,19 +27,19 @@ export default function Page() {
   );
 }
 
+// metal loss summury
 // find . -mindepth 1 -delete
 
-// pm2 list 
-// npm i -f
-// npm run build && pm2 restart "90099" && pm2 save 
-
-// Dx metal loss report
 // Dxreport - R50B3 - 6006    - 27
-// Dxreport - local76 - 6010  - 33  
+// npm run build && pm2 restart 27 && pm2 save 
+
+// Dxreport - local76 - 6010  - 30  
+// npm run build && pm2 restart 30 && pm2 save 
+
 
 // Dxreport - local77 - 6011  - 31
-
 // R76 - 5008
+
 // R76BETA - 5009
 // R76LIVE - 5012
 

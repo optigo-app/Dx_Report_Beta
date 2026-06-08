@@ -120,9 +120,7 @@ const LongCallChart = ({ filteredRows, selectedMonth = null }) => {
         display="flex"
         justifyContent="space-between"
         alignItems="center"
-        mb={2}
-        mt={10}
-      >
+        >
         <Typography variant="h6" sx={{ fontWeight: 500, color: "#0f172a" }}>
           Long Calls ({durationRange === "all" ? "All Durations" : durationRange + " mins"})
         </Typography>
