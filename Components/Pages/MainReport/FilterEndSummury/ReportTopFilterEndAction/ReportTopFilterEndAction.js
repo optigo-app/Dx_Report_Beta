@@ -1638,7 +1638,7 @@ const ReportTopFilterEndAction = ({
 
     const header = {
       Yearcode: `${AllData?.YearCode}`,
-      version: `${atob(AllData?.cuVer)}`,
+      version: `${atob(AllData?.dxver)}`,
       sv: `${atob(AllData?.SV)}`,
       sp: 55,
     };

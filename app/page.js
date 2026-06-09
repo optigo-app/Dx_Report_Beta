@@ -30,10 +30,10 @@ export default function Page() {
 // metal loss summury
 // find . -mindepth 1 -delete
 
-// Dxreport - R50B3 - 6006    - 27
-// npm run build && pm2 restart 27 && pm2 save 
+// Dxreport - beta - 6006 - 34
+// npm run build && pm2 restart 34 && pm2 save 
 
-// Dxreport - local76 - 6010  - 30  
+// Dxreport - live - 6010  - 30  
 // npm run build && pm2 restart 30 && pm2 save 
 
 

@@ -17,7 +17,7 @@ export const CommonAPI = async (body) => {
     const APIURL = atob(AllData?.rptapiurl);
     const header = {
       Yearcode: `${AllData?.YearCode}`,
-      version: `${atob(AllData?.cuVer)}`,
+      version: `${atob(AllData?.dxver)}`,
       sv: `${atob(AllData?.SV)}`,
       sp: 34,
     };

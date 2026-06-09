@@ -5,14 +5,14 @@ export const ReportCommonAPI = async (body, spNumber) => {
 
   const headerOnline = {
     Yearcode: `${AllData?.YearCode}`,
-    version: `${atob(AllData?.cuVer)}`,
+    version: `${atob(AllData?.dxver)}`,
     sv: `${atob(AllData?.SV)}`,
     sp: spNumber,
   };
 
   const headerLocal = {
     Yearcode: `${AllData?.YearCode}`,
-    version: `${atob(AllData?.cuVer)}`,
+    version: `${atob(AllData?.dxver)}`,
     sv: `${atob(AllData?.SV)}`,
     sp: spNumber,
   };

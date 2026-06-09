@@ -14,7 +14,8 @@ import {
 const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const AreaChartView = ({ filteredRows }) => {
+const AreaChartView = ({ filteredRows, title }) => {
+  const gradientId = React.useId();
 
   const chartData = React.useMemo(() => {
     if (!filteredRows?.length) return [];
@@ -68,14 +69,14 @@ const AreaChartView = ({ filteredRows }) => {
     <>
       <Box sx={{ mb: 2 }}>
         <Typography variant="h6">
-          {isDayWise ? "Day Wise Call Count" : "Month Wise Call Count"}
+          {title || (isDayWise ? "Day Wise Call Count" : "Month Wise Call Count")}
         </Typography>
       </Box>
 
       <ResponsiveContainer width="100%" height={280}>
         <AreaChart data={chartData}>
           <defs>
-            <linearGradient id="callGradient" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.9} />
               <stop offset="60%" stopColor="#93c5fd" stopOpacity={0.4} />
               <stop offset="100%" stopColor="#eff6ff" stopOpacity={0.05} />
@@ -92,7 +93,7 @@ const AreaChartView = ({ filteredRows }) => {
             dataKey="callCount"
             stroke="#3b82f6"
             strokeWidth={3}
-            fill="url(#callGradient)"
+            fill={`url(#${gradientId})`}
           >
             <LabelList
               dataKey="callCount"

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Box from "@mui/material/Box";
 import "./MainReport.scss";
@@ -51,7 +53,6 @@ import AreaChartD from "@/Components/Pages/MainReport/ChartView/Dynamic/AreaChar
 import BarChartD from "@/Components/Pages/MainReport/ChartView/Dynamic/BarChartD";
 import PieChartD from "@/Components/Pages/MainReport/ChartView/Dynamic/PieChartD";
 import PersonWiseDailyCallCountD from "@/Components/Pages/MainReport/ChartView/Dynamic/PersonWiseDailyCallCountD";
-import $ from 'jquery';
 import { GridOverlay } from "@mui/x-data-grid";
 import { IoWarningOutline } from "react-icons/io5";
 import { MdDoNotDisturb } from "react-icons/md";
@@ -172,6 +173,8 @@ export default function MainReport({
   const [status500, setStatus500] = useState(false);
   const [commonSearch, setCommonSearch] = useState("");
   const [sortModel, setSortModel] = useState([]);
+  const [multiSortModel, setMultiSortModel] = useState([]);
+  const isMultiSortingEnabled = masterKeyData?.IsMultiSorting == "True";
   const [activeActionColumn, setActiveActionColumn] = useState(null);
   const [tempValue, setTempValue] = useState("");
   const [selectionModel, setSelectionModel] = useState([]);
@@ -189,7 +192,10 @@ export default function MainReport({
   const [navigationPageMaster, setNavigationPageMaster] = useState();
   const [selectedCurrency, setSelectedCurrency] = useState("INR");
   const [draftFilters, setDraftFilters] = useState({});
-  const clientIpAddress = sessionStorage.getItem("clientIpAddress");
+  const clientIpAddress =
+    typeof window !== "undefined"
+      ? sessionStorage.getItem("clientIpAddress")
+      : null;
   const [suggestionVisibility, setSuggestionVisibility] = useState({});
   const [highlightedIndex, setHighlightedIndex] = useState({});
   const [preparingPrint, setPreparingPrint] = useState(false);
@@ -201,11 +207,14 @@ export default function MainReport({
   const [summaryColumns, setSummaryColumns] = useState();
   const [finalSummaryColumns, setFinalSummaryColumns] = useState();
   const [chartView, setChartView] = useState(false);
+  const [savedAreaCharts, setSavedAreaCharts] = useState([]);
   const [previewImg, setPreviewImg] = useState(null);
   const [openImgModal, setOpenImgModal] = useState(false);
   const [otherReport, setOtherReport] = useState([]);
   const gridContainerRef = useRef(null);
-  const fullscreenContainer = gridContainerRef.current || document.body;
+  const fullscreenContainer =
+    gridContainerRef.current ||
+    (typeof document !== "undefined" ? document.body : undefined);
   const apiRef = useGridApiRef();
   const printRef = useRef();
   const gridRef = useRef(null);
@@ -239,23 +248,32 @@ export default function MainReport({
 
   const filteredRowsRef = useRef(null);
 
-  useEffect(() => {
-    window.$ = $;
-    window.jQuery = $;
-  }, []);
+  const handleSaveAreaChart = () => {
+    setSavedAreaCharts((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        title: `Saved Area Chart ${prev.length + 1}`,
+        rows: filteredRows ? [...filteredRows] : [],
+      },
+    ]);
+  };
+
+  const handleMakeNewAreaChart = () => {
+    handleSaveAreaChart();
+  };
 
   useEffect(() => {
     authLoadingCellRef.current = authLoadingCell;
   }, [authLoadingCell]);
 
-  const isOldHome = window.location.pathname
-    .toLowerCase()
-    .endsWith("/home1.do");
+  const pathname =
+    typeof window !== "undefined" ? window.location.pathname : "";
+
+  const isOldHome = pathname.toLowerCase().endsWith("/home1.do");
 
   const isNewHome =
-    window.location.pathname
-      .toLowerCase()
-      .endsWith("/home.do") && !isOldHome;
+    pathname.toLowerCase().endsWith("/home.do") && !isOldHome;
 
   function getCurrentBrowserUrl() {
     try {
@@ -1584,6 +1602,7 @@ export default function MainReport({
               : "desc";
           initialSort.current = [{ field: cand.field, sort: sortDir }];
           setSortModel(initialSort.current);
+          setMultiSortModel(initialSort.current);
         }
       }
       defaultSortApplied.current = true;
@@ -1676,6 +1695,39 @@ export default function MainReport({
   const [filters, setFilters] = useState({});
   const [filtersShow, setFiltersShow] = useState({});
   const [filtersShowDraf, setFiltersShowDraf] = useState({});
+
+  const applyMultiSort = (rows, model) => {
+    if (!Array.isArray(rows) || !model?.length) return rows;
+
+    return [...rows].sort((a, b) => {
+      for (const sortItem of model) {
+        const aValue = a?.[sortItem.field];
+        const bValue = b?.[sortItem.field];
+        const aEmpty = aValue === null || aValue === undefined || aValue === "";
+        const bEmpty = bValue === null || bValue === undefined || bValue === "";
+
+        if (aEmpty && bEmpty) continue;
+        if (aEmpty) return sortItem.sort === "asc" ? 1 : -1;
+        if (bEmpty) return sortItem.sort === "asc" ? -1 : 1;
+
+        const aNumber = Number(aValue);
+        const bNumber = Number(bValue);
+        const bothNumbers = !Number.isNaN(aNumber) && !Number.isNaN(bNumber);
+        const compareResult = bothNumbers
+          ? aNumber - bNumber
+          : String(aValue).localeCompare(String(bValue), undefined, {
+            numeric: true,
+            sensitivity: "base",
+          });
+
+        if (compareResult !== 0) {
+          return sortItem.sort === "asc" ? compareResult : -compareResult;
+        }
+      }
+
+      return 0;
+    });
+  };
 
   useEffect(() => {
     const filtersArray = filtersShow
@@ -1864,10 +1916,13 @@ export default function MainReport({
 
       return updatedRow;
     });
+    const sortedRows = isMultiSortingEnabled
+      ? applyMultiSort(rowsWithSrNo, multiSortModel)
+      : rowsWithSrNo;
     if (masterKeyData?.GroupCheckBox == "True") {
-      setFilteredRows(groupRows(rowsWithSrNo, grupEnChekBox));
+      setFilteredRows(groupRows(sortedRows, grupEnChekBox));
     } else {
-      setFilteredRows(rowsWithSrNo);
+      setFilteredRows(sortedRows);
     }
 
     const formattedFilters = Object.entries(filters).map(([key, value]) => ({
@@ -1889,7 +1944,9 @@ export default function MainReport({
     selectedCurrency,
     grupEnChekBox,
     svgFilter,
-    originalRows
+    originalRows,
+    multiSortModel,
+    isMultiSortingEnabled
   ]);
 
   const handleCellClick = (params, colId) => {
@@ -2587,13 +2644,52 @@ export default function MainReport({
               {pid == 18418 &&
                 <Grid item md={12} xs={12}>
                   <ChartCard>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        gap: 1,
+                        mb: 1,
+                      }}
+                    >
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={handleSaveAreaChart}
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={handleMakeNewAreaChart}
+                      >
+                        Make New
+                      </Button>
+                    </Box>
                     <AreaChartView
                       filteredRows={filteredRows}
                       sortModel={sortModel}
                       columns={columns}
+                      title="Current Area Chart"
                     />
                   </ChartCard>
                 </Grid>
+              }
+
+              {pid == 18418 &&
+                savedAreaCharts.map((chart) => (
+                  <Grid item md={12} xs={12} key={chart.id}>
+                    <ChartCard>
+                      <AreaChartView
+                        filteredRows={chart.rows}
+                        sortModel={sortModel}
+                        columns={columns}
+                        title={chart.title}
+                      />
+                    </ChartCard>
+                  </Grid>
+                ))
               }
 
               {pid == 18418 &&
@@ -2652,10 +2748,26 @@ export default function MainReport({
                 //   params.row.IsClub === 1 ? "yellow-row" : ""
                 // }
                 sortingOrder={["asc", "desc"]}
-                sortingMode="client"
+                sortingMode={isMultiSortingEnabled ? "server" : "client"}
                 sortModel={sortModel}
                 onSortModelChange={(model) => {
-                  if (!model.length) return;
+                  const clickedSort = model[0];
+                  if (isMultiSortingEnabled) {
+                    const nextMultiSortModel = clickedSort
+                      ? [
+                          ...multiSortModel.filter(
+                            (item) => item.field !== clickedSort.field
+                          ),
+                          clickedSort,
+                        ]
+                      : [];
+                    setSortModel(clickedSort ? [clickedSort] : []);
+                    setMultiSortModel(nextMultiSortModel);
+                  } else {
+                    setSortModel(model);
+                    setMultiSortModel(model);
+                  }
+                  if (!clickedSort) return;
                   const keyPrefix = `${pid}_`;
                   const matchingKey = Object.keys(sessionStorage).find(
                     (key) => key.startsWith(keyPrefix)
@@ -2668,7 +2780,7 @@ export default function MainReport({
                     return;
                   }
                   const reportId = matchingKey.split("_")[1];
-                  const { field, sort } = model[0];
+                  const { field, sort } = clickedSort;
                   const column = apiRef.current.getColumn(field);
                   const actionOn = column?.headerName || field;
                   saveReportActivity(reportId, {
@@ -2676,7 +2788,6 @@ export default function MainReport({
                     ActionOn: actionOn,
                     ActionValue: sort,
                   });
-                  setSortModel(model);
                 }}
                 localeText={{ noRowsLabel: "No Data" }}
                 initialState={{

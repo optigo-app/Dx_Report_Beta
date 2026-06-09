@@ -1,4 +1,4 @@
-import { Button, Dialog, IconButton } from "@mui/material";
+import { Box, Button, Dialog, IconButton, Typography } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { MessageCircle, NotebookPen, Printer, X } from "lucide-react";
 
@@ -17,24 +17,35 @@ const IframAction = ({ params, col, iframeModelData }) => {
       (x) => x.ColId == colId && x.IframeTypeId == iframeTypeId
     );
     if (!rd1Item || !rdParams) return "";
+
     const getRowValue = (paramName) => {
+      const row = params?.row || {};
       const key = Object.keys(row).find(
         (k) => k.toLowerCase() === paramName.toLowerCase()
       );
       return key ? row[key] : "";
     };
+    console.log('rdParams: ', rdParams);
     const queryString = rdParams
       .map((p) => {
         if (p.IsStatic === true || p.IsStatic === "true") {
-          return `${p.ParameterName}=${encodeURIComponent(p.ParameterValue)}`;
+          if (p?.IsEncoded == true) {
+            return `${p.ParameterName}=${btoa(p.ParameterValue)}`;
+          } else {
+            return `${p.ParameterName}=${p.ParameterValue}`;
+          }
         } else {
-          return `${p.ParameterName}=${encodeURIComponent(
-            getRowValue(p.ParameterName) || ""
-          )}`;
+          const dynamicVal = getRowValue(p?.ParameterName) || p?.VariableValue || "";
+          if (p?.IsEncoded == true) {
+            return `${p?.ParameterName}=${btoa(dynamicVal)}`;
+          } else {
+            return `${p?.ParameterName}=${dynamicVal}`;
+          }
         }
       })
       .join("&");
 
+    console.log('queryString: ', queryString);
     return `${rd1Item.BaseUrl}${rd1Item.ReportRedirectUrl}&${queryString}`;
   };
 
@@ -109,53 +120,62 @@ const IframAction = ({ params, col, iframeModelData }) => {
       <Dialog
         open={openHrefModel}
         onClose={() => setOpenHrefModel(false)}
+        maxWidth="xl"
+        fullWidth
         PaperProps={{
           sx: {
-            height: "40vh",
+            width: "60vw",
+            height: "80vh",
+            maxWidth: "90vw",
+            maxHeight: "80vh",
             borderRadius: 2,
             overflow: "hidden",
-            width: "600px",
+            display: "flex",
+            flexDirection: "column",
           },
         }}
       >
-        <div
-          style={{
+        {/* Header */}
+        <Box
+          sx={{
             display: "flex",
             justifyContent: "space-between",
-            padding: "15px 15px 10px 15px",
-            backgroundColor: "#ebebeb",
+            alignItems: "center",
+            p: 2,
+            bgcolor: "#ebebeb",
+            flexShrink: 0,
           }}
         >
-          <div>
-            <p>{iframeTitle}</p>
-          </div>
+          <Typography>{iframeTitle}</Typography>
+
           <IconButton
-            edge="end"
             size="small"
             onClick={() => setOpenHrefModel(false)}
-            aria-label="clear"
-            style={{ border: "1px solid rgb(44 56 90)" }}
+            sx={{ border: "1px solid rgb(44 56 90)" }}
           >
-            <X size={18} color="black" />
+            <X size={18} />
           </IconButton>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            padding: "10px 20px",
-            height: "100%",
+        </Box>
+
+        {/* Content */}
+        <Box
+          sx={{
+            flex: 1,
+            overflow: "auto",
+            p: 1,
           }}
         >
           <iframe
             src={iframeUrl}
             title="iframe-preview"
             style={{
-              border: "none",
+              width: "100%",
               height: "100%",
+              border: "none",
+              display: "block",
             }}
           />
-        </div>
+        </Box>
       </Dialog>
     </div>
   );
