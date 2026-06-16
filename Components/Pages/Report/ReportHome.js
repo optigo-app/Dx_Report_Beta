@@ -775,7 +775,7 @@ export default function ReportHome({
                   showReportMaster={showReportMaster}
                   printViewData={printViewData}
                   isMultiTab={isMultiTab}
-                  isRightBaseColum={isRightBaseColum}
+                  isRightBaseColumMaster={isRightBaseColum}
                   printMasterData={printMasterData}
                   refreshFunction={() => fetchReportData({}, "0")}
                   isPageChanging={isPageChanging}
@@ -811,7 +811,7 @@ export default function ReportHome({
                   defaultShowAllData={defaultShowAllData}
                   printViewData={printViewData}
                   isMultiTab={isMultiTab}
-                  isRightBaseColum={isRightBaseColum}
+                  isRightBaseColumMaster={isRightBaseColum}
                   printMasterData={printMasterData}
                   isPageChanging={isPageChanging}
                   setIsPageChanging={setIsPageChanging}

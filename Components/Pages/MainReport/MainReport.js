@@ -17,6 +17,7 @@ import {
   DialogTitle,
   Drawer,
   FormControl,
+  FormControlLabel,
   Grid,
   IconButton,
   InputLabel,
@@ -24,6 +25,8 @@ import {
   Paper,
   Popover,
   Select,
+  styled,
+  Switch,
   Typography,
 } from "@mui/material";
 import { DragDropContext } from "@hello-pangea/dnd";
@@ -35,6 +38,7 @@ import { CallApi } from "@/API/CallApi/CallApi";
 import Print1JewelleryBook from "@/Components/Pages/MainReport/Print1JewelleryBook/Print1JewelleryBook";
 import {
   CustomPagination,
+  evaluateRightBaseFormula,
   formatToMMDDYYYY,
 } from "@/Utils/globalFunc";
 import ImageView from "@/Components/Pages/MainReport/ImageView/ImageView";
@@ -105,6 +109,66 @@ const CustomLoadingOverlay = () => {
   );
 };
 
+const IOSSwitch = styled((props) => (
+  <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
+))(({ theme }) => ({
+  width: 42,
+  height: 26,
+  padding: 0,
+  '& .MuiSwitch-switchBase': {
+    padding: 0,
+    margin: 2,
+    transitionDuration: '300ms',
+    '&.Mui-checked': {
+      transform: 'translateX(16px)',
+      color: '#fff',
+      '& + .MuiSwitch-track': {
+        backgroundColor: '#65C466',
+        opacity: 1,
+        border: 0,
+        ...theme.applyStyles('dark', {
+          backgroundColor: '#2ECA45',
+        }),
+      },
+      '&.Mui-disabled + .MuiSwitch-track': {
+        opacity: 0.5,
+      },
+    },
+    '&.Mui-focusVisible .MuiSwitch-thumb': {
+      color: '#33cf4d',
+      border: '6px solid #fff',
+    },
+    '&.Mui-disabled .MuiSwitch-thumb': {
+      color: theme.palette.grey[100],
+      ...theme.applyStyles('dark', {
+        color: theme.palette.grey[600],
+      }),
+    },
+    '&.Mui-disabled + .MuiSwitch-track': {
+      opacity: 0.7,
+      ...theme.applyStyles('dark', {
+        opacity: 0.3,
+      }),
+    },
+  },
+  '& .MuiSwitch-thumb': {
+    boxSizing: 'border-box',
+    width: 22,
+    height: 22,
+  },
+  '& .MuiSwitch-track': {
+    borderRadius: 26 / 2,
+    backgroundColor: '#E9E9EA',
+    opacity: 1,
+    transition: theme.transitions.create(['background-color'], {
+      duration: 500,
+    }),
+    ...theme.applyStyles('dark', {
+      backgroundColor: '#39393D',
+    }),
+  },
+}));
+
 const authIconGroups = [
   {
     id: 1,
@@ -146,7 +210,7 @@ export default function MainReport({
   refreshFunction,
   defaultShowAllData,
   isMultiTab,
-  isRightBaseColum,
+  isRightBaseColumMaster,
   printMasterData,
   isPageChanging,
   setIsPageChanging,
@@ -159,6 +223,7 @@ export default function MainReport({
   isPrintColumn,
   isPrintColumnData
 }) {
+
   const noFoundImg = "./images/noFound.jpg";
   const [isLoading, setIsLoading] = useState(isLoadingChek);
   const [showImageView, setShowImageView] = useState(false);
@@ -245,7 +310,7 @@ export default function MainReport({
   const [selectedAuthCol, setSelectedAuthCol] = useState(null);
   const [authLoadingCell, setAuthLoadingCell] = useState(null); // keep state only
   const authLoadingCellRef = useRef(null); // keep ref too
-
+  const sortedFilteredRowsRef = useRef([]);
   const filteredRowsRef = useRef(null);
 
   const handleSaveAreaChart = () => {
@@ -996,6 +1061,23 @@ export default function MainReport({
                     <div className="auth_dot_loader">
                       <span /><span /><span /><span />
                     </div>
+                  ) : selectedIconGroup?.id === 1 ? (
+                    <Checkbox
+                      checked={isActive}
+                      onChange={() => { }}
+                      sx={{ '& .MuiSvgIcon-root': { fontSize: 28 } }}
+                    />
+                  ) : selectedIconGroup?.id === 2 ? (
+                    <FormControlLabel
+                      control={
+                        <IOSSwitch
+                          sx={{ m: 1 }}
+                          checked={isActive}
+                          onChange={() => { }}
+                        />
+                      }
+                      label=""
+                    />
                   ) : isActive ? (
                     selectedIconGroup?.activeIcon || (
                       <CheckCircle2 size={20} color="#22c55e" strokeWidth={2.5} />
@@ -1569,14 +1651,28 @@ export default function MainReport({
       )
     };
 
+    // const visibleColumns = [
+    //   srColumn,
+    //   ...columnDataWithIcon.filter(col => {
+    //     if (col.HideColumn === "True") return false;
+    //     console.log('col.IsRightBase: ', col.IsRightBase);
+    //     // if (isRightBaseColum === 0 && col.IsRightBase === true) return false;
+    //     return true;
+    //   })
+    // ];
+
     const visibleColumns = [
       srColumn,
       ...columnDataWithIcon.filter(col => {
         if (col.HideColumn === "True") return false;
-        if (isRightBaseColum === 0 && col.IsRightBase === true) return false;
-        return true;
+        if (col.IsRightBase) {
+          return evaluateRightBaseFormula(col.IsRightBase, isRightBaseColumMaster);
+        }
+        return true; // no IsRightBase = always show
       })
     ];
+
+    setColumns(visibleColumns);
     setColumns(visibleColumns);
     setColumnsHide([srColumn, ...columnDataWithIcon]);
   }, [allColumData, paginationModel, selectionModel, svgIconData]);
@@ -1934,6 +2030,8 @@ export default function MainReport({
       ...(prev || []),
       ...formattedFilters
     ]);
+
+    sortedFilteredRowsRef.current = getSortedFilteredRows();
   }, [
     filters,
     commonSearch,
@@ -2259,6 +2357,27 @@ export default function MainReport({
     }
   }
 
+  const getSortedFilteredRows = () => {
+    if (!apiRef?.current?.getSortedRowIds) {
+      return sortedFilteredRowsRef.current.length > 0
+        ? sortedFilteredRowsRef.current
+        : filteredRows ?? [];
+    }
+
+    try {
+      const sortedIds = apiRef.current.getSortedRowIds();
+      const rowMap = {};
+      (filteredRows ?? []).forEach(row => {
+        rowMap[row.id] = row;
+      });
+      const result = sortedIds.map(id => rowMap[id]).filter(Boolean);
+      sortedFilteredRowsRef.current = result; // keep ref updated while grid is active
+      return result;
+    } catch {
+      return filteredRows ?? [];
+    }
+  };
+
   if (showPrintView) {
     return (
       <div
@@ -2303,7 +2422,7 @@ export default function MainReport({
           </Button>
         </div>
         <Print1JewelleryBook
-          visibleItemsMain={printData}
+          visibleItemsMain={getSortedFilteredRows()}  // ✅ was: printData
           onPrintClick={handlePrintNow}
           preparingPrint={preparingPrint}
           currentPrintPage={currentPrintPage}
@@ -2581,7 +2700,8 @@ export default function MainReport({
           {showImageView ? (
             <div>
               <ImageView
-                filteredRows={filteredRows}
+                // filteredRows={filteredRows}
+                filteredRows={getSortedFilteredRows()}
                 sortModel={sortModel}
                 columns={columns}
                 imageViewData={imageViewData}
@@ -2755,11 +2875,11 @@ export default function MainReport({
                   if (isMultiSortingEnabled) {
                     const nextMultiSortModel = clickedSort
                       ? [
-                          ...multiSortModel.filter(
-                            (item) => item.field !== clickedSort.field
-                          ),
-                          clickedSort,
-                        ]
+                        ...multiSortModel.filter(
+                          (item) => item.field !== clickedSort.field
+                        ),
+                        clickedSort,
+                      ]
                       : [];
                     setSortModel(clickedSort ? [clickedSort] : []);
                     setMultiSortModel(nextMultiSortModel);
@@ -2802,7 +2922,6 @@ export default function MainReport({
                   pagination: CustomPagination,
                   loadingOverlay: CustomLoadingOverlay,
                 }}
-
                 paginationModel={paginationModel}
                 onPaginationModelChange={handlePaginationChange}
                 onColumnWidthChange={(params) => {

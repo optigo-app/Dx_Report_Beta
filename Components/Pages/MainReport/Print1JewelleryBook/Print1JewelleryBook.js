@@ -360,129 +360,111 @@ export default function Print1JewelleryBook({
           </p>
         </div>
 
-        {
-          e?.Status || e?.Manufacturer && (
-            <div className="w-100 disflxCen spaclftTpm">
-              <div className="wdth_45 spbrWord">{e?.Status}</div>
-              {e?.Manufacturer ? <div className="spfntBld">|</div> : null}
-              <div className="wdth_55 spacrighTpm spbrWord">{e?.Manufacturer}</div>
-            </div>
-          )
-        }
+        {/* Status | Manufacturer */}
+        {(e?.Status || e?.Manufacturer) && (
+          <div className="w-100 disflxCen spaclftTpm">
+            <div className="wdth_45 spbrWord">{e?.Status}</div>
+            {e?.Manufacturer ? <div className="spfntBld">|</div> : null}
+            <div className="wdth_55 spacrighTpm spbrWord">{e?.Manufacturer}</div>
+          </div>
+        )}
 
-        {
-          e?.Metal_Type || e?.Sr_JobNo && (
-            <div className="w-100 disflxCen spaclftTpm">
-              {e?.Metal_Type && (
-                <div className="wdth_45 spbrWord">{e?.Metal_Type}</div>
-              )}
-              {e?.Metal_Type ? <div> |</div> : null}
-              <div
-                className={`${e?.Metal_Type !== "" ? "wdth_55 spacrighTpm" : "w-100 spfntlft"
-                  } spbrWord`}
-              >
-                {e?.Sr_JobNo}
+        {/* Metal Type | Job No */}
+        {(e?.Metal_Type || e?.Sr_JobNo) && (
+          <div className="w-100 disflxCen spaclftTpm">
+            {e?.Metal_Type && (
+              <div className="wdth_45 spbrWord">{e?.Metal_Type}</div>
+            )}
+            {e?.Metal_Type && e?.Sr_JobNo ? <div>|</div> : null}
+            <div className={`${e?.Metal_Type ? "wdth_55 spacrighTpm" : "w-100 spfntlft"} spbrWord`}>
+              {e?.Sr_JobNo}
+            </div>
+          </div>
+        )}
+
+        {/* Metal Color | Gross Wt */}
+        {(e?.Metal_Color || e?.Gross_Wt) && (
+          <div className="w-100 disflxCen spaclftTpm">
+            {e?.Metal_Color && (
+              <div className="wdth_45 spbrWord">{e?.Metal_Color}</div>
+            )}
+            {e?.Metal_Color && e?.Gross_Wt ? <div>|</div> : null}
+            {e?.Gross_Wt !== undefined && e?.Gross_Wt !== null && (
+              <div className={`${e?.Metal_Color ? "wdth_55 spacrighTpm" : "w-100 spfntlft"} spbrWord`}>
+                G.WT: {fixedValues(e?.Gross_Wt, 3)} gm
               </div>
-            </div>
-          )
-        }
+            )}
+          </div>
+        )}
 
-
-        {
-          e?.Metal_Color || e?.Gross_Wt && (
-            <div className="w-100 disflxCen spaclftTpm">
-              {e?.Metal_Color && (
-                <div className="wdth_45 spbrWord">{e?.Metal_Color}</div>
-              )}
-              {e?.Metal_Color ? <div>|</div> : null}
-              {e?.Gross_Wt && (
-                <div
-                  className={`${e?.Metal_Color !== "" ? "wdth_55 spacrighTpm" : "w-100 spfntlft"
-                    } spbrWord`}
-                >
-                  G.WT: {fixedValues(e?.Gross_Wt, 3)} gm
-                </div>
-              )}
-            </div>
-          )
-        }
-
-        {
-          e?.Diam_Ctw || e?.CS_Ctw && (
-            <div className="w-100 disflxCen spaclftTpm">
+        {/* Diamond CTW | Net Weight */}
+        {(e?.Diam_Ctw || e?.Metal_Wt) && (
+          <div className="w-100 disflxCen spaclftTpm">
+            {e?.Diam_Ctw ? (
               <div className="wdth_45 spbrWord">
-                DIA: {e?.Diam_Ctw ? `${fixedValues(e?.Diam_Ctw, 3)}` : null}
+                DIA: {fixedValues(e?.Diam_Ctw, 3)}
               </div>
-
-              {e?.CS_Ctw || e?.Misc_Ctw ? <div>|</div> : null}
-              <div
-                className={`${e?.Misc_Ctw !== "" ? "wdth_55 spacrighTpm" : "w-100 spfntlft"
-                  } spbrWord`}
-              >
+            ) : <div className="wdth_45 spbrWord"></div>}
+            {e?.Diam_Ctw && e?.Metal_Wt ? <div>|</div> : null}
+            {e?.Metal_Wt !== undefined && e?.Metal_Wt !== null && (
+              <div className="wdth_55 spacrighTpm spbrWord">
                 N.WT: {fixedValues(e?.Metal_Wt, 3)} gm
               </div>
-            </div>
-          )
-        }
+            )}
+          </div>
+        )}
 
-        {
-          e?.Misc_Ctw || e?.CS_Ctw && (
-            <div className="w-100 disflxCen spaclftTpm">
-              {e?.Misc_Ctw ? (
-                <div className="w-100 disflx spaclftTpm spbrWord">
-                  MISC: {fixedValues(e?.Misc_Ctw, 3)}
-                </div>
-              ) : null}
-              <div className="wdth_55 spacrighTpm spbrWord">
-                {e?.CS_Ctw
-                  ? `CS: ${fixedValues(e?.CS_Ctw, 3)}`
-                  : e?.Misc_Ctw
-                    ? `MISC: ${fixedValues(e?.Misc_Ctw, 3)}`
-                    : null}
+        {/* Misc CTW | CS CTW */}
+        {(e?.Misc_Ctw || e?.CS_Ctw) && (
+          <div className="w-100 disflxCen spaclftTpm">
+            {e?.Misc_Ctw ? (
+              <div className="wdth_45 spbrWord">
+                MISC: {fixedValues(e?.Misc_Ctw, 3)}
               </div>
-            </div>
-          )
-        }
+            ) : <div className="wdth_45"></div>}
+            {e?.Misc_Ctw && e?.CS_Ctw ? <div>|</div> : null}
+            {e?.CS_Ctw ? (
+              <div className="wdth_55 spacrighTpm spbrWord">
+                CS: {fixedValues(e?.CS_Ctw, 3)}
+              </div>
+            ) : null}
+          </div>
+        )}
 
-        {
-          e?.Inwardno ? (
-            <div className="w-100 disflx spaclftTpm spbrWord">
-              Inward: {e?.Inwardno}
-            </div>
-          ) : null
-        }
+        {/* Inward No */}
+        {e?.Inwardno && (
+          <div className="w-100 disflx spaclftTpm spbrWord">
+            Inward: {e?.Inwardno}
+          </div>
+        )}
 
-        {
-          e?.Status === "Sold" && (
-            <div className="w-100 spbrWord disflx spaclftTpm">
-              Sale: {e?.InvoiceNo}
-            </div>
-          )
-        }
+        {/* Sale Invoice */}
+        {e?.Status === "Sold" && e?.InvoiceNo && (
+          <div className="w-100 spbrWord disflx spaclftTpm">
+            Sale: {e?.InvoiceNo}
+          </div>
+        )}
 
-        {
-          e?.Status === "In Memo" && (
-            <div className="w-100 disflx spbrWord spaclftTpm">
-              Memo: {e?.InvoiceNo}
-            </div>
-          )
-        }
+        {/* Memo Invoice */}
+        {e?.Status === "In Memo" && e?.InvoiceNo && (
+          <div className="w-100 disflx spbrWord spaclftTpm">
+            Memo: {e?.InvoiceNo}
+          </div>
+        )}
 
-        {
-          e?.Status === "In Repair" && (
-            <div className="w-100 disflx spaclftTpm spbrWord">
-              Repair: {e?.InvoiceNo}
-            </div>
-          )
-        }
+        {/* Repair Invoice */}
+        {e?.Status === "In Repair" && e?.InvoiceNo && (
+          <div className="w-100 disflx spaclftTpm spbrWord">
+            Repair: {e?.InvoiceNo}
+          </div>
+        )}
 
-        {
-          e?.Status === "Purchase Return" && (
-            <div className="w-100 disflx spaclftTpm spbrWord">
-              Pur. Return: {e?.InvoiceNo}
-            </div>
-          )
-        }
+        {/* Purchase Return Invoice */}
+        {e?.Status === "Purchase Return" && e?.InvoiceNo && (
+          <div className="w-100 disflx spaclftTpm spbrWord">
+            Pur. Return: {e?.InvoiceNo}
+          </div>
+        )}
       </div >
     </div >
   );

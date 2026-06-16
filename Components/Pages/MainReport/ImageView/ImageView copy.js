@@ -123,9 +123,40 @@ const ImageView = ({ filteredRows, sortModel, columns, imageViewData, isLoading 
           paddingBottom: "100px",
         }}
       >
-        {filteredRows
+        {[...filteredRows]
+          .sort((a, b) => {
+            const activeSort = sortModel?.[0];
+            if (activeSort) {
+              const field = activeSort.field;
+              const order = activeSort.sort === "asc" ? 1 : -1;
+              const x = a[field];
+              const y = b[field];
+              if (!isNaN(x) && !isNaN(y)) {
+                return (Number(x) - Number(y)) * order;
+              }
+              return String(x).localeCompare(String(y)) * order;
+            }
+
+            const col = columns.find(
+              (c) => c.DefaultSort && c.DefaultSort !== "None"
+            );
+
+            if (!col) return 0;
+            const field = col.field;
+            const order =
+              col.DefaultSort.toLowerCase() === "ascending" ? 1 : -1;
+
+            const x = a[field];
+            const y = b[field];
+
+            if (!isNaN(x) && !isNaN(y)) {
+              return (Number(x) - Number(y)) * order;
+            }
+            return String(x).localeCompare(String(y)) * order;
+          })
           .slice((currentPage - 1) * pageSize, currentPage * pageSize)
           .map((item, idx) => {
+            
             const src = String(item?.ImgUrl ?? "").trim() || defaultImg;
             return (
               <div

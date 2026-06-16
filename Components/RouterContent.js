@@ -163,6 +163,7 @@ export default function RouterContent() {
         setCurrencyMaster(response?.rd3);
         setOtherPrintOptionShowData(response?.rd5)
         setAuthActionDropdownMaster(response?.rd6)
+        setIsRightBaseColum(response?.rd9);
         const masterName = response?.rd?.[0]?.PrintMasterName;
         const matched = response?.rd4?.find(
           (item) => item.PrintMaster === masterName
@@ -198,7 +199,6 @@ export default function RouterContent() {
           setChartViewData(JSON.parse(data.chartViewData));
           setIsMultiTab(data?.IsMultiTab);
           setSpliterReportMonthRestiction(data.DateMonthRestriction);
-          setIsRightBaseColum(data?.solitairegemstoneupdateaccess);
           setDateOptions(response?.rd1);
           const key = `${pid}_${data.ReportId}`;
           sessionStorage.setItem(key, data.ReportId);

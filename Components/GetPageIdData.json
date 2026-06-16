@@ -26,7 +26,6 @@
       "PrintDataArray": "[]",
       "IsMultiTab": false,
       "PrintMasterName": "",
-      "solitairegemstoneupdateaccess": 0,
       "IsFormulaBasedSummary": true,
       "SummaryFormulaArray": "[{\"id\":\"64\",\"formula\":\"JobNo + HSN_No 10\",\"summurylabe\":\"add one \",\"summuryunit\":\"gm\",\"summurydecimal\":0,\"order\":\"\"},{\"id\":\"65\",\"formula\":\"\",\"summurylabe\":\"dsss\",\"summuryunit\":\"\",\"summurydecimal\":0,\"order\":\"\"}]",
       "otherSpliterSideData1": "{\"firstSlideFirstData\":[{\"selectedField\":\"HSN_No\",\"title\":\"First\",\"unit\":\"gm\",\"formula\":\"\",\"decimal\":\"0\"}]}",

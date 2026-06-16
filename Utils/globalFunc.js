@@ -9,6 +9,47 @@ import {
 import { Checkbox, FormControlLabel, IconButton, MenuItem, Select, TextField } from "@mui/material";
 import { FirstPage, KeyboardArrowLeft, KeyboardArrowRight, LastPage } from "@mui/icons-material";
 
+
+
+
+/**
+ * Evaluates a boolean formula string against isRightBaseColumMaster
+ * 
+ * @param {string} formula - e.g. "IsSolitaireGemStoneActivate && (IsAdmin || rmstockrateshowaccess)"
+ * @param {Array}  master  - isRightBaseColumMaster array
+ * @returns {boolean}
+ */
+export function evaluateRightBaseFormula(formula, master) {
+  if (!formula || !master?.length) return true; // no restriction = show
+
+  // Build a lookup map: Flag_Name -> boolean (Flag_Value === "1")
+  const flagMap = {};
+  master.forEach(item => {
+    flagMap[item.Flag_Name] = item.Flag_Value === "1";
+  });
+
+  // Replace each Flag_Name in the formula with its boolean value (true/false)
+  // Matches whole words only so partial names don't get replaced
+  const evaluated = formula.replace(/\b([A-Za-z_][A-Za-z0-9_]*)\b/g, (match) => {
+    if (match in flagMap) {
+      return flagMap[match]; // true or false
+    }
+    // If name not found in master, treat as false (no access)
+    console.warn(`IsRightBase flag "${match}" not found in master. Defaulting to false.`);
+    return false;
+  });
+
+  try {
+    // Safely evaluate the resulting "true && (false || true)" string
+    // eslint-disable-next-line no-new-func
+    return Function('"use strict"; return (' + evaluated + ')')();
+  } catch (e) {
+    console.error('Invalid IsRightBase formula:', formula, e);
+    return false; // on error, hide the column (safe default)
+  }
+}
+
+
 export async function readAndDecodeCookie(cookieName) {
   const rawCookie = Cookies.get(cookieName);
   if (!rawCookie) return null;
