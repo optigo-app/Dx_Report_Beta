@@ -7,23 +7,42 @@ import React, {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import { DragDropContext } from "@hello-pangea/dnd";
-import { Box, Button, FormControl, IconButton, InputLabel, MenuItem, Select } from "@mui/material";
+import { Box, Button, FormControl, IconButton, InputLabel, MenuItem, Select, Typography } from "@mui/material";
 import "./SpliterReport.scss";
 import { ReportCallApi } from "@/API/ReportCommonAPI/ReportCallApi";
 import MainReport from "../MainReport/MainReport";
 import DualDatePicker from "@/Utils/DatePicker/DualDatePicker";
 import { CircleX } from "lucide-react";
+import SideToggleButton from '@/Components/ui/SplitterBtn';
+import ClearAllRoundedIcon from '@mui/icons-material/ClearAllRounded';
 
 const SplitterWithToggle = ({ index, onDrag, isCollapsed, onToggle, isDragging }) => (
   <div style={{ position: "relative", width: 0, zIndex: 100, display: "flex", alignItems: "center", flexShrink: 0 }}>
     {/* Drag zone */}
     <div
       className={`splitter ${isDragging ? "active" : ""}`}
-      style={{ position: "absolute", width: 10, left: -5, top: 0, height: "100%", cursor: "col-resize", zIndex: 1 }}
+      style={{ position: "absolute", width: 0, left: -5, top: 0, height: "100%", cursor: "col-resize", zIndex: 1 }}
       onMouseDown={(e) => !isCollapsed && onDrag(index, e)}
     />
     {/* Toggle button */}
-    <button
+    <SideToggleButton
+      onMouseEnter={e => e.currentTarget.style.background = "#857af7ff"}
+      onMouseLeave={e => e.currentTarget.style.background = "#7367f0"}
+      onClick={onToggle}
+      title={isCollapsed ? `Expand panel ${index + 1}` : `Collapse panel ${index + 1}`}
+      svg={
+         <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d={isCollapsed ? "M3 2 L7 5 L3 8" : "M7 2 L3 5 L7 8"} />
+      </svg>
+      }
+    />
+
+  </div>
+);
+
+
+{/* <button
       onClick={onToggle}
       title={isCollapsed ? `Expand panel ${index + 1}` : `Collapse panel ${index + 1}`}
       style={{
@@ -53,9 +72,7 @@ const SplitterWithToggle = ({ index, onDrag, isCollapsed, onToggle, isDragging }
         stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d={isCollapsed ? "M3 2 L7 5 L3 8" : "M7 2 L3 5 L7 8"} />
       </svg>
-    </button>
-  </div>
-);
+    </button> */}
 
 const formatToYYYYMMDD = (date) => {
   if (!date) return null;
@@ -93,7 +110,8 @@ export default function SpliterReport({
   spliterReportFirstPanelFilter,
   spliterReportSecondPanelSecondoption,
   authActionDropdownMaster,
-  isPrintColumn
+  isPrintColumn,
+  isRightBaseColumMaster
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -185,7 +203,6 @@ export default function SpliterReport({
   }, [pid, reportId, largeData, filterState.dateRange]);
 
   const fetchReportData = async (filters = {}, Master, allData = false, dateOverride = null) => {
-
     try {
       setIsLoading(true);
       let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
@@ -289,6 +306,26 @@ export default function SpliterReport({
     return found[0];
   };
 
+  // ─── NEW: formula evaluator (same pattern as SummaryEndFilteredValue) ─────────
+  const evaluateFormula = (formulaString, totalsMap) => {
+    if (!formulaString) return 0;
+    const fieldNames = Object.keys(totalsMap).sort((a, b) => b.length - a.length);
+    let expr = formulaString;
+    fieldNames.forEach((field) => {
+      const regex = new RegExp(`\\b${field}\\b`, "g");
+      expr = expr.replace(regex, totalsMap[field] ?? 0);
+    });
+    if (!/^[\d\s\+\-\*\/\(\)\.]+$/.test(expr)) return 0;
+    try {
+      // eslint-disable-next-line no-new-func
+      const result = new Function(`return (${expr})`)();
+      if (!isFinite(result) || isNaN(result)) return 0;
+      return result;
+    } catch {
+      return 0;
+    }
+  };
+
   const calculateSummaryForFirstPanel = (rows) => {
     if (!rows || rows.length === 0) return {};
     const firstSlide = otherSpliterSideData1 || {};
@@ -298,17 +335,38 @@ export default function SpliterReport({
       ...(firstSlide?.firstSlideThirdData || []),
       ...(firstSlide?.firstSlideFouthData || []),
     ];
+
+    // build totals map keyed by FieldName (not internal col key) for formula use
+    const rd2 = spData?.rd2?.[0] || {};
+    const totalsMap = {};
+    Object.entries(rd2).forEach(([colKey, fieldName]) => {
+      let total = 0;
+      rows.forEach((r) => { total += Number(r[colKey]) || 0; });
+      totalsMap[fieldName] = total;
+    });
+
     const summary = {};
     allSections.forEach((sec) => {
-      if (!sec?.selectedField) return;
-      const colKey = getColumnKeyByFieldName(sec.selectedField);
-      if (!colKey) return;
+      // 3 params: selectedField, formula, (title/unit/decimal) — handle either mode
+      const hasFormula = sec?.formula && sec.formula.trim();
+      const hasField = sec?.selectedField && sec.selectedField.trim();
+      if (!hasFormula && !hasField) return;
+
       let total = 0;
-      rows.forEach((r) => { const v = Number(r[colKey]) || 0; total += v; });
-      summary[sec.title || sec.selectedField] = `${total.toFixed(sec?.decimal || 0)} ${sec?.unit || ""}`.trim();
+      if (hasFormula) {
+        total = evaluateFormula(sec.formula, totalsMap);
+      } else {
+        const colKey = getColumnKeyByFieldName(sec.selectedField);
+        if (!colKey) return;
+        rows.forEach((r) => { total += Number(r[colKey]) || 0; });
+      }
+
+      const label = sec.title || sec.selectedField || sec.formula;
+      summary[label] = `${Number(total).toFixed(sec?.decimal || 0)} ${sec?.unit || ""}`.trim();
     });
     return summary;
   };
+
 
   const handleFirstPanelSelection = (value, rd3Override = null) => {
     const base = rd3Override ?? activeRd3;
@@ -470,14 +528,32 @@ export default function SpliterReport({
       ...(secondSlide?.firstSlideThirdData || []),
       ...(secondSlide?.firstSlideFouthData || []),
     ];
+
+    const rd2 = spData?.rd2?.[0] || {};
+    const totalsMap = {};
+    Object.entries(rd2).forEach(([colKey, fieldName]) => {
+      let total = 0;
+      rows.forEach((r) => { total += Number(r[colKey]) || 0; });
+      totalsMap[fieldName] = total;
+    });
+
     const summary = {};
     allSections.forEach((sec) => {
-      if (!sec?.selectedField) return;
-      const colKey = getColumnKeyByFieldName(sec.selectedField);
-      if (!colKey) return;
+      const hasFormula = sec?.formula && sec.formula.trim();
+      const hasField = sec?.selectedField && sec.selectedField.trim();
+      if (!hasFormula && !hasField) return;
+
       let total = 0;
-      rows.forEach((r) => { const v = Number(r[colKey]) || 0; total += v; });
-      summary[sec.title || sec.selectedField] = `${total.toFixed(sec?.decimal || 0)} ${sec?.unit || ""}`.trim();
+      if (hasFormula) {
+        total = evaluateFormula(sec.formula, totalsMap);
+      } else {
+        const colKey = getColumnKeyByFieldName(sec.selectedField);
+        if (!colKey) return;
+        rows.forEach((r) => { total += Number(r[colKey]) || 0; });
+      }
+
+      const label = sec.title || sec.selectedField || sec.formula;
+      summary[label] = `${Number(total).toFixed(sec?.decimal || 0)} ${sec?.unit || ""}`.trim();
     });
     return summary;
   };
@@ -553,7 +629,8 @@ export default function SpliterReport({
 
   const SearchBox = useCallback(
     React.memo(({ value, onChange, onClear, placeholder }) => (
-      <div className="splitter-search" style={{ position: "relative", display: "inline-block", width: "100%" }}>
+      <div className="splitter-search" style={{ position: "relative", display: "inline-block", width: "100%",
+      }}>
         <input
           type="text"
           value={value}
@@ -561,18 +638,19 @@ export default function SpliterReport({
           onChange={(e) => onChange(e.target.value)}
           style={{
             borderRadius: "5px",
-            height: "30px",
             outline: "none",
             border: "1px solid lightgray",
             width: "100%",
             paddingRight: "25px",
             boxSizing: "border-box",
+            paddingInline:'10px',
+            paddingBlock:'10px'
           }}
         />
         {value && (
           <IconButton
             onClick={onClear}
-            style={{ position: "absolute", right: "5px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", userSelect: "none" }}
+            style={{ position: "absolute", right: "0", top: "50%", transform: "translateY(-50%)", cursor: "pointer", userSelect: "none" }}
           >
             <CircleX style={{ height: "20px", width: "20px" }} />
           </IconButton>
@@ -582,6 +660,7 @@ export default function SpliterReport({
     []
   );
 
+  
   // ─── NEW: Second panel option toggle (Department | Employee style) ─────────
   const SecondPanelOptionToggle = () => {
     if (!spliterReportSecondPanelSecondoption || !spliterReportSecondPanel) return null;
@@ -650,6 +729,7 @@ export default function SpliterReport({
   };
   // ────────────────────────────────────────────────────────────────────────────
 
+
   return (
     <DragDropContext onDragEnd={() => { }}>
       <Box sx={{ height: "100vh", display: "flex", flexDirection: "row" }} ref={containerRef}>
@@ -674,14 +754,20 @@ export default function SpliterReport({
         >
           {collapsed[0] ? (
             <div style={{
-              writingMode: "vertical-rl", textOrientation: "mixed", fontSize: 11, fontWeight: 500,
-              color: "#7367f0", letterSpacing: "0.08em", padding: "16px 0", userSelect: "none",
+              writingMode: "vertical-rl", textOrientation: "mixed", fontSize: 11, fontWeight: 600,
+              color: "#7367f0", letterSpacing: "0.09em", padding: "16px 0px", userSelect: "none",
+              textTransform:'uppercase',
+     
             }}>
               {Array.isArray(filteredColumns) && filteredColumns[0]?.HeaderName || "Panel 1"}
             </div>
           ) : (
-            <div>
-              <div style={{ margin: "5px 0px 5px 5px" }}>
+            <div
+            style={{
+               padding: "0px 0px", 
+            }}
+            >
+              <div style={{ marginTop:'5px' }}>
                 {!largeData && (
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <DualDatePicker
@@ -786,10 +872,16 @@ export default function SpliterReport({
                 )}
 
 
-                <p className="reportSpliter_top_headername">
+                <Typography className="reportSpliter_top_headername">
                   {/* {Array.isArray(filteredColumns) && filteredColumns.length > 0 && filteredColumns[0]?.HeaderName} */}
+                 
+                 <ClearAllRoundedIcon
+                 style={{
+                  color:'black !important'
+                 }}
+                 />
                   {Array.isArray(filteredColumns) && filteredColumns[0]?.HeaderName}
-                </p>
+                </Typography>
 
                 {hasFirstPanelData && (
                   <SearchBox
@@ -879,7 +971,7 @@ export default function SpliterReport({
                 width: collapsed[1] ? COLLAPSED_W : paneWidths[1],
                 minWidth: collapsed[1] ? COLLAPSED_W : undefined,
                 maxWidth: collapsed[1] ? COLLAPSED_W : undefined,
-                padding: collapsed[1] ? 0 : 8,
+                padding: collapsed[1] ? 0 : 0,
                 overflow: "hidden",
                 transition: "width 0.22s cubic-bezier(.4,0,.2,1)",
                 display: "flex",
@@ -892,25 +984,40 @@ export default function SpliterReport({
             >
               {collapsed[1] ? (
                 <div style={{
-                  writingMode: "vertical-rl", textOrientation: "mixed", fontSize: 11, fontWeight: 500,
-                  color: "#7367f0", letterSpacing: "0.08em", padding: "16px 0", userSelect: "none",
+      writingMode: "vertical-rl", textOrientation: "mixed", fontSize: 11, fontWeight: 600,
+              color: "#7367f0", letterSpacing: "0.09em", userSelect: "none",
+              textTransform:'uppercase',
+    padding: "16px 0px",
+
+            
                 }}>
                   {/* Show active field name when collapsed */}
                   {activeSecondPanelField || "Panel 2"}
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-                  <div style={{ margin: "5px 0px 5px 5px" }}>
+                  <div
+                  style={{
+                        paddingLeft:'7px',
+                        paddingRight:'14px',
+                  }}
+                  >
 
                     {/* ── TOGGLE BUTTONS (Department | Employee) ── */}
                     <SecondPanelOptionToggle />
 
                     {/* Header name for the active option */}
-                    {!spliterReportSecondPanelSecondoption && <p className="reportSpliter_top_headername">
+                    {!spliterReportSecondPanelSecondoption && <Typography className="reportSpliter_top_headername">
+                       <ClearAllRoundedIcon
+                       
+                       style={{
+                        color:'black !important'
+                       }}
+                       />
                       {Array.isArray(filteredColumns2) && filteredColumns2.length > 0
                         ? filteredColumns2[0]?.HeaderName
                         : activeSecondPanelField}
-                    </p>}
+                    </Typography>}
 
                     {hasSecondPanelData && (
                       <SearchBox
@@ -1027,13 +1134,14 @@ export default function SpliterReport({
             chartViewData={chartViewData}
             imageViewData={imageViewData}
             defaultShowAllData={defaultShowAllData}
-            refreshFunction={refreshFunction}
+            refreshFunction={() => fetchReportData({}, "0")}
             isPageChanging={isPageChanging}
             setIsPageChanging={setIsPageChanging}
             isFormulaBasedSummary={isFormulaBasedSummary}
             summaryViewData={summaryViewData}
             authActionDropdownMaster={authActionDropdownMaster}
             isPrintColumn={isPrintColumn}
+            isRightBaseColumMaster={isRightBaseColumMaster}
           />
         </div>
       </Box>

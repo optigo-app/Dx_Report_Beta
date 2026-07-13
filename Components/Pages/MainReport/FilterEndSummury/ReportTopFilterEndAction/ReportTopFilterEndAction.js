@@ -42,7 +42,8 @@ import { IoWarningOutline } from "react-icons/io5";
 import { MdDoNotDisturb } from "react-icons/md";
 import { IoMdAddCircleOutline } from "react-icons/io";
 import { GiReturnArrow } from "react-icons/gi";
-
+import { evaluateRightBaseFormula } from "@/Utils/globalFunc";
+import TagPrint from "./TagPrint/TagPrint";
 
 const EXCEL_TYPE =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
@@ -144,7 +145,8 @@ const ReportTopFilterEndAction = ({
   svgFilter,
   setSvgFilter,
   otherPrintOptionShow,
-  otherPrintOptionShowData
+  otherPrintOptionShowData,
+  isRightBaseColumMaster
 }) => {
   const searchParams = useSearchParams();
   const pid = searchParams.get("pid");
@@ -558,7 +560,22 @@ const ReportTopFilterEndAction = ({
   }
 
   const sortedRowsForExport = applyClientSorting(filteredRows, sortModel);
-  const converted = mapRowsToHeaders(allColumData, sortedRowsForExport);
+
+  const showonModelColum = [
+    ...(allColumData?.filter(col => {
+      if (col.IsRightBase && col.IsRightBase !== "0") {
+        return evaluateRightBaseFormula(
+          col.IsRightBase,
+          isRightBaseColumMaster
+        );
+      }
+      return true;
+    }) || [])
+  ];
+
+
+
+  const converted = mapRowsToHeaders(showonModelColum, sortedRowsForExport);
   const exportToExcel = () => {
     const now = new Date();
     const formattedDate = now
@@ -571,13 +588,15 @@ const ReportTopFilterEndAction = ({
         second: "2-digit",
         hour12: false,
       })
-      .replace(/[/:]/g, "-");
+      .replace(/\//g, "-")       // replace date slashes: 17/06/2026 → 17-06-2026
+      .replace(",", "_");        // replace comma+space between date and time: ", " → "_"
     const headerRows = [
       [`Report Name : ${reportName}`],
       [`${formattedDate}`],
       [],
     ];
     const worksheet = XLSX.utils.aoa_to_sheet(headerRows);
+
     XLSX.utils.sheet_add_json(worksheet, converted, {
       origin: "A4",
       skipHeader: false,
@@ -1746,6 +1765,37 @@ const ReportTopFilterEndAction = ({
       );
     }
   }
+
+
+  const hnaldeNavigate = async (tab) => {
+    let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
+    const body = {
+      con: JSON.stringify({
+        id: "",
+        mode: "SwitchToClassicReportCount",
+        appuserid: AllData?.LUId,
+        IPAddress: clientIpAddress,
+      }),
+      p: JSON.stringify({ PageId: pid }),
+      f: "DynamicReport (Switch To Classic Report Count)",
+    };
+    const response = await CallApi(body);
+
+    if (window?.parent?.postMessage) {
+      window.parent.postMessage(
+        {
+          type: "ADD_TAB",
+          evt: "DynamicReport",
+          payload: {
+            TabName: tab.Title,
+            TabUrl: tab.FullGeneratedUrl,
+          },
+        },
+        "*"
+      );
+    }
+
+  }
   return (
     <div
       style={{
@@ -1908,21 +1958,7 @@ const ReportTopFilterEndAction = ({
                         size="small"
                         variant={activeIframeTab?.FullGeneratedUrl === tab.FullGeneratedUrl ? "contained" : "outlined"}
                         // onClick={() => setActiveIframeTab(tab)}
-                        onClick={() => {
-                          if (window?.parent?.postMessage) {
-                            window.parent.postMessage(
-                              {
-                                type: "ADD_TAB",
-                                evt: "DynamicReport",
-                                payload: {
-                                  TabName: tab.Title,
-                                  TabUrl: tab.FullGeneratedUrl,
-                                },
-                              },
-                              "*"
-                            );
-                          }
-                        }}
+                        onClick={() => hnaldeNavigate(tab)}
                         className="fontFamily"
                         sx={{
                           textTransform: "none",
@@ -2731,6 +2767,13 @@ const ReportTopFilterEndAction = ({
                 </Tooltip>
               }
 
+              {pid == 18546 &&
+                <TagPrint
+                  selectionModel={selectionModel}
+                  filteredRows={filteredRows}
+                  gridContainerRef={gridContainerRef}
+                />
+              }
 
               {/* {masterKeyData?.FullScreenGridButton == "True" && (
                 <Tooltip
@@ -2780,7 +2823,6 @@ const ReportTopFilterEndAction = ({
 };
 
 export default ReportTopFilterEndAction;
-
 
 const FilterIcons = ({ FontSize = 35 }) => {
   return <>

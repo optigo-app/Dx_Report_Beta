@@ -29,16 +29,13 @@ export default function Page() {
 
 // find . -mindepth 1 -delete
 
-// Dxreport - beta - 6006 - 34
-// npm run build && pm2 restart 34 && pm2 save 
+// Dxreport - beta - 6006 - 38   
+// npm run build && pm2 restart 38 && pm2 save 
+
+// LIVE BETA :-       5020
+// LIVE LIVE :-       5021
 
 
-// LIVE BETA:-       5020
-
-
-
-
-// Dxreport - local77 - 6011  - 31
 // R76 - 5008
 // R76BETA - 5009
 // R76LIVE - 5012

@@ -51,7 +51,8 @@ const SummaryEndFilteredValue = ({
   onAskOptigoAiPanelToggle,
   isFormulaBasedSummary,
   summaryViewData,
-  isLoading
+  isLoading,
+  isRightBaseColumMaster
 }) => {
   const [openPopup, setOpenPopup] = useState(false);
   const [openAskOptigoAi, setOpenAskOptigoAi] = useState(false);
@@ -302,6 +303,7 @@ const SummaryEndFilteredValue = ({
           currentOpenReport={currentOpenReport}
           otherReport={otherReport}
           setOtherReprot={setOtherReprot}
+          isRightBaseColumMaster={isRightBaseColumMaster}
         />
       </Dialog>
 

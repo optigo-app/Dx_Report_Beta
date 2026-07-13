@@ -245,5 +245,3 @@ export const CustomPagination = () => {
     </div>
   );
 };
-
-

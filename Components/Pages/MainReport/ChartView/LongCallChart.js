@@ -84,6 +84,10 @@ const LongCallChart = ({ filteredRows, selectedMonth = null }) => {
 
     const data = payload[0].payload;
 
+    const sortedDurations = [...data.callDurations].sort((a, b) => b - a);
+    const topDurations = sortedDurations.slice(0, 10);
+    const remaining = sortedDurations.length - topDurations.length;
+
     return (
       <div
         style={{
@@ -93,8 +97,6 @@ const LongCallChart = ({ filteredRows, selectedMonth = null }) => {
           border: "1px solid #e2e8f0",
           fontSize: "12px",
           boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-          maxHeight: '300px',
-          overflow: 'auto'
         }}
       >
         <strong>{data.name}</strong>
@@ -104,11 +106,16 @@ const LongCallChart = ({ filteredRows, selectedMonth = null }) => {
         Total Duration: {data.totalMinutes} mins
         <br />
         <br />
-        <strong>Call Breakdown:</strong>
+        <strong>Top 10 Calls:</strong>
         <br />
-        {data.callDurations.map((d, i) => (
+        {topDurations.map((d, i) => (
           <div key={i}>Call {i + 1}: {Math.round(d)} mins</div>
         ))}
+        {remaining > 0 && (
+          <div style={{ color: "#94a3b8", marginTop: "4px" }}>
+            +{remaining} more call{remaining > 1 ? "s" : ""}
+          </div>
+        )}
       </div>
     );
   };

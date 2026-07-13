@@ -19,6 +19,7 @@ import { Draggable, Droppable } from "@hello-pangea/dnd";
 import { GripHorizontal } from "lucide-react";
 import CloseIcon from "@mui/icons-material/Close";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
+import { evaluateRightBaseFormula } from "@/Utils/globalFunc";
 
 // ── DraggableColumn (unchanged) ──────────────────────────────────────────────
 const DraggableColumn = ({ col, index, handleCheckboxChange, checkedColumns }) => {
@@ -298,6 +299,7 @@ const ColumnRearrange = ({
   currentOpenReport,
   otherReport,
   setOtherReprot,
+  isRightBaseColumMaster
 }) => {
   const searchParams = useSearchParams();
   const pid = searchParams.get("pid");
@@ -314,6 +316,17 @@ const ColumnRearrange = ({
   const allChecked =
     visibleColumns.length > 0 && visibleColumns.every((col) => !!checkedColumns[col.FieldName]);
   const someChecked = visibleColumns.some((col) => !!checkedColumns[col.FieldName]);
+
+
+  const showonModelColum = [
+    ...tempColumns?.filter(col => {
+      if (col.IsRightBase && col?.IsRightBase != "0") {
+        return evaluateRightBaseFormula(col.IsRightBase, isRightBaseColumMaster);
+      }
+      return true;
+    })
+  ];
+
 
   useEffect(() => {
     if (allColumData?.length > 0) {
@@ -526,7 +539,7 @@ const ColumnRearrange = ({
           <Droppable droppableId="columns-list" type="COLUMN">
             {(provided) => (
               <div ref={provided.innerRef} {...provided.droppableProps} className="columns-list">
-                {tempColumns
+                {showonModelColum
                   .filter((col) => col.HideColumn !== "True")
                   .map((col, index) => (
                     <DraggableColumn

@@ -770,7 +770,6 @@ export default function MainReport({
 
     try {
       const response = await ReportCallApi(body, spNumber);
-      console.log('ToggleAuth response:',);
       if (response?.rd[0]?.stat == 1) {
 
       }
@@ -1125,40 +1124,50 @@ export default function MainReport({
                 if (alreadyFormatted) {
                   formattedDate = params.value;
                 } else {
+                  const isoNaiveMatch = typeof params.value === "string" &&
+                    params.value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?$/);
 
-                  // YOUR EXISTING PROCESS
-                  const dateObj = new Date(params.value);
+                  if (isoNaiveMatch) {
+                    const [, year, month, day, hour, minute, second] = isoNaiveMatch;
 
-                  if (!isNaN(dateObj.getTime())) {
+                    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                    const datePart = `${day} ${monthNames[parseInt(month, 10) - 1]} ${year}`;
+                    const timePart = `${hour}:${minute}:${second}`;
 
-                    if (col.IsShowDateWithTime == "True") {
+                    formattedDate = col.IsShowDateWithTime == "True"
+                      ? `${datePart} ${timePart}`
+                      : datePart;
 
-                      const datePart = dateObj.toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        timeZone: "UTC",
-                      });
+                  } else {
+                    // YOUR EXISTING PROCESS
+                    const dateObj = new Date(params.value);
 
-                      const timePart = dateObj.toLocaleTimeString("en-GB", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                        hour12: false,
-                        timeZone: "UTC",
-                      });
+                    if (!isNaN(dateObj.getTime())) {
+                      if (col.IsShowDateWithTime == "True") {
+                        const datePart = dateObj.toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          timeZone: "UTC",
+                        });
 
-                      formattedDate = `${datePart} ${timePart}`;
+                        const timePart = dateObj.toLocaleTimeString("en-GB", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                          hour12: false,
+                          timeZone: "UTC",
+                        });
 
-                    } else {
-
-                      formattedDate = dateObj.toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        timeZone: "UTC",
-                      });
-
+                        formattedDate = `${datePart} ${timePart}`;
+                      } else {
+                        formattedDate = dateObj.toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          timeZone: "UTC",
+                        });
+                      }
                     }
                   }
                 }
@@ -1665,16 +1674,28 @@ export default function MainReport({
       srColumn,
       ...columnDataWithIcon.filter(col => {
         if (col.HideColumn === "True") return false;
-        if (col.IsRightBase) {
+        if (col.IsRightBase && col?.IsRightBase != "0") {
           return evaluateRightBaseFormula(col.IsRightBase, isRightBaseColumMaster);
         }
         return true; // no IsRightBase = always show
       })
     ];
 
+    const visibleColumnsFilter = [
+      srColumn,
+      ...columnDataWithIcon.filter(col => {
+        if (col.IsRightBase && col?.IsRightBase != "0") {
+          return evaluateRightBaseFormula(col.IsRightBase, isRightBaseColumMaster);
+        }
+        return true;
+      })
+    ];
+
     setColumns(visibleColumns);
-    setColumns(visibleColumns);
-    setColumnsHide([srColumn, ...columnDataWithIcon]);
+    setColumnsHide([srColumn, ...visibleColumnsFilter]);
+
+    sortedFilteredRowsRef.current = getSortedFilteredRows();
+
   }, [allColumData, paginationModel, selectionModel, svgIconData]);
 
   // }, [allColumData, grupEnChekBox, paginationModel, selectionModel]);
@@ -1888,7 +1909,11 @@ export default function MainReport({
             break;
           }
         } else if (Array.isArray(filterValue)) {
-          if (!filterValue.includes(rawRowValue)) {
+          const rowValueStr = rawRowValue?.toString().trim().toLowerCase() || "";
+          const filterValueStrs = filterValue.map((v) =>
+            v?.toString().trim().toLowerCase()
+          );
+          if (!filterValueStrs.includes(rowValueStr)) {
             isMatch = false;
             break;
           }
@@ -2012,6 +2037,7 @@ export default function MainReport({
 
       return updatedRow;
     });
+
     const sortedRows = isMultiSortingEnabled
       ? applyMultiSort(rowsWithSrNo, multiSortModel)
       : rowsWithSrNo;
@@ -2238,10 +2264,29 @@ export default function MainReport({
 
   const handlePrintNow = (currentPageItems, currentPage) => {
     setPreparingPrint(true);
-    setCurrentPrintPage(currentPage);
+    setCurrentPrintPage(currentPage ?? 1);
 
-    requestAnimationFrame(() => {
-      waitForPrintReady(currentPageItems);
+    // Preload all images FIRST, then show print view
+    const items = currentPageItems ?? getSortedFilteredRows();
+    const imageUrls = [...new Set(
+      items
+        .map(row => row?.ImgUrl)
+        .filter(Boolean)
+    )];
+
+    const preloadPromises = imageUrls.map(src =>
+      new Promise(resolve => {
+        const img = new Image();
+        img.onload = resolve;
+        img.onerror = resolve; // don't block on broken images
+        img.src = src;
+      })
+    );
+
+    Promise.all(preloadPromises).then(() => {
+      requestAnimationFrame(() => {
+        waitForPrintReady(items);
+      });
     });
   };
 
@@ -2249,41 +2294,82 @@ export default function MainReport({
     const container = printRef.current;
     if (!container) return;
 
-    const images = container.querySelectorAll(".print-content img");
+    // Target the print section specifically
+    const printSection = container.querySelector(".print-content");
+    if (!printSection) {
+      setPreparingPrint(false);
+      setTimeout(() => window.print(), 300);
+      return;
+    }
+
+    const images = printSection.querySelectorAll("img");
     const imagePromises = Array.from(images).map(
-      (img) =>
-        new Promise((resolve) => {
-          if (img.complete) {
+      img =>
+        new Promise(resolve => {
+          if (img.complete && img.naturalWidth > 0) {
             resolve();
           } else {
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
+            img.onload = resolve;
+            img.onerror = resolve;
           }
         })
     );
 
     Promise.all(imagePromises).then(() => {
-      let attempts = 0;
-      const maxAttempts = 100;
-
-      const checkLayout = () => {
-        requestAnimationFrame(() => {
-          attempts++;
-          const items = container.querySelectorAll(".print-content .col1");
-          if (items.length >= itemsToPrint.length || attempts >= maxAttempts) {
-            setPreparingPrint(false);
-            setTimeout(() => {
-              window.print();
-            }, 300);
-          } else {
-            checkLayout();
-          }
-        });
-      };
-
-      checkLayout();
+      setPreparingPrint(false);
+      setTimeout(() => window.print(), 300);
     });
   };
+
+
+  // const handlePrintNow = (currentPageItems, currentPage) => {
+  //   setPreparingPrint(true);
+  //   setCurrentPrintPage(currentPage);
+
+  //   requestAnimationFrame(() => {
+  //     waitForPrintReady(currentPageItems);
+  //   });
+  // };
+
+  // const waitForPrintReady = (itemsToPrint) => {
+  //   const container = printRef.current;
+  //   if (!container) return;
+
+  //   const images = container.querySelectorAll(".print-content img");
+  //   const imagePromises = Array.from(images).map(
+  //     (img) =>
+  //       new Promise((resolve) => {
+  //         if (img.complete) {
+  //           resolve();
+  //         } else {
+  //           img.onload = () => resolve();
+  //           img.onerror = () => resolve();
+  //         }
+  //       })
+  //   );
+
+  //   Promise.all(imagePromises).then(() => {
+  //     let attempts = 0;
+  //     const maxAttempts = 100;
+
+  //     const checkLayout = () => {
+  //       requestAnimationFrame(() => {
+  //         attempts++;
+  //         const items = container.querySelectorAll(".print-content .col1");
+  //         if (items.length >= itemsToPrint.length || attempts >= maxAttempts) {
+  //           setPreparingPrint(false);
+  //           setTimeout(() => {
+  //             window.print();
+  //           }, 300);
+  //         } else {
+  //           checkLayout();
+  //         }
+  //       });
+  //     };
+
+  //     checkLayout();
+  //   });
+  // };
 
   const menuSearchRef = useRef(null);
   const [menuSearch, setMenuSearch] = useState("");
@@ -2403,7 +2489,7 @@ export default function MainReport({
           <Button
             variant="contained"
             color="primary"
-            onClick={handlePrintNow}
+            onClick={() => handlePrintNow(null, currentPrintPage)}
             disabled={preparingPrint}
             sx={{
               backgroundColor: "#2e7d32",
@@ -2585,6 +2671,7 @@ export default function MainReport({
             isFormulaBasedSummary={isFormulaBasedSummary}
             summaryViewData={summaryViewData}
             isLoading={isLoading}
+            isRightBaseColumMaster={isRightBaseColumMaster}
           />
         </div>
         {!activeIframeTab &&
@@ -2663,6 +2750,7 @@ export default function MainReport({
             setSvgFilter={setSvgFilter}
             otherPrintOptionShow={otherPrintOptionShow}
             otherPrintOptionShowData={otherPrintOptionShowData}
+            isRightBaseColumMaster={isRightBaseColumMaster}
           />}
 
         {activeIframeTab ? (

@@ -5,7 +5,22 @@ import { DeviceStatusProvider } from "@/Components/DeviceStatusContext/DeviceSta
 import { getClientIpAddress } from "@/Utils/globalFunc";
 import { useEffect } from "react";
 import Script from "next/script";
+import { Poppins ,Montserrat } from 'next/font/google'
 import "./globals.scss";
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-poppins',
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900']
+});
+
+const montserrat = Montserrat({
+  weight: ['300', '400', '500', '700'],
+  subsets: ['latin'],
+  display:'swap',
+  fallback: ['Arial', 'sans-serif'],
+});
 
 export default function RootLayout({ children }) {
 
@@ -14,14 +29,13 @@ export default function RootLayout({ children }) {
   }, []);
 
   return (
-    <html lang="en">
+    <html lang="en"
+      className={`${poppins.variable}
+      `}
+      >
+      {/* // ${montserrat.variable} */}
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Poppins:ital,wght@0,100..900&display=swap"
-          rel="stylesheet"
-        />
+       
         <Script
           src="https://code.jquery.com/jquery-1.7.2.min.js"
           strategy="beforeInteractive"
