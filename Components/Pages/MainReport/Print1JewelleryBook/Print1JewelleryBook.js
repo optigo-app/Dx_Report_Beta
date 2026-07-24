@@ -29,7 +29,7 @@ export default function Print1JewelleryBook({
     const endIdx = startIdx + itemsPerPage;
     return visibleItemsMain?.slice(startIdx, endIdx) || [];
   }, [visibleItemsMain, currentPage, itemsPerPage]);
-  
+
   const itemsToPrint = useMemo(() => {
     if (preparingPrint) {
       const startIdx = (currentPrintPage - 1) * itemsPerPage;
@@ -152,221 +152,123 @@ export default function Print1JewelleryBook({
   }
 
   const renderCard = (e, i, isPrint = false) => (
-    <div key={i} className="col1 brbxAll spfntbH pagBrkIns" style={{ width: '18%' }}>
-      {e?.Customer ? (
-        <div className="w-100 brBtom spaclftTpm spacBtom spfntHead">
-          {e?.Customer}
-        </div>
-      ) : (
-        <div className="minheit brBtom"></div>
-      )}
-      {withImage && e?.ImageName !== "" && (
-        <div className="w-100 brBtom imgwdtheit">
-          <img
-            src={`${e?.ImgUrl}`}
-            // loading={isPrint ? "eager" : "lazy"}
-            loading="eager"
-            alt="Design_Image"
-            onError={handleImageError}
-          />
-        </div>
-      )}
-
-
-      <Stack>
-        {rows.map((row, index) => {
-          const leftVal = e?.[row.left?.value];
-          const rightVal = row.right ? e?.[row.right?.value] : undefined;
-          const isZeroValue = (val) =>
-            val === 0 ||
-            val === "0" ||
-            val === 0.0 ||
-            val === null ||
-            val === undefined ||
-            val === "";
-          const showLeft = row.left && !isZeroValue(leftVal);
-          const showRight = row.right && !isZeroValue(rightVal);
-
-          return (
-            <Stack
-              key={index}
-              direction="row"
-              justifyContent="space-between"
-              style={{ padding: '2px', display: 'flex', justifyContent: 'space-between', gap: '6px' }}
-            >
-              {/* Left */}
-              <Box sx={{ width: '50%', minWidth: 0 }}>
-                {showLeft && (
-                  <div style={{ display: 'block', lineHeight: '1.3' }}>
-                    <span
-                      className="printLabelData"
-                      style={{
-                        fontSize: `${row.left?.fontsizel}px` || "12px",
-                        fontWeight: row.left?.fontweightl || 500,
-                        color: "#555",
-                      }}
-                    >
-                      {row.left?.lable}
-                    </span>
-                    <span
-                      className="printLabelData"
-                      style={{
-                        fontSize: `${row.left?.fontsizev}px` || "12px",
-                        fontWeight: row.left?.fontweightv || 500,
-                        color: "#000",
-                        wordBreak: 'break-word',
-                        overflowWrap: 'anywhere',
-                      }}
-                    >
-                      {leftVal}
-                    </span>
-                  </div>
-                )}
-              </Box>
-
-              {/* Right */}
-              <Box sx={{ width: '50%', minWidth: 0, textAlign: 'right' }}>
-                {showRight && (
-                  <div style={{ display: 'block', lineHeight: '1.3' }}>
-                    <span
-                      className="printLabelData"
-                      style={{
-                        fontSize: `${row.right?.fontsizel}px` || "12px",
-                        fontWeight: row.right?.fontweightl || 500,
-                        color: "#555",
-                      }}
-                    >
-                      {row.right?.lable}
-                    </span>
-                    <span
-                      className="printLabelData"
-                      style={{
-                        fontSize: `${row.right?.fontsizev}px` || "12px",
-                        fontWeight: row.right?.fontweightv || 500,
-                        color: "#000",
-                        wordBreak: 'break-word',
-                        overflowWrap: 'anywhere',
-                      }}
-                    >
-                      {rightVal}
-                    </span>
-                  </div>
-                )}
-              </Box>
-            </Stack>
-          );
-        })}
-      </Stack>
-
-      <div className="w-100 spaclftTpm d-flex" style={{ display: 'flex', justifyContent: 'space-between', marginInline: '5px' }}>
-        <div className="spfntBld spbrWord spfntHead">{e?.designno}</div>
-        <p style={{ margin: 0, fontSize: "13px", lineHeight: "16px" }}>
-          {e?.designcount !== undefined && (
-            <span>Order: <strong>{e.designcount}</strong></span>
-          )}
-          {e?.designcount !== undefined && e?.salescount !== undefined && ", "}
-          {e?.salescount !== undefined && (
-            <span>Sale: <strong>{e.salescount}</strong></span>
-          )}
-        </p>
-      </div>
-
-      {/*  {(e?.Status || e?.Manufacturer) && (
-        <div className="w-100 disflxCen spaclftTpm">
-          <div className="wdth_45 spbrWord">{e?.Status}</div>
-          {e?.Manufacturer ? <div className="spfntBld">|</div> : null}
-          <div className="wdth_55 spacrighTpm spbrWord">{e?.Manufacturer}</div>
-        </div>
-      )}
-
-      {(e?.Metal_Type || e?.Sr_JobNo) && (
-        <div className="w-100 disflxCen spaclftTpm">
-          {e?.Metal_Type && (
-            <div className="wdth_45 spbrWord">{e?.Metal_Type}</div>
-          )}
-          {e?.Metal_Type && e?.Sr_JobNo ? <div>|</div> : null}
-          <div className={`${e?.Metal_Type ? "wdth_55 spacrighTpm" : "w-100 spfntlft"} spbrWord`}>
-            {e?.Sr_JobNo}
+    <div key={i} className="col1 pagBrkIns" style={{ width: '18%' }}>
+      <div className="brbxAll spfntbH">
+        {e?.Customer ? (
+          <div className="w-100 brBtom spaclftTpm spacBtom spfntHead">
+            {e?.Customer}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="minheit brBtom"></div>
+        )}
+        {withImage && e?.ImageName !== "" && (
+          <div className="w-100 brBtom imgwdtheit">
+            <img
+              src={`${e?.ImgUrl}`}
+              loading="eager"
+              alt="Design_Image"
+              onError={handleImageError}
+            />
+          </div>
+        )}
 
-      {(e?.Metal_Color || e?.Gross_Wt) && (
-        <div className="w-100 disflxCen spaclftTpm">
-          {e?.Metal_Color && (
-            <div className="wdth_45 spbrWord">{e?.Metal_Color}</div>
-          )}
-          {e?.Metal_Color && e?.Gross_Wt ? <div>|</div> : null}
-          {e?.Gross_Wt !== undefined && e?.Gross_Wt !== null && (
-            <div className={`${e?.Metal_Color ? "wdth_55 spacrighTpm" : "w-100 spfntlft"} spbrWord`}>
-              G.WT: {fixedValues(e?.Gross_Wt, 3)} gm
-            </div>
-          )}
-        </div>
-      )}
+        <div>
+          {rows.map((row, index) => {
+            const leftVal = e?.[row.left?.value];
+            const rightVal = row.right ? e?.[row.right?.value] : undefined;
+            const isZeroValue = (val) =>
+              val === 0 ||
+              val === "0" ||
+              val === 0.0 ||
+              val === null ||
+              val === undefined ||
+              val === "";
+            const showLeft = row.left && !isZeroValue(leftVal);
+            const showRight = row.right && !isZeroValue(rightVal);
 
-      {(e?.Diam_Ctw || e?.Metal_Wt) && (
-        <div className="w-100 disflxCen spaclftTpm">
-          {e?.Diam_Ctw ? (
-            <div className="wdth_45 spbrWord">
-              DIA: {fixedValues(e?.Diam_Ctw, 3)}
-            </div>
-          ) : <div className="wdth_45 spbrWord"></div>}
-          {e?.Diam_Ctw && e?.Metal_Wt ? <div>|</div> : null}
-          {e?.Metal_Wt !== undefined && e?.Metal_Wt !== null && (
-            <div className="wdth_55 spacrighTpm spbrWord">
-              N.WT: {fixedValues(e?.Metal_Wt, 3)} gm
-            </div>
-          )}
-        </div>
-      )}
+            return (
+              <div
+                key={index}
+                style={{ padding: '2px', display: 'flex', justifyContent: 'space-between', gap: '6px' }}
+              >
+                {/* Left */}
+                <div style={{ width: '50%', minWidth: 0 }}>
+                  {showLeft && (
+                    <div style={{ display: 'block', lineHeight: '1.3' }}>
+                      <span
+                        className="printLabelData"
+                        style={{
+                          fontSize: `${row.left?.fontsizel}px` || "12px",
+                          fontWeight: row.left?.fontweightl || 500,
+                          color: "#555",
+                        }}
+                      >
+                        {row.left?.lable}
+                      </span>
+                      <span
+                        className="printLabelData"
+                        style={{
+                          fontSize: `${row.left?.fontsizev}px` || "12px",
+                          fontWeight: row.left?.fontweightv || 500,
+                          color: "#000",
+                          wordBreak: 'break-word',
+                          overflowWrap: 'anywhere',
+                        }}
+                      >
+                        {leftVal}
+                      </span>
+                    </div>
+                  )}
+                </div>
 
-      {(e?.Misc_Ctw || e?.CS_Ctw) && (
-        <div className="w-100 disflxCen spaclftTpm">
-          {e?.Misc_Ctw ? (
-            <div className="wdth_45 spbrWord">
-              MISC: {fixedValues(e?.Misc_Ctw, 3)}
-            </div>
-          ) : <div className="wdth_45"></div>}
-          {e?.Misc_Ctw && e?.CS_Ctw ? <div>|</div> : null}
-          {e?.CS_Ctw ? (
-            <div className="wdth_55 spacrighTpm spbrWord">
-              CS: {fixedValues(e?.CS_Ctw, 3)}
-            </div>
-          ) : null}
+                {/* Right */}
+                <div style={{ width: '50%', minWidth: 0, textAlign: 'right' }}>
+                  {showRight && (
+                    <div style={{ display: 'block', lineHeight: '1.3' }}>
+                      <span
+                        className="printLabelData"
+                        style={{
+                          fontSize: `${row.right?.fontsizel}px` || "12px",
+                          fontWeight: row.right?.fontweightl || 500,
+                          color: "#555",
+                        }}
+                      >
+                        {row.right?.lable}
+                      </span>
+                      <span
+                        className="printLabelData"
+                        style={{
+                          fontSize: `${row.right?.fontsizev}px` || "12px",
+                          fontWeight: row.right?.fontweightv || 500,
+                          color: "#000",
+                          wordBreak: 'break-word',
+                          overflowWrap: 'anywhere',
+                        }}
+                      >
+                        {rightVal}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
-      )}
 
-      {e?.Inwardno && (
-        <div className="w-100 disflx spaclftTpm spbrWord">
-          Inward: {e?.Inwardno}
+        <div className="w-100 spaclftTpm d-flex" style={{ display: 'flex', justifyContent: 'space-between', marginInline: '5px' }}>
+          <div className="spfntBld spbrWord spfntHead">{e?.designno}</div>
+          <p style={{ margin: 0, fontSize: "13px", lineHeight: "16px" }}>
+            {e?.designcount !== undefined && (
+              <span>Order: <strong>{e.designcount}</strong></span>
+            )}
+            {e?.designcount !== undefined && e?.salescount !== undefined && ", "}
+            {e?.salescount !== undefined && (
+              <span>Sale: <strong>{e.salescount}</strong></span>
+            )}
+          </p>
         </div>
-      )}
-
-      {e?.Status === "Sold" && e?.InvoiceNo && (
-        <div className="w-100 spbrWord disflx spaclftTpm">
-          Sale: {e?.InvoiceNo}
-        </div>
-      )}
-
-      {e?.Status === "In Memo" && e?.InvoiceNo && (
-        <div className="w-100 disflx spbrWord spaclftTpm">
-          Memo: {e?.InvoiceNo}
-        </div>
-      )}
-
-      {e?.Status === "In Repair" && e?.InvoiceNo && (
-        <div className="w-100 disflx spaclftTpm spbrWord">
-          Repair: {e?.InvoiceNo}
-        </div>
-      )}
-
-      {e?.Status === "Purchase Return" && e?.InvoiceNo && (
-        <div className="w-100 disflx spaclftTpm spbrWord">
-          Pur. Return: {e?.InvoiceNo}
-        </div>
-      )} */}
-    </div >
+      </div>
+    </div>
   );
 
   return loader ? (
@@ -465,7 +367,6 @@ export default function Print1JewelleryBook({
           </p>
         </div>
 
-        {/* Display current page items */}
         <div
           style={{
             marginTop: "20px",
@@ -480,11 +381,13 @@ export default function Print1JewelleryBook({
         </div>
       </div>
 
-      <div className="print-content print-only" style={{ display: "none" }}>
-        <div className="container disflx">
-          {itemsToPrint.map((e, i) => renderCard(e, i, true))}
+      {preparingPrint && (
+        <div className="print-content print-only" style={{ display: "none" }}>
+          <div className="container disflx">
+            {itemsToPrint.map((e, i) => renderCard(e, i, true))}
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

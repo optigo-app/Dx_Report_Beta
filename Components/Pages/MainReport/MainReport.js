@@ -8,6 +8,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import "react-datepicker/dist/react-datepicker.css";
 import {
+  Alert,
   Button,
   Checkbox,
   CircularProgress,
@@ -25,6 +26,7 @@ import {
   Paper,
   Popover,
   Select,
+  Snackbar,
   styled,
   Switch,
   Typography,
@@ -45,6 +47,7 @@ import ImageView from "@/Components/Pages/MainReport/ImageView/ImageView";
 import ActionFilter from "@/Components/Pages/MainReport/ActionFilter/ActionFilter";
 import IframAction from "@/Components/Pages/MainReport/IframAction/IframAction";
 import BarChartView from "@/Components/Pages/MainReport/ChartView/BarChartView";
+import MultiBarChartView from "@/Components/Pages/MainReport/ChartView/MultiBarChartView";
 import PieChartView from "@/Components/Pages/MainReport/ChartView/PieChartView";
 import AreaChartView from "@/Components/Pages/MainReport/ChartView/AreaChart";
 import LongCallChart from "@/Components/Pages/MainReport/ChartView/LongCallChart";
@@ -332,36 +335,6 @@ export default function MainReport({
     authLoadingCellRef.current = authLoadingCell;
   }, [authLoadingCell]);
 
-  const pathname =
-    typeof window !== "undefined" ? window.location.pathname : "";
-
-  const isOldHome = pathname.toLowerCase().endsWith("/home1.do");
-
-  const isNewHome =
-    pathname.toLowerCase().endsWith("/home.do") && !isOldHome;
-
-  function getCurrentBrowserUrl() {
-    try {
-      return window.top.location.href;
-    } catch (e) {
-      return window.location.href;
-    }
-  }
-  function getHomePageTypeFromBrowser() {
-    const url = getCurrentBrowserUrl().toLowerCase();
-    if (url.includes("/home1.do")) {
-      return "OLD";
-    }
-
-    if (url.includes("/home.do") || url.includes("/Home.do")) {
-      return "NEW";
-    }
-    return "UNKNOWN";
-  }
-
-  useEffect(() => {
-    setHomeType(getHomePageTypeFromBrowser());
-  }, []);
 
   const toggleDrawer = (newOpen) => () => {
     setSideFilterOpen(newOpen);
@@ -760,6 +733,7 @@ export default function MainReport({
         FormName: "DynamicReport ( data )",
       }),
       p: JSON.stringify({
+        isAuthActionId: Number(selectedAuthCol?.IsAuthActionIcon),
         ReportId: reportId,          // report id from session
         IsActionData: fieldName,     // field name e.g. "UserId"
         State: currentVal,           // 0 or 1
@@ -842,6 +816,130 @@ export default function MainReport({
     }
   };
 
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMsg, setSnackbarMsg] = useState("");
+  const AuthCustomInputCell = ({ initialValue, onCommit, regexType }) => {
+    const [value, setValue] = useState(initialValue ?? "");
+    useEffect(() => {
+      setValue(initialValue ?? "");
+    }, [initialValue]);
+
+    const mobileRegex = /^[0-9]{10,12}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const isValid = (val) => {
+      if (String(regexType) === "1") return mobileRegex.test(val);
+      if (String(regexType) === "2") return emailRegex.test(val);
+      return true;
+    };
+
+    const handleChange = (e) => {
+      let val = e.target.value;
+      if (String(regexType) === "1") {
+        val = val.replace(/[^0-9]/g, "").slice(0, 12);
+      }
+      setValue(val);
+    };
+
+    const commit = () => {
+      if (value === (initialValue ?? "")) return;
+
+      if (!isValid(value)) {
+        setSnackbarMsg(
+          String(regexType) === "1"
+            ? "Please enter a valid mobile number"
+            : String(regexType) === "2"
+              ? "Please enter a valid email address"
+              : "Invalid entry"
+        );
+        setSnackbarOpen(true);
+        setValue(initialValue ?? ""); // revert to original value
+        return;
+      }
+
+      onCommit(value);
+    };
+
+    return (
+      <>
+        <input
+          size="small"
+          value={value}
+          type={
+            String(regexType) === "1"
+              ? "tel"
+              : String(regexType) === "2"
+                ? "email"
+                : "text"
+          }
+          onClick={(e) => e.stopPropagation()}
+          onChange={handleChange}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.target.blur();
+            }
+          }}
+          style={{ width: "80%", height: "20px" }}
+        />
+
+      </>
+    );
+  };
+
+  const handleCustomAuthInputChange = async (row, col, newValue) => {
+    const fieldName = col.FieldName;
+    const rowId = row.id;
+
+    const authDataFieldName = col.IsAuthActionData;
+    const recordId = row[authDataFieldName];
+
+    authLoadingCellRef.current = { rowId, fieldName };
+    setAuthLoadingCell({ rowId, fieldName });
+
+    const keyPrefix = `${pid}_`;
+    const matchingKey = Object.keys(sessionStorage).find((key) =>
+      key.startsWith(keyPrefix)
+    );
+    const reportId = matchingKey ? matchingKey.split("_")[1] : "";
+    let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
+
+    const body = {
+      con: JSON.stringify({
+        id: "",
+        mode: "ToggelAction",
+        appuserid: AllData?.LUId,
+        IPAddress: clientIpAddress,
+        FormName: "DynamicReport ( data )",
+      }),
+      p: JSON.stringify({
+        isAuthActionId: Number(col?.IsAuthActionIcon), // 4
+        ReportId: reportId,
+        IsActionData: fieldName,
+        State: newValue,
+        RecordID: recordId,
+      }),
+      f: "DynamicReport ( data )",
+    };
+
+    try {
+      const response = await ReportCallApi(body, spNumber);
+      if (response?.rd[0]?.stat == 1) {
+        setFilteredRows((prev) =>
+          prev.map((r) =>
+            r.id === rowId ? { ...r, [fieldName]: newValue } : r
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Custom auth input save failed:", err);
+    } finally {
+      authLoadingCellRef.current = null;
+      setAuthLoadingCell(null);
+    }
+  };
+
   useEffect(() => {
     if (!allColumData) return;
     const toBool = (val) => String(val).toLowerCase() === "true";
@@ -917,6 +1015,9 @@ export default function MainReport({
           IsAuthActionIcon: col?.IsAuthActionIcon,
           IsAuthActionData: col?.IsAuthActionData,
           IsAuthActionDropdown: col?.IsAuthActionDropdown,
+          IsAuthActionInputRegex: col?.IsAuthActionInputRegex,
+          IframeHeight: col?.IframeHeight,
+          IframeWidth: col?.IframeWidth,
           filterTypes: [
             toBool(col.NormalFilter) && "NormalFilter",
             toBool(col.MultiSelection) && "MultiSelection",
@@ -1076,6 +1177,15 @@ export default function MainReport({
                         />
                       }
                       label=""
+                    />
+                  ) : Number(col?.IsAuthActionIcon) == 4 ? (
+                    <AuthCustomInputCell
+                      key={`${params.row.id}-${col.FieldName}`}
+                      initialValue={liveValue}
+                      regexType={col.IsAuthActionInputRegex}
+                      onCommit={(newValue) => {
+                        handleCustomAuthInputChange(params.row, col, newValue);
+                      }}
                     />
                   ) : isActive ? (
                     selectedIconGroup?.activeIcon || (
@@ -2263,11 +2373,19 @@ export default function MainReport({
   };
 
   const handlePrintNow = (currentPageItems, currentPage) => {
+    const page = currentPage ?? 1;
     setPreparingPrint(true);
-    setCurrentPrintPage(currentPage ?? 1);
+    setCurrentPrintPage(page);
 
-    // Preload all images FIRST, then show print view
-    const items = currentPageItems ?? getSortedFilteredRows();
+    // Only preload the images for the page that is actually printed
+    // (must match itemsPerPage in Print1JewelleryBook), not the whole dataset.
+    const PRINT_ITEMS_PER_PAGE = 1000;
+    const allItems = currentPageItems ?? getSortedFilteredRows();
+    const startIdx = (page - 1) * PRINT_ITEMS_PER_PAGE;
+    const items = currentPageItems
+      ? allItems
+      : allItems.slice(startIdx, startIdx + PRINT_ITEMS_PER_PAGE);
+
     const imageUrls = [...new Set(
       items
         .map(row => row?.ImgUrl)
@@ -2751,7 +2869,8 @@ export default function MainReport({
             otherPrintOptionShow={otherPrintOptionShow}
             otherPrintOptionShowData={otherPrintOptionShowData}
             isRightBaseColumMaster={isRightBaseColumMaster}
-          />}
+          />
+        }
 
         {activeIframeTab ? (
           <div
@@ -2777,7 +2896,7 @@ export default function MainReport({
           ref={gridRef}
           style={{
             height: "100%",
-            margin: homeType == "NEW" ? "5px 10px 5px 10px" : "5px 10px 5px 10px",
+            margin: homeType == "NEW" ? "5px 10px 5px 10px" : "5px 5px 50px 5px",
             overflow: "auto",
             transition: "opacity 0.3s",
             opacity: isPageChanging ? 0.5 : 1,
@@ -2884,6 +3003,7 @@ export default function MainReport({
                   </ChartCard>
                 </Grid>
               }
+              
 
               {pid == 18418 &&
                 savedAreaCharts.map((chart) => (
@@ -2898,6 +3018,19 @@ export default function MainReport({
                     </ChartCard>
                   </Grid>
                 ))
+              }
+
+                {pid == 18418 &&
+                <Grid item md={12} xs={12}>
+                  <ChartCard>
+                    <MultiBarChartView
+                      filteredRows={filteredRows}
+                      sortModel={sortModel}
+                      columns={columns}
+                      title="Current Area Chart"
+                    />
+                  </ChartCard>
+                </Grid>
               }
 
               {pid == 18418 &&
@@ -3229,6 +3362,26 @@ export default function MainReport({
             />
           </div>
         </Dialog>
+
+
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={3000}
+          onClose={(e, reason) => {
+            if (reason === "clickaway") return;
+            setSnackbarOpen(false);
+          }}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        >
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity="error"
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
+            {snackbarMsg}
+          </Alert>
+        </Snackbar>
 
         {status500 && (
           <div

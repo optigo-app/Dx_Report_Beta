@@ -120,61 +120,66 @@ const IframAction = ({ params, col, iframeModelData }) => {
       <Dialog
         open={openHrefModel}
         onClose={() => setOpenHrefModel(false)}
-        maxWidth="xl"
-        fullWidth
         PaperProps={{
           sx: {
-            width: "60vw",
-            height: "80vh",
-            maxWidth: "90vw",
-            maxHeight: "80vh",
             borderRadius: 2,
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
           },
         }}
+
+        sx={{
+          '& .MuiPaper-root': {
+            maxWidth: '100% !important'
+          }
+        }}
       >
-        {/* Header */}
         <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            p: 2,
-            bgcolor: "#ebebeb",
-            flexShrink: 0,
+          style={{
+            height: `${col?.IframeHeight}px`,
+            width: `${col?.IframeWidth}px`,
           }}
         >
-          <Typography>{iframeTitle}</Typography>
-
-          <IconButton
-            size="small"
-            onClick={() => setOpenHrefModel(false)}
-            sx={{ border: "1px solid rgb(44 56 90)" }}
-          >
-            <X size={18} />
-          </IconButton>
-        </Box>
-
-        {/* Content */}
-        <Box
-          sx={{
-            flex: 1,
-            overflow: "auto",
-            p: 1,
-          }}
-        >
-          <iframe
-            src={iframeUrl}
-            title="iframe-preview"
-            style={{
-              width: "100%",
-              height: "100%",
-              border: "none",
-              display: "block",
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              p: 2,
+              bgcolor: "#ebebeb",
+              flexShrink: 0,
             }}
-          />
+          >
+            <Typography>{iframeTitle}</Typography>
+
+            <IconButton
+              size="small"
+              onClick={() => setOpenHrefModel(false)}
+              sx={{ border: "1px solid rgb(44 56 90)" }}
+            >
+              <X size={18} />
+            </IconButton>
+          </Box>
+
+          {/* Content */}
+          <Box
+            sx={{
+              p: 1,
+              height: '80%'
+            }}
+          >
+            <iframe
+              src={iframeUrl}
+              title="iframe-preview"
+              style={{
+                width: "100%",
+                height: "100%",
+                border: "none",
+                display: "block",
+              }}
+            />
+          </Box>
         </Box>
       </Dialog>
     </div>
