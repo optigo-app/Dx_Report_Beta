@@ -5,7 +5,7 @@ import { DeviceStatusProvider } from "@/Components/DeviceStatusContext/DeviceSta
 import { getClientIpAddress } from "@/Utils/globalFunc";
 import { useEffect } from "react";
 import Script from "next/script";
-import { Poppins ,Montserrat } from 'next/font/google'
+import { Poppins ,Montserrat ,Geist } from 'next/font/google'
 import "./globals.scss";
 
 const poppins = Poppins({
@@ -22,6 +22,15 @@ const montserrat = Montserrat({
   fallback: ['Arial', 'sans-serif'],
 });
 
+const geist = Geist({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-geist',
+});
+
+
+
+
 export default function RootLayout({ children }) {
 
   useEffect(() => {
@@ -30,8 +39,7 @@ export default function RootLayout({ children }) {
 
   return (
     <html lang="en"
-      className={`${poppins.variable}
-      `}
+      className={`${poppins.variable} ${geist.variable}`}
       >
       {/* // ${montserrat.variable} */}
       <head>

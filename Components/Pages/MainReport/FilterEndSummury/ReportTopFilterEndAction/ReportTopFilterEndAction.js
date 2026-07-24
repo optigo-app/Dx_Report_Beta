@@ -1900,23 +1900,7 @@ const ReportTopFilterEndAction = ({
             </div>
           }
 
-          <div style={{ display: 'flex' }}>
-            {masterKeyData?.MakeNewReport == "True" &&
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <ActionButton onClick={() => setOpenSaveModal(true)}
-                  style={{
-                    width: '180px',
-                    border: '1px solid rgb(205 213 255)',
-                    color: '#7d66ff'
-                  }}
-                  className="fontFamily"
-                >
-                  <AddRoundedIcon />
-                  Make New report
-                </ActionButton>
-              </div>
-            }
-
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {masterKeyData?.MakeNewReport == "True" &&
               <MakeNewReport
                 setAllColumData={setAllColumData}
@@ -1937,6 +1921,27 @@ const ReportTopFilterEndAction = ({
                 filters={filters}
                 setFilters={setFilters}
               />
+            }
+
+            {masterKeyData?.MakeNewReport == "True" &&
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <ActionButton onClick={() => setOpenSaveModal(true)}
+                  style={{
+                    width: '160px',
+                    height: '36px',
+                    border: '1px solid #7c6cf0',
+                    color: '#7c6cf0',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    fontSize: '0.78rem',
+                    backgroundColor: 'rgba(124, 108, 240, 0.06)'
+                  }}
+                  className="fontFamily"
+                >
+                  <AddRoundedIcon style={{ fontSize: 18 }} />
+                  Make New report
+                </ActionButton>
+              </div>
             }
 
             {!isLoading &&
@@ -2042,12 +2047,22 @@ const ReportTopFilterEndAction = ({
                 {masterKeyData?.IsMainFilterButton == "True" && <IconButton
                   onClick={toggleDrawer(true)}
                   sx={{
-                    bgcolor: '#d5d5d573',
-                    borderRadius: 2
+                    bgcolor: '#f1f5f9',
+                    color: '#475569',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    width: '36px',
+                    height: '36px',
+                    transition: 'all 0.18s ease',
+                    '&:hover': {
+                      bgcolor: '#e2e8f0',
+                      color: '#0f172a',
+                      borderColor: '#cbd5e1',
+                    },
                   }}
                 >
                   <FilterIcons
-                    FontSize={25}
+                    FontSize={18}
                   />
                 </IconButton>
                 }
@@ -2118,8 +2133,8 @@ const ReportTopFilterEndAction = ({
                   }}
                   InputProps={{
                     startAdornment: (
-                      <InputAdornment position="start">
-                        <Search size={20} color="#888" />
+                      <InputAdornment position="start" sx={{ color: "#71717a", mr: 0.5 }}>
+                        <Search size={16} color="#71717a" />
                       </InputAdornment>
                     ),
                     endAdornment: commonSearch ? (
@@ -2130,28 +2145,44 @@ const ReportTopFilterEndAction = ({
                           onClick={() => setCommonSearch("")}
                           aria-label="clear"
                         >
-                          <X size={18} color="#888" />
+                          <X size={15} color="#71717a" />
                         </IconButton>
                       </InputAdornment>
                     ) : null,
                   }}
                   sx={{
                     width: "280px",
-                    // Remove MUI outline completely
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      border: "none",
-                    },
-
-                    "& .MuiInputBase-input": {
-                      padding: "6px !important",
-
-                    },
+                    backgroundColor: "#ffffff",
+                    borderRadius: "8px",
                     "& .MuiOutlinedInput-root": {
-                      height: "40px",
+                      height: "36px",
+                      borderRadius: "8px",
+                      paddingLeft: "10px",
                       paddingRight: "8px",
-                      border: "1px solid #d5d5d573",
+                      fontSize: "0.78rem",
+                      fontWeight: 500,
+                      color: "#09090b",
+                      backgroundColor: "#ffffff",
+                      "& .MuiInputBase-input": {
+                        padding: "0px 4px !important",
+                        fontSize: "0.78rem",
+                        fontWeight: 500,
+                        color: "#09090b",
+                      },
                     },
-
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#e4e4e7",
+                      borderWidth: "1px",
+                      transition: "all 0.18s ease",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#a1a1aa",
+                    },
+                    "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#18181b !important",
+                      borderWidth: "1px !important",
+                      boxShadow: "0 0 0 2px rgba(24, 24, 27, 0.08)",
+                    },
                   }}
                   className="txt_commonSearch"
                 />
