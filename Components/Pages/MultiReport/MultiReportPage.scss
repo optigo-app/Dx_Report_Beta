@@ -86,9 +86,6 @@ $tabbar-height: 38px;
     flex-direction: column;
     gap: 8px;
 
-    &::-webkit-scrollbar { width: 3px; }
-    &::-webkit-scrollbar-thumb { background: $primary; border-radius: 4px; }
-
     .mrp-card-loading {
       font-size: 12px;
       color: #9ca3af;
@@ -209,14 +206,7 @@ $tabbar-height: 38px;
   overflow-x: auto;
   flex-shrink: 0;
 
-  &::-webkit-scrollbar {
-    height: 3px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: $primary;
-    border-radius: 4px;
-  }
-
+ 
   .mrp-tabbar-hint {
     font-size: 12px;
     color: #9ca3af;
@@ -329,13 +319,6 @@ $tabbar-height: 38px;
   align-content: start;
   background: #f0f0f5;
 
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: $primary;
-    border-radius: 4px;
-  }
 }
 
 .mrp-grid-card {
