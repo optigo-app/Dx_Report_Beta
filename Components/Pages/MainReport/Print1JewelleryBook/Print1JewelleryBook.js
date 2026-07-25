@@ -172,100 +172,102 @@ export default function Print1JewelleryBook({
           </div>
         )}
 
-        <div>
-          {rows.map((row, index) => {
-            const leftVal = e?.[row.left?.value];
-            const rightVal = row.right ? e?.[row.right?.value] : undefined;
-            const isZeroValue = (val) =>
-              val === 0 ||
-              val === "0" ||
-              val === 0.0 ||
-              val === null ||
-              val === undefined ||
-              val === "";
-            const showLeft = row.left && !isZeroValue(leftVal);
-            const showRight = row.right && !isZeroValue(rightVal);
+        <div style={{display: 'flex', justifyContent: 'space-between'}}>
+          <div>
+            {rows.map((row, index) => {
+              const leftVal = e?.[row.left?.value];
+              const rightVal = row.right ? e?.[row.right?.value] : undefined;
+              const isZeroValue = (val) =>
+                val === 0 ||
+                val === "0" ||
+                val === 0.0 ||
+                val === null ||
+                val === undefined ||
+                val === "";
+              const showLeft = row.left && !isZeroValue(leftVal);
+              const showRight = row.right && !isZeroValue(rightVal);
 
-            return (
-              <div
-                key={index}
-                style={{ padding: '2px', display: 'flex', justifyContent: 'space-between', gap: '6px' }}
-              >
-                {/* Left */}
-                <div style={{ width: '50%', minWidth: 0 }}>
-                  {showLeft && (
-                    <div style={{ display: 'block', lineHeight: '1.3' }}>
-                      <span
-                        className="printLabelData"
-                        style={{
-                          fontSize: `${row.left?.fontsizel}px` || "12px",
-                          fontWeight: row.left?.fontweightl || 500,
-                          color: "#555",
-                        }}
-                      >
-                        {row.left?.lable}
-                      </span>
-                      <span
-                        className="printLabelData"
-                        style={{
-                          fontSize: `${row.left?.fontsizev}px` || "12px",
-                          fontWeight: row.left?.fontweightv || 500,
-                          color: "#000",
-                          wordBreak: 'break-word',
-                          overflowWrap: 'anywhere',
-                        }}
-                      >
-                        {leftVal}
-                      </span>
-                    </div>
-                  )}
+              return (
+                <div
+                  key={index}
+                  style={{ padding: '2px', display: 'flex', justifyContent: 'space-between', gap: '6px' }}
+                >
+                  {/* Left */}
+                  <div style={{ width: '50%', minWidth: 0 }}>
+                    {showLeft && (
+                      <div style={{ display: 'block', lineHeight: '1.3' }}>
+                        <span
+                          className="printLabelData"
+                          style={{
+                            fontSize: `${row.left?.fontsizel}px` || "12px",
+                            fontWeight: row.left?.fontweightl || 500,
+                            color: "#555",
+                          }}
+                        >
+                          {row.left?.lable}
+                        </span>
+                        <span
+                          className="printLabelData"
+                          style={{
+                            fontSize: `${row.left?.fontsizev}px` || "12px",
+                            fontWeight: row.left?.fontweightv || 500,
+                            color: "#000",
+                            wordBreak: 'break-word',
+                            overflowWrap: 'anywhere',
+                          }}
+                        >
+                          {leftVal}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right */}
+                  <div style={{ width: '50%', minWidth: 0, textAlign: 'right' }}>
+                    {showRight && (
+                      <div style={{ display: 'block', lineHeight: '1.3' }}>
+                        <span
+                          className="printLabelData"
+                          style={{
+                            fontSize: `${row.right?.fontsizel}px` || "12px",
+                            fontWeight: row.right?.fontweightl || 500,
+                            color: "#555",
+                          }}
+                        >
+                          {row.right?.lable}
+                        </span>
+                        <span
+                          className="printLabelData"
+                          style={{
+                            fontSize: `${row.right?.fontsizev}px` || "12px",
+                            fontWeight: row.right?.fontweightv || 500,
+                            color: "#000",
+                            wordBreak: 'break-word',
+                            overflowWrap: 'anywhere',
+                          }}
+                        >
+                          {rightVal}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
+              );
+            })}
+          </div>
 
-                {/* Right */}
-                <div style={{ width: '50%', minWidth: 0, textAlign: 'right' }}>
-                  {showRight && (
-                    <div style={{ display: 'block', lineHeight: '1.3' }}>
-                      <span
-                        className="printLabelData"
-                        style={{
-                          fontSize: `${row.right?.fontsizel}px` || "12px",
-                          fontWeight: row.right?.fontweightl || 500,
-                          color: "#555",
-                        }}
-                      >
-                        {row.right?.lable}
-                      </span>
-                      <span
-                        className="printLabelData"
-                        style={{
-                          fontSize: `${row.right?.fontsizev}px` || "12px",
-                          fontWeight: row.right?.fontweightv || 500,
-                          color: "#000",
-                          wordBreak: 'break-word',
-                          overflowWrap: 'anywhere',
-                        }}
-                      >
-                        {rightVal}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="w-100 spaclftTpm d-flex" style={{ display: 'flex', justifyContent: 'space-between', marginInline: '5px' }}>
-          <div className="spfntBld spbrWord spfntHead">{e?.designno}</div>
-          <p style={{ margin: 0, fontSize: "13px", lineHeight: "16px" }}>
-            {e?.designcount !== undefined && (
-              <span>Order: <strong>{e.designcount}</strong></span>
-            )}
-            {e?.designcount !== undefined && e?.salescount !== undefined && ", "}
-            {e?.salescount !== undefined && (
-              <span>Sale: <strong>{e.salescount}</strong></span>
-            )}
-          </p>
+          <div className="w-100 spaclftTpm d-flex" style={{ display: 'flex', justifyContent: 'space-between', marginInline: '5px' }}>
+            {/* <div className="spfntBld spbrWord spfntHead">{e?.designno}</div> */}
+            <p style={{ margin: 0, fontSize: "13px", lineHeight: "16px" }}>
+              {e?.designcount !== undefined && (
+                <span style={{color: 'rgb(85, 85, 85)'}}>Order: <strong>{e.designcount}</strong></span>
+              )}
+              {e?.designcount !== undefined && e?.salescount !== undefined && ", "}
+              {e?.salescount !== undefined && (
+                <span style={{color: 'rgb(85, 85, 85)'}}>Sale: <strong>{e.salescount}</strong></span>
+              )}
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -298,7 +300,7 @@ export default function Print1JewelleryBook({
               flexWrap: "wrap",
               gap: "15px",
               paddingTop: "5px",
-              width: '70%'
+              width: '80%'
             }}
           >
             <label
