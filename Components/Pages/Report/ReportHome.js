@@ -790,6 +790,7 @@ export default function ReportHome({
                   authActionDropdownMaster={authActionDropdownMaster}
                   isPrintColumn={isPrintColumn}
                   isPrintColumnData={isPrintColumnData}
+                  onSearchFilter={fetchReportData}
                 />
                 :
                 <MainReport

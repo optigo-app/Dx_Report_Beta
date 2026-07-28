@@ -106,7 +106,8 @@ export default function SpliterReport({
   spliterReportSecondPanelSecondoption,
   authActionDropdownMaster,
   isPrintColumn,
-  isRightBaseColumMaster
+  isRightBaseColumMaster,
+  onSearchFilter
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -212,6 +213,26 @@ export default function SpliterReport({
 
       const startDate = dateOverride?.startDate ?? filterState.dateRange.startDate;
       const endDate = dateOverride?.endDate ?? filterState.dateRange.endDate;
+      let ServerFilterHeader = "";
+      let ServerFilterValue = "";
+
+      if (Array.isArray(filters) && filters.length > 0) {
+        const serverFilters = filters.filter(
+          (f) => f.ServerFilterHeader && f.ServerFilterValue
+        );
+
+        ServerFilterHeader = serverFilters
+          .map((f) => f.ServerFilterHeader)
+          .join("#");
+        ServerFilterValue = serverFilters
+          .map((f) => f.ServerFilterValue)
+          .join("#");
+      } else if (filters.FilterHeader || filters.ServerFilterHeader) {
+        ServerFilterHeader = filters.ServerFilterHeader || "";
+        ServerFilterValue = filters.ServerFilterValue || "";
+      }
+
+
 
       const body = {
         con: JSON.stringify({ mode: "GetFullReport", appuserid: AllData?.LUId, IPAddress: clientIpAddress }),
@@ -222,6 +243,8 @@ export default function SpliterReport({
           FilterEndDate: allData ? "" : formatToYYYYMMDD(endDate),
           ...(filters.FilterHeader && { FilterHeader: filters.FilterHeader }),
           ...(filters.FilterValue && { FilterValue: filters.FilterValue }),
+          ...(ServerFilterHeader && { ServerFilterHeader }),
+          ...(ServerFilterValue && { ServerFilterValue }),
         }),
         f: "DynamicReport ( data )",
       };
@@ -624,7 +647,7 @@ export default function SpliterReport({
 
   // PanelSearchBox is now a shared component — no inline definition needed
 
-  
+
   // ─── Second panel option toggle (iOS/macOS style Segmented Control) ────────
   const SecondPanelOptionToggle = () => {
     if (!spliterReportSecondPanelSecondoption || !spliterReportSecondPanel) return null;
@@ -874,8 +897,9 @@ export default function SpliterReport({
                             boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 10px -2px rgba(0, 0, 0, 0.04)",
                             minWidth: "100%",
                             boxSizing: "border-box",
-                            "& .MuiList-root": { p: 0,
-                             },
+                            "& .MuiList-root": {
+                              p: 0,
+                            },
                           },
                         },
                       }}
@@ -984,7 +1008,7 @@ export default function SpliterReport({
               {/* Card list */}
               <Box
                 className="spliter1_maindiv"
-                sx={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column",gap: 1, pr: 0.5 }}
+                sx={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 1, pr: 0.5 }}
               >
                 {hasFirstPanelData ? (
                   <>

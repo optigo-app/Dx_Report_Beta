@@ -35,8 +35,11 @@ export default function Page() {
 // LIVE BETA :-       5020
 // LIVE LIVE :-       5021
 
-
 // R76 - 5008
 // R76BETA - 5009
 // R76LIVE - 5012
 // R77BETA - 5015
+
+
+// exec sp_Generate_DynamicReport_MasterPatch_beta
+// @pageid=18362
