@@ -25,7 +25,6 @@ const IframAction = ({ params, col, iframeModelData }) => {
       );
       return key ? row[key] : "";
     };
-    console.log('rdParams: ', rdParams);
     const queryString = rdParams
       .map((p) => {
         if (p.IsStatic === true || p.IsStatic === "true") {
@@ -44,8 +43,6 @@ const IframAction = ({ params, col, iframeModelData }) => {
         }
       })
       .join("&");
-
-    console.log('queryString: ', queryString);
     return `${rd1Item.BaseUrl}${rd1Item.ReportRedirectUrl}&${queryString}`;
   };
 

@@ -474,14 +474,15 @@
 
 .sidebar_filter_main_div {
   padding-bottom: 100px;
-  height: 77vh;
+  height: 90vh;
   overflow: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding-top: 10px;
 
-  
+  scrollbar-width: thin; /* makes it thinner */
+  scrollbar-color: rgb(86, 74, 252) transparent;
 }
 
 /* Remove native title tooltip on header */

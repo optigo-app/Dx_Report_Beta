@@ -51,10 +51,8 @@ const SAMPLE_REPORTS = [
 const MultiReportPage = () => {
   const searchParams = useSearchParams();
   const [reportList, setReportList] = useState([]);
-  console.log('reportList: ', reportList);
   const [loading, setLoading] = useState(false);
   const [openReports, setOpenReports] = useState([]); // { id, pid, name, url }
-  console.log('openReports: ', openReports);
   const [activeTabId, setActiveTabId] = useState(null);
   const [layout, setLayout] = useState("tabs"); // 'tabs' | 'grid'
   const [leftCollapsed, setLeftCollapsed] = useState(false);
@@ -106,7 +104,7 @@ const MultiReportPage = () => {
         setReportList(JSON.parse(response?.rd[0]?.SubReports))
       }
     } catch {
-      console.log('errr')
+      console.error('errr')
     } finally {
       setLoading(false);
     }

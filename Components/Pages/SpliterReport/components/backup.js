@@ -41,7 +41,6 @@ const SplitterWithToggle = ({ index, onDrag, isCollapsed, onToggle, isDragging }
   </div>
 );
 
-
 {/* <button
       onClick={onToggle}
       title={isCollapsed ? `Expand panel ${index + 1}` : `Collapse panel ${index + 1}`}

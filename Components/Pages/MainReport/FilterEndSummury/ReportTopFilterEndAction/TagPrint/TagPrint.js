@@ -266,7 +266,35 @@ const TagPrint = ({ selectionModel = [], filteredRows = [], gridContainerRef, jo
             f: "DynamicReport (Get Multi Job Data)",
         };
         const response = await axios.post(APIURL, body, { headers: header });
-        return response?.data?.Data?.rd || [];
+        const data = response?.data?.Data || {};
+
+        const rd = data.rd || [];
+        const rd1 = data.rd1 || []; // Diamond shape/color/clarity wise totals
+        const rd2 = data.rd2 || []; // Colorstone shape/color/clarity wise totals
+        const rd3 = data.rd3 || []; // Misc shape/color/clarity wise totals
+
+        // ✅ index each extra result-set by MatchedIdentifier for O(1) lookup
+        const indexByIdentifier = (arr) => {
+            const map = {};
+            arr.forEach((r) => {
+                if (r?.MatchedIdentifier) map[String(r.MatchedIdentifier)] = r;
+            });
+            return map;
+        };
+        const rd1ByIdentifier = indexByIdentifier(rd1);
+        const rd2ByIdentifier = indexByIdentifier(rd2);
+        const rd3ByIdentifier = indexByIdentifier(rd3);
+
+
+        return rd.map((row) => {
+            const key = String(row?.MatchedIdentifier ?? "");
+            return {
+                ...row,
+                ...(rd1ByIdentifier[key] || {}),
+                ...(rd2ByIdentifier[key] || {}),
+                ...(rd3ByIdentifier[key] || {}),
+            };
+        });
     };
 
     const handleSelectTag = async (tag) => {

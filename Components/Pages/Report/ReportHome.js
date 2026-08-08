@@ -202,7 +202,8 @@ export default function ReportHome({
   otherPrintOptionShowData,
   authActionDropdownMaster,
   isPrintColumn,
-  isPrintColumnData
+  isPrintColumnData,
+  reportsExcelRights
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -791,6 +792,7 @@ export default function ReportHome({
                   isPrintColumn={isPrintColumn}
                   isPrintColumnData={isPrintColumnData}
                   onSearchFilter={fetchReportData}
+                  reportsExcelRights={reportsExcelRights}
                 />
                 :
                 <MainReport
@@ -825,6 +827,7 @@ export default function ReportHome({
                   authActionDropdownMaster={authActionDropdownMaster}
                   isPrintColumn={isPrintColumn}
                   isPrintColumnData={isPrintColumnData}
+                  reportsExcelRights={reportsExcelRights}
                 />
               }
             </div>

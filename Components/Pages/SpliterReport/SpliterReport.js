@@ -107,7 +107,8 @@ export default function SpliterReport({
   authActionDropdownMaster,
   isPrintColumn,
   isRightBaseColumMaster,
-  onSearchFilter
+  onSearchFilter,
+  reportsExcelRights
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -1217,6 +1218,7 @@ export default function SpliterReport({
             authActionDropdownMaster={authActionDropdownMaster}
             isPrintColumn={isPrintColumn}
             isRightBaseColumMaster={isRightBaseColumMaster}
+            reportsExcelRights={reportsExcelRights}
           />
         </div>
       </Box>

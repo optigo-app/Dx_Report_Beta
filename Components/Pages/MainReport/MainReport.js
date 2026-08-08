@@ -224,9 +224,9 @@ export default function MainReport({
   otherPrintOptionShowData,
   authActionDropdownMaster,
   isPrintColumn,
-  isPrintColumnData
+  isPrintColumnData,
+  reportsExcelRights
 }) {
-
   const noFoundImg = "./images/noFound.jpg";
   const [isLoading, setIsLoading] = useState(isLoadingChek);
   const [showImageView, setShowImageView] = useState(false);
@@ -1774,7 +1774,6 @@ export default function MainReport({
     //   srColumn,
     //   ...columnDataWithIcon.filter(col => {
     //     if (col.HideColumn === "True") return false;
-    //     console.log('col.IsRightBase: ', col.IsRightBase);
     //     // if (isRightBaseColum === 0 && col.IsRightBase === true) return false;
     //     return true;
     //   })
@@ -1805,7 +1804,6 @@ export default function MainReport({
     setColumnsHide([srColumn, ...visibleColumnsFilter]);
 
     sortedFilteredRowsRef.current = getSortedFilteredRows();
-
   }, [allColumData, paginationModel, selectionModel, svgIconData]);
 
   // }, [allColumData, grupEnChekBox, paginationModel, selectionModel]);
@@ -1900,7 +1898,6 @@ export default function MainReport({
   }, [allRowData, allColumIdWiseName, allColumData, masterValueMap]); // ✅ allColumData here
 
   const isFirstLoad = useRef(true);
-
   useEffect(() => {
     if (allColumData) {
       const dateCols = allColumData?.filter((col) => col.ColumnType == "Date");
@@ -1946,12 +1943,10 @@ export default function MainReport({
             numeric: true,
             sensitivity: "base",
           });
-
         if (compareResult !== 0) {
           return sortItem.sort === "asc" ? compareResult : -compareResult;
         }
       }
-
       return 0;
     });
   };
@@ -2870,6 +2865,7 @@ export default function MainReport({
             otherPrintOptionShow={otherPrintOptionShow}
             otherPrintOptionShowData={otherPrintOptionShowData}
             isRightBaseColumMaster={isRightBaseColumMaster}
+            reportsExcelRights={reportsExcelRights}
           />
         }
 
@@ -2908,12 +2904,14 @@ export default function MainReport({
           {showImageView ? (
             <div>
               <ImageView
-                // filteredRows={filteredRows}
                 filteredRows={getSortedFilteredRows()}
                 sortModel={sortModel}
                 columns={columns}
                 imageViewData={imageViewData}
                 isLoading={isLoading}
+                masterKeyData={masterKeyData}
+                selectionModel={selectionModel}
+                setSelectionModel={setSelectionModel}
               />
             </div>
           ) : chartView ? (

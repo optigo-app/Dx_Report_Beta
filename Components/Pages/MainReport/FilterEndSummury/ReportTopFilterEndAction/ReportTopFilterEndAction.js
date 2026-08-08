@@ -146,7 +146,8 @@ const ReportTopFilterEndAction = ({
   setSvgFilter,
   otherPrintOptionShow,
   otherPrintOptionShowData,
-  isRightBaseColumMaster
+  isRightBaseColumMaster,
+  reportsExcelRights
 }) => {
   const searchParams = useSearchParams();
   const pid = searchParams.get("pid");
@@ -2607,7 +2608,8 @@ const ReportTopFilterEndAction = ({
                   </div>
                 ))}
 
-              {masterKeyData?.ExcelExport == "True" && (
+              {/* {masterKeyData?.ExcelExport == "True" && ( */}
+              {(reportsExcelRights[0]?.IsExcelRight == 1 && reportsExcelRights[0]?.IsReportExcelRights == 1) &&
                 <Tooltip
                   title="Export to Excel"
                   disablePortal
@@ -2634,7 +2636,7 @@ const ReportTopFilterEndAction = ({
                     <FileSpreadsheet size={22} />
                   </IconButton>
                 </Tooltip>
-              )}
+              }
 
               {masterKeyData?.ChartView == "True" &&
                 <div

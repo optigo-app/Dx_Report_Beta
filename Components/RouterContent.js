@@ -33,6 +33,7 @@ export default function RouterContent() {
   const [isFormulaBasedSummary, setIsFormulaBasedSummary] = useState(false);
   const [isPrintColumn, setIsPrintColumn] = useState(false);
   const [isPrintColumnData, setIsPrintColumnData] = useState(false);
+  const [reportsExcelRights, setReportsExcelRights] = useState();
   const [spliterReportFirstPanel, setSpliterReportFirstPanel] = useState();
   const [authActionDropdownMaster, setAuthActionDropdownMaster] = useState();
   const [spliterReportFirstPanelFilter, setSpliterReportFirstPanelFilter] = useState();
@@ -164,6 +165,7 @@ export default function RouterContent() {
         setCurrencyMaster(response?.rd3);
         setOtherPrintOptionShowData(response?.rd5)
         setAuthActionDropdownMaster(response?.rd6)
+        setReportsExcelRights(response?.rd8)
         setIsRightBaseColum(response?.rd9);
         const masterName = response?.rd?.[0]?.PrintMasterName;
         const matched = response?.rd4?.find(
@@ -296,6 +298,7 @@ export default function RouterContent() {
         authActionDropdownMaster={authActionDropdownMaster}
         isPrintColumn={isPrintColumn}
         isPrintColumnData={isPrintColumnData}
+        reportsExcelRights={reportsExcelRights}
       />
     </Suspense>
   );

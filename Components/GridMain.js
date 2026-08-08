@@ -45,6 +45,7 @@ const GridMain = ({
   authActionDropdownMaster,
   isPrintColumn,
   isPrintColumnData,
+  reportsExcelRights
 }) => {
   
   // useEffect(() => {
@@ -68,7 +69,7 @@ const GridMain = ({
   //     "dxver" : "YmV0YQ==",
   //     "rptapiurl": "aHR0cDovL25ld25leHRqcy53ZWIvYXBpL3JlcG9ydA=="
   //   }))
-  //   window.location.replace("http://localhost:6006/beta/?CN=UkRTRF8yMDI2MDQwOTEwMDkwOV9iZGIzY2Y1NjRiNDc0NWJmYWY4NjNkYjBhZmI2MzZmNg==&pid=18333&Token=5F383721-FC33-F111-B3AE-F875A496BA9D");
+  //   window.location.replace("http://localhost:6006/beta/?CN=UkRTRF8yMDI2MDQwOTEwMDkwOV9iZGIzY2Y1NjRiNDc0NWJmYWY4NjNkYjBhZmI2MzZmNg==&pid=18577&Token=5F383721-FC33-F111-B3AE-F875A496BA9D");
   // }, []);
 
   if (tokenMissing) {
@@ -159,6 +160,7 @@ const GridMain = ({
       authActionDropdownMaster={authActionDropdownMaster}
       isPrintColumn={isPrintColumn}
       isPrintColumnData={isPrintColumnData}
+      reportsExcelRights={reportsExcelRights}
     />
   );
 };
