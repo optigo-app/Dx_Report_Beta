@@ -18,7 +18,7 @@ const PanelSearchBox = ({ value, onChange, onClear, placeholder = "Search..." })
       sx={{
         display: "flex",
         alignItems: "center",
-        background: "rgba(248,247,255,0.9)",
+        background: "rgba(255, 255, 255, 0)",
         border: "1.5px solid",
         borderColor: value ? "rgba(124,108,240,0.45)" : "rgba(0,0,0,0.1)",
         borderRadius: "8px",

@@ -56,6 +56,7 @@ const SummaryEndFilteredValue = ({
 }) => {
   const [openPopup, setOpenPopup] = useState(false);
   const [openAskOptigoAi, setOpenAskOptigoAi] = useState(false);
+  const [rotationDeg, setRotationDeg] = useState(0);
   const searchParams = useSearchParams();
   const pid = searchParams.get("pid");
 
@@ -443,11 +444,21 @@ const SummaryEndFilteredValue = ({
                 <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center", gap: '10px' }}>
                   <Tooltip title="Refresh" disablePortal PopperProps={{ container: gridContainerRef.current }}>
                     <IconButton
-                      onClick={() => { refreshFunction(); setFilteredValue(); }}
+                      onClick={() => {
+                        setRotationDeg((prev) => prev - 360);
+                        refreshFunction();
+                        setFilteredValue();
+                      }}
                       sx={{
-                        background: "#cdd5ff", color: "#6f53ff", height: "38px", width: "38px",
+                        background: "#ffffff", color: "#09090b", height: "38px", width: "38px",
                         borderRadius: 3, transition: "all .2s ease",
                         "&:hover": { backgroundColor: "#cdd5ff" },
+                        fontWeight: "600",
+                        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)",
+                        "& svg": {
+                          transform: `rotate(${rotationDeg}deg)`,
+                          transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+                        },
                       }}
                     >
                       <RotateCcw size={20} />
