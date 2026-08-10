@@ -721,8 +721,8 @@ export default function SpliterReport({
             display: "flex",
             flexDirection: "column",
             alignItems: collapsed[0] ? "center" : undefined,
-            background: collapsed[0] ? "rgba(244,241,241,0.5)" : "#ffffff",
-            borderRight: "1px solid #e4e4e7",
+            background: collapsed[0] ? "rgba(244, 241, 241, 0.11)" : "#ffffff",
+            borderRight: "1px solid #e4e4e728",
             cursor: collapsed[0] ? "pointer" : undefined,
           }}
           onClick={collapsed[0] ? () => toggleCollapse(0) : undefined}
@@ -1065,8 +1065,8 @@ export default function SpliterReport({
                 display: "flex",
                 flexDirection: "column",
                 alignItems: collapsed[1] ? "center" : undefined,
-                background: collapsed[1] ? "rgba(244,241,241,0.5)" : "#ffffff",
-                borderRight: "1px solid #e4e4e7",
+                background: collapsed[1] ? "rgba(244, 241, 241, 0.11)" : "#ffffff",
+                borderRight: "1px solid #e4e4e728",
                 cursor: collapsed[1] ? "pointer" : undefined,
               }}
               onClick={collapsed[1] ? () => toggleCollapse(1) : undefined}

@@ -3180,7 +3180,7 @@ export default function MainReport({
                 sx={{
                   height: "100%",    // ✅ fills the flex parent
                   width: "100%",
-                  borderRadius: "8px",
+                  borderRadius: "4px",
                   border: "1px solid rgba(224, 224, 224, 1)",
                   "& .MuiDataGrid-columnHeaders, & .MuiDataGrid-columnHeader, & .MuiDataGrid-columnHeaderRow": {
                     fontFamily: "var(--font-geist), sans-serif !important",
@@ -3190,13 +3190,12 @@ export default function MainReport({
                     letterSpacing: "0.01em",
                     minHeight: "42px !important",
                     maxHeight: "42px !important",
-                    backgroundColor: "#f8fafc !important",
-                    borderBottom: "1px solid #e2e8f0 !important",
+                    backgroundColor: "#fff !important",
                     outline: "none !important",
                     textTransform: "capitalize",
+                    // boxShadow:'rgba(0, 0, 0, 0.1) 0px 2px 6px, rgba(0, 0, 0, 0.06) 0px 1px 2px',
                   },
                   "& .MuiDataGrid-columnHeaderTitle": {
-                    fontFamily: "var(--font-geist), sans-serif !important",
                     fontWeight: 700,
                     fontSize: "0.78rem !important",
                     color: "#334155 !important",
