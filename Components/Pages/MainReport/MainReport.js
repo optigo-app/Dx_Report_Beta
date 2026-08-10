@@ -225,7 +225,8 @@ export default function MainReport({
   authActionDropdownMaster,
   isPrintColumn,
   isPrintColumnData,
-  reportsExcelRights
+  reportsExcelRights,
+  datefilterServerSide
 }) {
   const noFoundImg = "./images/noFound.jpg";
   const [isLoading, setIsLoading] = useState(isLoadingChek);
@@ -314,7 +315,6 @@ export default function MainReport({
   const [authLoadingCell, setAuthLoadingCell] = useState(null); // keep state only
   const authLoadingCellRef = useRef(null); // keep ref too
   const sortedFilteredRowsRef = useRef([]);
-  const filteredRowsRef = useRef(null);
 
   const handleSaveAreaChart = () => {
     setSavedAreaCharts((prev) => [
@@ -493,12 +493,35 @@ export default function MainReport({
   useEffect(() => {
     if (!firstTimeLoadedRef.current) return;
     const { startDate: s, endDate: e } = filterState.dateRange;
-    if (s && e) {
+    if (!s || !e) return;
+
+    if (datefilterServerSide) {
+      const formatServerDate = (d) => {
+        const dateObj = new Date(d);
+        const yyyy = dateObj.getFullYear();
+        const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+        const dd = String(dateObj.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      };
+
+      const FilterStartDate = formatServerDate(s);
+      const FilterEndDate = formatServerDate(e);
+
+      if (typeof onSearchFilter === "function") {
+        onSearchFilter(
+          {
+            FilterStartDate,
+            FilterEndDate,
+          },
+          "0"
+        );
+      }
+    } else {
       const formattedStart = formatToMMDDYYYY(new Date(s));
       const formattedEnd = formatToMMDDYYYY(new Date(e));
       fetchData(formattedStart, formattedEnd);
     }
-  }, [filterState.dateRange]);
+  }, [filterState.dateRange, datefilterServerSide]);
 
   const fetchData = async () => {
     try {

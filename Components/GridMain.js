@@ -45,7 +45,8 @@ const GridMain = ({
   authActionDropdownMaster,
   isPrintColumn,
   isPrintColumnData,
-  reportsExcelRights
+  reportsExcelRights,
+  datefilterServerSide
 }) => {
   
   // useEffect(() => {
@@ -161,6 +162,7 @@ const GridMain = ({
       isPrintColumn={isPrintColumn}
       isPrintColumnData={isPrintColumnData}
       reportsExcelRights={reportsExcelRights}
+      datefilterServerSide={datefilterServerSide}
     />
   );
 };

@@ -203,7 +203,8 @@ export default function ReportHome({
   authActionDropdownMaster,
   isPrintColumn,
   isPrintColumnData,
-  reportsExcelRights
+  reportsExcelRights,
+  datefilterServerSide
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -224,6 +225,10 @@ export default function ReportHome({
   const [selectedDateOption, setSelectedDateOption] = useState("");
   const clientIpAddress = sessionStorage.getItem("clientIpAddress");
   const [isPageChanging, setIsPageChanging] = useState(false);
+  const formatDate = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate()
+    ).padStart(2, "0")}`;
 
   useEffect(() => {
     setShowReportMaster(largeData);
@@ -285,7 +290,18 @@ export default function ReportHome({
           setLoadingMaster(false);
         }
       } else {
-        fetchReportData({}, "0");
+        if (datefilterServerSide) {
+          const todayStr = formatDate(new Date()); 
+          fetchReportData(
+            {
+              FilterStartDate: todayStr,
+              FilterEndDate: todayStr,
+            },
+            "0"
+          );
+        } else {
+          fetchReportData({}, "0");
+        }
       }
     };
     fetchData();
@@ -828,6 +844,7 @@ export default function ReportHome({
                   isPrintColumn={isPrintColumn}
                   isPrintColumnData={isPrintColumnData}
                   reportsExcelRights={reportsExcelRights}
+                  datefilterServerSide={datefilterServerSide}
                 />
               }
             </div>

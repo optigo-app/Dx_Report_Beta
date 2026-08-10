@@ -35,6 +35,7 @@ export default function RouterContent() {
   const [isPrintColumnData, setIsPrintColumnData] = useState(false);
   const [reportsExcelRights, setReportsExcelRights] = useState();
   const [spliterReportFirstPanel, setSpliterReportFirstPanel] = useState();
+  const [datefilterServerSide, setDatefilterServerSide] = useState();
   const [authActionDropdownMaster, setAuthActionDropdownMaster] = useState();
   const [spliterReportFirstPanelFilter, setSpliterReportFirstPanelFilter] = useState();
   const [spliterReportSecondPanelSecondoption, setSpliterReportSecondPanelSecondoption] = useState();
@@ -181,6 +182,7 @@ export default function RouterContent() {
           setSpliterReportShow(data.IsSpliterReport);
           setLargeDataShow(data.ServerSideDateWiseFilter);
           setSpliterReportFirstPanel(data.SpliterFirstPanel);
+          setDatefilterServerSide(data?.IsDateFilterServerSide);
           setSpliterReportSecondPanel(data.SpliterSecondPanel);
           setIsFormulaBasedSummary(data.IsFormulaBasedSummary);
           setReportName(data.ReportName);
@@ -299,6 +301,7 @@ export default function RouterContent() {
         isPrintColumn={isPrintColumn}
         isPrintColumnData={isPrintColumnData}
         reportsExcelRights={reportsExcelRights}
+        datefilterServerSide={datefilterServerSide}
       />
     </Suspense>
   );
