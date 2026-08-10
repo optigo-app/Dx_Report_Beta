@@ -27,11 +27,9 @@ const PanelHeader = ({ title, icon, tooltipText, count }) => {
         py: 0.8,
         borderRadius: "8px",
         background: "#ffffff",
-        border: "1px solid rgba(0, 0, 0, 0.08)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -85,7 +83,7 @@ const PanelHeader = ({ title, icon, tooltipText, count }) => {
         )}
       </Box>
 
-      <Tooltip
+      {/* <Tooltip
         title={tooltipText || `Click any ${title} below to filter report results`}
         arrow
         placement="top"
@@ -121,7 +119,7 @@ const PanelHeader = ({ title, icon, tooltipText, count }) => {
         >
           <InfoOutlinedIcon sx={{ fontSize: 16 }} />
         </IconButton>
-      </Tooltip>
+      </Tooltip> */}
     </Box>
   );
 };
