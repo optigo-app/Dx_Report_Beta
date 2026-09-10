@@ -6,6 +6,7 @@ import {
   alpha,
   Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -70,6 +71,27 @@ const ICON_LIST = [
     icon: GiReturnArrow,
   },
 ];
+
+
+const reportBtnStyle = (active) => ({
+  whiteSpace: "nowrap",
+  border: 'none',
+  borderRadius: "8px",
+  height: "36px",
+  px: 1.5,
+  fontSize: "0.78rem",
+  fontWeight: 600,
+  minWidth: "fit-content",
+  backgroundColor: active ? "#7c6cf0" : "#ffffff",
+  color: active ? "#ffffff" : "#3f3f46",
+  boxShadow: active ? "0 2px 6px rgba(124, 108, 240, 0.25)" : "none",
+  textTransform: "none",
+  transition: "all 0.18s ease",
+  "&:hover": {
+    backgroundColor: active ? "#6a5ae0" : "#f4f4f5",
+    borderColor: active ? "#6a5ae0" : "#cbd5e1",
+  },
+});
 
 const ReportTopFilterEndAction = ({
   isLoading,
@@ -147,7 +169,12 @@ const ReportTopFilterEndAction = ({
   otherPrintOptionShow,
   otherPrintOptionShowData,
   isRightBaseColumMaster,
-  reportsExcelRights
+  reportsExcelRights,
+  datefilterServerSide,
+  spNumber,
+  onShowMoreData,
+  hasMoreData,
+  loadingMore,
 }) => {
   const searchParams = useSearchParams();
   const pid = searchParams.get("pid");
@@ -165,6 +192,7 @@ const ReportTopFilterEndAction = ({
   const [openSnackbarMsg, setOpenSnackbarMsg] = useState(false);
   const [errorMessageColor, setErrorMessageColor] = useState("error");
   const [iframeWidth, setIframeWidth] = useState("600px")
+  const [iframeHeight, setIframeHeight] = useState("500px")
   const [selectedSvgId, setSelectedSvgId] = useState(null);
 
   useEffect(() => {
@@ -172,6 +200,8 @@ const ReportTopFilterEndAction = ({
       console.warn("Page is embedded in iframe - fullscreen may be restricted");
     }
   }, []);
+
+
 
   const handleAllDataShow = () => {
     setIsPageChanging(true);
@@ -564,6 +594,8 @@ const ReportTopFilterEndAction = ({
 
   const showonModelColum = [
     ...(allColumData?.filter(col => {
+      if (col?.IsAuthAction) return false;
+      if (col?.IconName) return false;
       if (col.IsRightBase && col.IsRightBase !== "0") {
         return evaluateRightBaseFormula(
           col.IsRightBase,
@@ -573,8 +605,6 @@ const ReportTopFilterEndAction = ({
       return true;
     }) || [])
   ];
-
-
 
   const converted = mapRowsToHeaders(showonModelColum, sortedRowsForExport);
   const exportToExcel = () => {
@@ -1604,9 +1634,9 @@ const ReportTopFilterEndAction = ({
     return filteredRows.find((r) => r.id === selectionModel[0]);
   };
 
-  const buildIframeUrl = (iframeTypeId) => {
+  const buildIframeUrl = (iframeTypeId, allowNoSelection = false) => {
     const row = getSelectedRow();
-    if (!row) return "";
+    if (!row && !allowNoSelection) return "";
 
     const rd2Params = iframeModelData?.rd2?.filter(
       (x) => x.IframeTypeId == iframeTypeId
@@ -1619,6 +1649,7 @@ const ReportTopFilterEndAction = ({
     if (!rd3Item || !rd2Params) return "";
 
     const getRowValue = (paramName) => {
+      if (!row) return "";
       const key = Object.keys(row).find(
         (k) => k.toLowerCase() === paramName.toLowerCase()
       );
@@ -1640,16 +1671,33 @@ const ReportTopFilterEndAction = ({
     return `${rd3Item.BaseUrl}${rd3Item.ReportRedirectUrl}&${queryString}`;
   };
 
-  const openIframe = async (iframeTypeId, popupTitle, baseUrl) => {
-    if (!selectionModel.length) {
+  const openIframe = async (data) => {
+    const {
+      IframeTypeId: iframeTypeId,
+      PopupTitle: popupTitle,
+      BaseUrl: baseUrl,
+      IframeWidth,
+      IframeHeight,
+      IsRedirectButton,
+      DisableCheckboxSelection,
+    } = data;
+
+    const isCheckboxDisabled =
+      DisableCheckboxSelection === true || DisableCheckboxSelection === "true";
+    const isRedirect =
+      IsRedirectButton === true || IsRedirectButton === "true";
+
+    // Only enforce "select a row" when checkbox selection isn't disabled
+    if (!isCheckboxDisabled && !selectionModel.length) {
       alert("Please select a row first");
       return;
     }
 
+    const width = IframeWidth ? `${IframeWidth}px` : "600px";
+    const height = IframeHeight ? `${IframeHeight}px` : "500px";
+
     let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
-    const selectedRows = selectionModel?.map((id) =>
-      apiRef.current.getRow(id)
-    );
+    const selectedRows = selectionModel?.map((id) => apiRef.current.getRow(id));
 
     const actionIds = selectedRows
       .map((row) => row.forencodeDesignsIds)
@@ -1660,7 +1708,7 @@ const ReportTopFilterEndAction = ({
       Yearcode: `${AllData?.YearCode}`,
       version: `${atob(AllData?.dxver)}`,
       sv: `${atob(AllData?.SV)}`,
-      sp: 55,
+      sp: spNumber,
     };
 
     const body = {
@@ -1670,26 +1718,51 @@ const ReportTopFilterEndAction = ({
         appuserid: AllData?.LUId,
         IPAddress: clientIpAddress,
       }),
-      p: JSON.stringify({
-        ActionIds: actionIds
-      }),
+      p: JSON.stringify({ ActionIds: actionIds }),
       f: "DynamicReport (get column data)",
     };
-    const APIURL = atob(AllData?.rptapiurl)
+    const APIURL = atob(AllData?.rptapiurl);
+
     if (iframeTypeId == 6) {
-      setIframeTitle(popupTitle);
-      setIframeWidth("1200px")
       try {
         const response = await axios.post(APIURL, body, { headers: header });
         const finalURL = baseUrl + response?.data?.Data?.rd[0]?.Full_url;
+
+        if (isRedirect) {
+          window.open(finalURL, "_blank", "noopener,noreferrer");
+          return;
+        }
+
+        setIframeWidth(width);
+        setIframeHeight(height);
+        setIframeTitle(popupTitle);
         setIframeUrl(finalURL);
         setOpenIframeModal(true);
       } catch (error) {
         console.error("error is..", error);
       }
     } else {
-      setIframeWidth("600px")
-      const url = buildIframeUrl(iframeTypeId);
+      const url = buildIframeUrl(iframeTypeId, isCheckboxDisabled);
+
+      if (isRedirect) {
+        if (window?.parent?.postMessage) {
+          window.parent.postMessage(
+            {
+              type: "ADD_TAB",
+              evt: "DynamicReport",
+              payload: {
+                TabName: data.PopupTitle,
+                TabUrl: url,
+              },
+            },
+            "*"
+          );
+        }
+        return;
+      }
+
+      setIframeWidth(width);
+      setIframeHeight(height);
       setIframeTitle(popupTitle);
       setIframeUrl(url);
       setOpenIframeModal(true);
@@ -1810,7 +1883,6 @@ const ReportTopFilterEndAction = ({
         onClose={() => setOpenIframeModal(false)}
         PaperProps={{
           sx: {
-            height: "40vh",
             borderRadius: 2,
             overflow: "hidden",
           },
@@ -1819,7 +1891,8 @@ const ReportTopFilterEndAction = ({
           '& .MuiPaper-root': {
             width: `${iframeWidth} !important`,
             maxWidth: `${iframeWidth} !important`,
-            minHeight: '500 !important'
+            height: `${iframeHeight} !important`,
+            maxHeight: `${iframeHeight} !important`,
           }
         }}
       >
@@ -1828,20 +1901,20 @@ const ReportTopFilterEndAction = ({
             display: "flex",
             justifyContent: "space-between",
             padding: "15px 15px 10px 15px",
-            backgroundColor: "#ebebeb",
+            backgroundColor: "#222",
           }}
         >
           <div>
-            <p style={{ margin: '0px', fontWeight: 600 }}>{iframeTitle}</p>
+            <p style={{ margin: '0px', fontWeight: 600, color: 'white' }}>{iframeTitle}</p>
           </div>
           <IconButton
             edge="end"
             size="small"
             onClick={() => setOpenIframeModal(false)}
             aria-label="clear"
-            style={{ border: "1px solid rgb(44 56 90)" }}
+            style={{ border: "1px solid white" }}
           >
-            <X size={18} color="black" />
+            <X size={18} color="white" />
           </IconButton>
         </div>
 
@@ -1849,7 +1922,7 @@ const ReportTopFilterEndAction = ({
           src={iframeUrl}
           style={{
             border: "none",
-            minHeight: "40vh",
+            height: "100%",
             width: "100%",
           }}
         />
@@ -1888,9 +1961,7 @@ const ReportTopFilterEndAction = ({
                 return (
                   <Button
                     key={index}
-                    onClick={() =>
-                      openIframe(data.IframeTypeId, data.PopupTitle, data?.BaseUrl)
-                    }
+                    onClick={() => openIframe(data)}
                     className="fontFamily"
                     style={{ backgroundColor: 'rgb(213 219 249)', color: '#5a43e6', borderRadius: '5px', fontSize: '11.5px', height: "40px" }}
                   >
@@ -2092,6 +2163,7 @@ const ReportTopFilterEndAction = ({
                           showReportMaster={showReportMaster}
                           ShowAllbtn={masterKeyData?.AllDataButton == "True"}
                           handleAllDataShow={handleAllDataShow}
+                          datefilterServerSide={datefilterServerSide}
                         />
                         :
                         <Button
@@ -2440,6 +2512,18 @@ const ReportTopFilterEndAction = ({
                     ))}
                   </Select>
                 </FormControl>
+              )}
+
+              {masterKeyData?.ShowMultiTableData == "True" && (
+                <Button
+                  variant="contained"
+                  onClick={onShowMoreData}
+                  disabled={!hasMoreData || loadingMore}
+                  startIcon={loadingMore ? <CircularProgress size={18} /> : null}
+                  sx={reportBtnStyle("mainreport" === "mainreport")}
+                >
+                  {loadingMore ? "Loading..." : "Show More Data"}
+                </Button>
               )}
 
               {masterKeyData?.PrintButton == "True" && (

@@ -23,17 +23,19 @@ import {
   IconButton,
   InputLabel,
   MenuItem,
+  Modal,
   Paper,
   Popover,
   Select,
+  Slide,
   Snackbar,
   styled,
   Switch,
-  Typography,
+  TextField,
 } from "@mui/material";
 import { DragDropContext } from "@hello-pangea/dnd";
 import { useSearchParams } from "next/navigation";
-import { AlertTriangle, CheckCircle2, CheckSquare, Eye, Menu, ShieldAlert, Square, ToggleLeft, ToggleRight, X, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CheckSquare, Eye, Menu, ShieldAlert, Square, ToggleLeft, ToggleRight, Trash, X, XCircle } from "lucide-react";
 import { GoCopy } from "react-icons/go";
 import Warper from "@/Components/warper";
 import { CallApi } from "@/API/CallApi/CallApi";
@@ -66,6 +68,7 @@ import { MdDoNotDisturb } from "react-icons/md";
 import { IoMdAddCircleOutline } from "react-icons/io";
 import { GiReturnArrow } from "react-icons/gi";
 import { ReportCallApi } from "@/API/ReportCommonAPI/ReportCallApi";
+import RouterContent from "@/Components/RouterContent";
 
 const ICON_LIST = [
   {
@@ -226,7 +229,10 @@ export default function MainReport({
   isPrintColumn,
   isPrintColumnData,
   reportsExcelRights,
-  datefilterServerSide
+  datefilterServerSide,
+  onShowMoreData,
+  hasMoreData,
+  loadingMore,
 }) {
   const noFoundImg = "./images/noFound.jpg";
   const [isLoading, setIsLoading] = useState(isLoadingChek);
@@ -316,6 +322,20 @@ export default function MainReport({
   const authLoadingCellRef = useRef(null); // keep ref too
   const sortedFilteredRowsRef = useRef([]);
 
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedDeleteRow, setSelectedDeleteRow] = useState(null);
+  const [selectedDeleteCol, setSelectedDeleteCol] = useState(null);
+  const [deletedRowIds, setDeletedRowIds] = useState(() => new Set());
+  const [openPopupReport, setOpenPopupReport] = useState(false);
+  const [openPopupReportid, setOpenPopupReportid] = useState(null);
+  const [openPopupReportParam, setOpenPopupReportParam] = useState(null);
+
+  const handleClosePopupReport = () => {
+    setOpenPopupReport(false);
+    setOpenPopupReportid(null);
+    setOpenPopupReportParam(null);
+  };
+
   const handleSaveAreaChart = () => {
     setSavedAreaCharts((prev) => [
       ...prev,
@@ -403,10 +423,9 @@ export default function MainReport({
         p: JSON.stringify(data),
         f: "DynamicReport ( Save User Activity Log )",
       };
-
       try {
         await CallApi(body);
-        sessionStorage.removeItem(key); // ✅ clear after save
+        sessionStorage.removeItem(key);
       } catch (err) {
         console.error("Activity log save failed", err);
       }
@@ -470,7 +489,14 @@ export default function MainReport({
     }
     const formattedDate = formatToMMDDYYYY(now);
     fetchData(formattedDate, formattedDate);
-    if (showReportMaster || serverSideData == true) {
+    if (datefilterServerSide) {
+      setFilterState({
+        dateRange: {
+          startDate: now,
+          endDate: now,
+        },
+      });
+    } else if (showReportMaster || serverSideData == true) {
       setFilterState({
         dateRange: {
           startDate: new Date("1990-01-01T18:30:00.000Z"),
@@ -885,7 +911,7 @@ export default function MainReport({
 
     return (
       <>
-        <input
+        <TextField
           size="small"
           value={value}
           type={
@@ -904,7 +930,15 @@ export default function MainReport({
               e.target.blur();
             }
           }}
-          style={{ width: "80%", height: "20px" }}
+          sx={{
+            width: "80%",
+            mt: "-5px",
+            "& .MuiOutlinedInput-input": {
+              padding: "3px !important",
+              fontSize: '13px'
+            },
+          }}
+          inputProps={{ style: { height: "28px", padding: "0 8px" } }}
         />
 
       </>
@@ -1041,6 +1075,10 @@ export default function MainReport({
           IsAuthActionInputRegex: col?.IsAuthActionInputRegex,
           IframeHeight: col?.IframeHeight,
           IframeWidth: col?.IframeWidth,
+          OpenPopUpReport: col?.OpenPopUpReport,
+          PopUpPageid: col?.PopUpPageid,
+          PopUpReportName: col?.PopUpReportName,
+          PopUpParamiter: col?.PopUpParamiter,
           filterTypes: [
             toBool(col.NormalFilter) && "NormalFilter",
             toBool(col.MultiSelection) && "MultiSelection",
@@ -1169,6 +1207,13 @@ export default function MainReport({
                     if (isLoading) return;
                     setSelectedAuthRow(params.row);
                     setSelectedAuthCol(col);
+                    if (Number(col?.IsAuthActionIcon) == 4) return;
+                    if (Number(col?.IsAuthActionIcon) == 5) {
+                      setSelectedDeleteRow(params.row);
+                      setSelectedDeleteCol(col);
+                      setDeleteModalOpen(true);
+                      return;
+                    }
                     setAuthModalOpen(true);
                   }}
                   style={{
@@ -1210,6 +1255,8 @@ export default function MainReport({
                         handleCustomAuthInputChange(params.row, col, newValue);
                       }}
                     />
+                  ) : Number(col?.IsAuthActionIcon) == 5 ? (
+                    <Trash size={20} color="#ef4444" strokeWidth={2.5} />
                   ) : isActive ? (
                     selectedIconGroup?.activeIcon || (
                       <CheckCircle2 size={20} color="#22c55e" strokeWidth={2.5} />
@@ -1259,7 +1306,6 @@ export default function MainReport({
                 } else {
                   const isoNaiveMatch = typeof params.value === "string" &&
                     params.value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?$/);
-
                   if (isoNaiveMatch) {
                     const [, year, month, day, hour, minute, second] = isoNaiveMatch;
 
@@ -1530,11 +1576,48 @@ export default function MainReport({
               const priorityColumn = allColumData?.find(
                 (x) => x.IsPriorityColumn === "True"
               );
-              if (!priorityColumn) return params.value;
-              const priorityId = params?.row?.[priorityColumn.FieldName];
+              const priorityId = priorityColumn ? params?.row?.[priorityColumn.FieldName] : null;
               const priorityObj = colorMaster?.find((x) => x.id == priorityId);
               const bg = priorityObj?.colorcode ?? "inherit";
               const font = priorityObj?.fontcolorcode ?? "inherit";
+
+              const innerContent = col.HrefLink == "True" ? (
+                col.HyperlinkShowButton ? (
+                  <Button
+                    style={{
+                      backgroundColor: "#cdd5ff",
+                      height: "25px",
+                      color: "#8068fb",
+                      fontSize: '12px'
+                    }}
+                    onClick={() => handleCellClick(params, params?.colDef?.ColId)}
+                  >
+                    {params.value}
+                  </Button>
+                ) : (
+                  <a
+                    style={{
+                      color: font !== "inherit" ? font : "blue",
+                      textDecoration: "underline",
+                      fontSize: col.FontSize || "inherit",
+                      cursor: "pointer",
+                      width: "120px",
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      display: "flex",
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      height: '20px',
+                      width: 'fit-content'
+                    }}
+                    onClick={() => handleCellClick(params, params?.colDef?.ColId)}
+                  >
+                    {params.value}
+                  </a>
+                )
+              ) : (
+                <span>{params.value}</span>
+              );
 
               return (
                 <span
@@ -1544,10 +1627,12 @@ export default function MainReport({
                     fontSize: col.FontSize || "12px",
                     padding: "3px 6px",
                     borderRadius: "15px",
-                    fontWeight: col?.FontWeight
+                    fontWeight: col?.FontWeight,
+                    display: "inline-flex",
+                    alignItems: "center",
                   }}
                 >
-                  {params.value}
+                  {innerContent}
                 </span>
               );
             }
@@ -1584,6 +1669,24 @@ export default function MainReport({
                   {displayValue}
                 </a>
               )
+            ) : col.OpenPopUpReport == true ? (
+              <a
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: "blue",
+                  textDecoration: "underline",
+                  fontSize: col.FontSize || "inherit",
+                  padding: "0px",
+                  cursor: "pointer",
+                  width: "120px",
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                }}
+                onClick={() => openModelNewreport(params)}
+              >
+                {displayValue}
+              </a>
             ) : (
               <span>{displayValue}</span>
             );
@@ -1707,20 +1810,18 @@ export default function MainReport({
           return (
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
                 width: "100%",
                 height: "100%",
+                display: 'flex',
+                gap: 5,
+                justifyContent: col?.align,
+                alignItems: 'center'
               }}
             >
-              <p style={{ minWidth: '60px' }}>
-                {original}
-              </p>
-
+              {original}
               {DynamicIcon && (
                 <DynamicIcon
-                  size={16}
+                  size={25}
                   style={{ flexShrink: 0, color: 'white', backgroundColor: '#7367F0', padding: '5px', borderRadius: '50px' }}
                 />
               )}
@@ -1858,6 +1959,64 @@ export default function MainReport({
   }, [sortModel, columns])
 
 
+  const handleDeleteAuth = async () => {
+    if (!selectedDeleteRow || !selectedDeleteCol) return;
+
+    const fieldName = selectedDeleteCol.FieldName;
+    const rowId = selectedDeleteRow.id;
+    const authDataFieldName = selectedDeleteCol.IsAuthActionData;
+    const recordId = selectedDeleteRow[authDataFieldName];
+
+    setDeleteModalOpen(false);
+
+    const keyPrefix = `${pid}_`;
+    const matchingKey = Object.keys(sessionStorage).find((key) =>
+      key.startsWith(keyPrefix)
+    );
+    const reportId = matchingKey ? matchingKey.split("_")[1] : "";
+    let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
+
+    const body = {
+      con: JSON.stringify({
+        id: "",
+        mode: "ToggelAction",
+        appuserid: AllData?.LUId,
+        IPAddress: clientIpAddress,
+        FormName: "DynamicReport ( data )",
+      }),
+      p: JSON.stringify({
+        isAuthActionId: Number(selectedDeleteCol?.IsAuthActionIcon),
+        ReportId: reportId,
+        IsActionData: fieldName,
+        State: 0,
+        RecordID: recordId,
+      }),
+      f: "DynamicReport ( data )",
+    };
+
+    try {
+      const response = await ReportCallApi(body, spNumber);
+      if (response?.rd[0]?.stat == 1) {
+        // Track the deleted row id so originalRows (useMemo) permanently
+        // excludes it. Row ids stay stable (allRowData is untouched), so the
+        // grid removes the correct row and it will NOT reappear when the
+        // filtering effect re-runs (e.g. checking a Sr# checkbox).
+        setDeletedRowIds((prev) => {
+          const next = new Set(prev);
+          next.add(rowId);
+          return next;
+        });
+        // Immediate UI update until originalRows/filteredRows recompute.
+        setFilteredRows((prev) => prev.filter((row) => row.id !== rowId));
+      }
+    } catch (err) {
+      console.error("DeleteAuth API failed:", err);
+    } finally {
+      setSelectedDeleteRow(null);
+      setSelectedDeleteCol(null);
+    }
+  };
+
   const buildMasterValueMap = (masterData) => {
     const map = {};
     Object.keys(masterData || {}).forEach((key) => {
@@ -1903,22 +2062,24 @@ export default function MainReport({
   const originalRows = useMemo(() => {
     if (!allColumIdWiseName || !allRowData) return [];
 
-    return allRowData.map((row, index) => {
-      const formattedRow = {};
-      Object.keys(row).forEach((key) => {
-        const colName = allColumIdWiseName[0][key];
-        const colDef = allColumData?.find((c) => c.FieldName === colName);
-        if (colDef?.MasterId && colDef.MasterId !== 0) {
-          const rawValue = row[key];
-          const mappedValue = masterValueMap[colDef.MasterId]?.[rawValue] ?? rawValue;
-          formattedRow[colName] = mappedValue;
-        } else {
-          formattedRow[colName] = row[key];
-        }
-      });
-      return { id: index, ...formattedRow };
-    });
-  }, [allRowData, allColumIdWiseName, allColumData, masterValueMap]); // ✅ allColumData here
+    return allRowData
+      .map((row, index) => {
+        const formattedRow = {};
+        Object.keys(row).forEach((key) => {
+          const colName = allColumIdWiseName[0][key];
+          const colDef = allColumData?.find((c) => c.FieldName === colName);
+          if (colDef?.MasterId && colDef.MasterId !== 0) {
+            const rawValue = row[key];
+            const mappedValue = masterValueMap[colDef.MasterId]?.[rawValue] ?? rawValue;
+            formattedRow[colName] = mappedValue;
+          } else {
+            formattedRow[colName] = row[key];
+          }
+        });
+        return { id: index, ...formattedRow };
+      })
+      .filter((row) => !deletedRowIds.has(row.id)); // exclude deleted rows
+  }, [allRowData, allColumIdWiseName, allColumData, masterValueMap, deletedRowIds]); // ✅ allColumData here
 
   const isFirstLoad = useRef(true);
   useEffect(() => {
@@ -2073,22 +2234,18 @@ export default function MainReport({
       ) {
 
         // "2025-12-31T10:16:49.000Z"
-        const toDateOnly = (d) => new Date(new Date(d).toDateString());
-        const rowDate = toDateOnly(row[selectedDateColumn]);
-        const parsedStart = toDateOnly(startDate);
-        const parsedEnd = toDateOnly(endDate);
-
-        // const toUTCDateOnly = (d) =>
-        //   new Date(
-        //     Date.UTC(
-        //       new Date(d).getUTCFullYear(),
-        //       new Date(d).getUTCMonth(),
-        //       new Date(d).getUTCDate()
-        //     )
-        //   );
-        // const rowDate = toUTCDateOnly(row[selectedDateColumn]);
-        // const parsedStart = toUTCDateOnly(startDate);
-        // const parsedEnd = toUTCDateOnly(endDate);
+        // Use UTC date-only so filter matches the UTC date shown in the grid
+        const toUTCDateOnly = (d) =>
+          new Date(
+            Date.UTC(
+              new Date(d).getUTCFullYear(),
+              new Date(d).getUTCMonth(),
+              new Date(d).getUTCDate()
+            )
+          );
+        const rowDate = toUTCDateOnly(row[selectedDateColumn]);
+        const parsedStart = toUTCDateOnly(startDate);
+        const parsedEnd = toUTCDateOnly(endDate);
 
         if (
           isNaN(rowDate.getTime()) ||
@@ -2169,6 +2326,8 @@ export default function MainReport({
     const sortedRows = isMultiSortingEnabled
       ? applyMultiSort(rowsWithSrNo, multiSortModel)
       : rowsWithSrNo;
+
+    sortedFilteredRowsRef.current = sortedRows;
     if (masterKeyData?.GroupCheckBox == "True") {
       setFilteredRows(groupRows(sortedRows, grupEnChekBox));
     } else {
@@ -2256,6 +2415,26 @@ export default function MainReport({
         "*"
       );
     }
+  };
+
+  const openModelNewreport = (data) => {
+    const pageId = data?.colDef?.PopUpPageid;
+    const rawParamiter = data?.colDef?.PopUpParamiter;
+    let resolvedParamiter = rawParamiter;
+    if (rawParamiter && data?.row) {
+      const fieldNames = String(rawParamiter).split(",").map((f) => f.trim()).filter(Boolean);
+      if (fieldNames.length > 0) {
+        const resolvedObj = {};
+        fieldNames.forEach((fieldName) => {
+          resolvedObj[fieldName] = data.row[fieldName] ?? "";
+        });
+        resolvedParamiter = JSON.stringify([resolvedObj]);
+      }
+    }
+
+    setOpenPopupReportid(pageId);
+    setOpenPopupReportParam(resolvedParamiter);
+    setOpenPopupReport(true);
   };
 
   const saveReportActivity = (reportId, activity) => {
@@ -2679,6 +2858,26 @@ export default function MainReport({
       >
 
         <Dialog
+          open={deleteModalOpen}
+          onClose={() => setDeleteModalOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Confirm Delete</DialogTitle>
+          <DialogContent>
+            Are you sure you want to delete this record?
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteModalOpen(false)} color="inherit">
+              No
+            </Button>
+            <Button variant="contained" color="error" onClick={handleDeleteAuth}>
+              Yes, Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
           open={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
           maxWidth="xs"
@@ -2765,6 +2964,60 @@ export default function MainReport({
             isPageChanging={isPageChanging}
           />
         </Drawer>
+
+
+        <Modal
+          open={openPopupReport}
+          onClose={handleClosePopupReport}
+          disableEnforceFocus
+          disableAutoFocus
+          hideBackdrop
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            border: "0px",
+            outline: "0px",
+            pointerEvents: "none",
+          }}
+        >
+          <Slide in={openPopupReport} direction="down" timeout={500}>
+            <Box
+              sx={{
+                bgcolor: "background.paper",
+                boxShadow: 24,
+                borderRadius: 2,
+                width: "97%",
+                maxHeight: "95vh",
+                overflowY: "auto",
+                border: "none",
+                outline: "none",
+                pointerEvents: "auto",
+                position: "relative",
+              }}
+            >
+              <IconButton
+                onClick={handleClosePopupReport}
+                sx={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  zIndex: 1300,
+                  bgcolor: "#222",
+                  color: "white",
+                  "&:hover": { bgcolor: "#333" },
+                }}
+                size="small"
+              >
+                <X size={18} />
+              </IconButton>
+              <RouterContent
+                newReportId={openPopupReportid}
+                popupParamiter={openPopupReportParam}
+              />
+            </Box>
+          </Slide>
+        </Modal>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <Dialog
             open={Boolean(activeActionColumn)}
@@ -2831,6 +3084,7 @@ export default function MainReport({
             setDraftFilters={setDraftFilters}
             setFilteredValue={setFilteredValue}
             showReportMaster={showReportMaster}
+            datefilterServerSide={datefilterServerSide}
             onSearchFilter={onSearchFilter}
             saveReportActivity={saveReportActivity}
             commonSearch={commonSearch}
@@ -2889,6 +3143,10 @@ export default function MainReport({
             otherPrintOptionShowData={otherPrintOptionShowData}
             isRightBaseColumMaster={isRightBaseColumMaster}
             reportsExcelRights={reportsExcelRights}
+            spNumber={spNumber}
+            onShowMoreData={onShowMoreData}
+            hasMoreData={hasMoreData}
+            loadingMore={loadingMore}
           />
         }
 
@@ -2927,7 +3185,11 @@ export default function MainReport({
           {showImageView ? (
             <div>
               <ImageView
-                filteredRows={getSortedFilteredRows()}
+                // Grid is unmounted in image view, so getSortedFilteredRows()
+                // (which relies on the grid apiRef) returns an unstable row set
+                // on re-render and breaks selection. filteredRows is already
+                // sorted/grouped and stable across selection changes.
+                filteredRows={filteredRows}
                 sortModel={sortModel}
                 columns={columns}
                 imageViewData={imageViewData}
@@ -3110,7 +3372,7 @@ export default function MainReport({
                 headerHeight={45}
                 columnHeaderHeight={45}
                 // getRowClassName={(params) =>
-                //   params.row.IsClub === 1 ? "yellow-row" : ""
+                //   params.row.IsClub === 1 ? "highlight-row" : ""
                 // }
                 sortingOrder={["asc", "desc"]}
                 sortingMode={isMultiSortingEnabled ? "server" : "client"}

@@ -1,12 +1,11 @@
 import { Box, Button, Dialog, IconButton, Typography } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { MessageCircle, NotebookPen, Printer, X } from "lucide-react";
+import { MessageCircle, NotebookPen, PencilIcon, Printer, Upload, X } from "lucide-react";
 
 const IframAction = ({ params, col, iframeModelData }) => {
   const [iframeTitle, setIframeTitle] = useState();
   const [iframeUrl, setIframeUrl] = useState("");
   const [openHrefModel, setOpenHrefModel] = useState(false);
-
 
   const buildIframeUrl = (params, colId, iframeTypeId) => {
     const row = params?.row || {};
@@ -107,8 +106,12 @@ const IframAction = ({ params, col, iframeModelData }) => {
             <Printer style={{ color: "gray" }} />
           ) : col?.IconName == "MessageCircle" ? (
             <MessageCircle style={{ color: "gray" }} />
+          ) : col?.IconName == "Upload" ? (
+            <Upload style={{ color: "gray" }} />
+          ) : col?.IconName == "Edit" ? (
+            <PencilIcon style={{ color: "gray" , height:'20px'}} />
           ) : col?.IframeColumnLable ? (
-            params?.value != "" ? params?.value : col?.IframeColumnLable
+            col?.IframeColumnLable
           ) :
             params?.value
         }
@@ -144,18 +147,19 @@ const IframAction = ({ params, col, iframeModelData }) => {
               justifyContent: "space-between",
               alignItems: "center",
               p: 2,
-              bgcolor: "#ebebeb",
+              // bgcolor: "#ebebeb",
+              bgcolor: "#222",
               flexShrink: 0,
             }}
           >
-            <Typography>{iframeTitle}</Typography>
+            <Typography style={{color: 'white'}}>{iframeTitle}</Typography>
 
             <IconButton
               size="small"
               onClick={() => setOpenHrefModel(false)}
-              sx={{ border: "1px solid rgb(44 56 90)" }}
+              sx={{ border: "1px solid white", color: 'white' }}
             >
-              <X size={18} />
+              <X size={18} style={{color : 'white'}}/>
             </IconButton>
           </Box>
 

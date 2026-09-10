@@ -20,6 +20,7 @@ export default function Print1JewelleryBook({
   const [msg, setMsg] = useState("");
   const [loader, setLoader] = useState(false);
   const [withImage, setWithImage] = useState(true);
+  const [custCode, setCustCode] = useState(true);
   const itemsPerPage = 1000;
   const [currentPage, setCurrentPage] = useState(1);
   const preloadedImages = useRef(new Set());
@@ -131,6 +132,79 @@ export default function Print1JewelleryBook({
       ? value?.toFixed(zeroes)
       : (+value)?.toFixed(zeroes);
 
+  // Same date formatting as MainReport (ColumnType === "Date")
+  const formatPrintDate = (value, isShowDateWithTime) => {
+    let formattedDate = "-";
+    if (value && value !== "-" && value != null) {
+      const alreadyFormatted =
+        /^\d{1,2}\s[A-Za-z]{3,9}\s\d{4}$/.test(value);
+      if (alreadyFormatted) {
+        formattedDate = value;
+      } else {
+        const isoNaiveMatch = typeof value === "string" &&
+          value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?$/);
+
+        if (isoNaiveMatch) {
+          const [, year, month, day, hour, minute, second] = isoNaiveMatch;
+          const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const datePart = `${day} ${monthNames[parseInt(month, 10) - 1]} ${year}`;
+          const timePart = `${hour}:${minute}:${second}`;
+          formattedDate = isShowDateWithTime == "True"
+            ? `${datePart} ${timePart}`
+            : datePart;
+        } else {
+          const dateObj = new Date(value);
+          if (!isNaN(dateObj.getTime())) {
+            if (isShowDateWithTime == "True") {
+              const datePart = dateObj.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                timeZone: "UTC",
+              });
+              const timePart = dateObj.toLocaleTimeString("en-GB", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: false,
+                timeZone: "UTC",
+              });
+              formattedDate = `${datePart} ${timePart}`;
+            } else {
+              formattedDate = dateObj.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                timeZone: "UTC",
+              });
+            }
+          }
+        }
+      }
+    }
+    return formattedDate;
+  };
+
+  const formatPrintValue = (field, value) => {
+    const isDateField =
+      field?.ColumnType === "Date" ||
+      field?.columntype === "Date" ||
+      field?.columnType === "Date" ||
+      field?.FieldType === "Date" ||
+      field?.fieldtype === "Date";
+    const isIsoDateValue =
+      typeof value === "string" &&
+      /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/.test(value);
+
+    if (isDateField || isIsoDateValue) {
+      return formatPrintDate(
+        value,
+        field?.IsShowDateWithTime ?? field?.isshowdatewithtime ?? field?.IsShowDateWithtime
+      );
+    }
+    return value;
+  };
+
   const handleImageError = (e) => {
     e.target.src = img;
   };
@@ -138,6 +212,11 @@ export default function Print1JewelleryBook({
   const handleImageHideShow = useCallback(() => {
     setWithImage(!withImage);
   }, [withImage]);
+
+  const handleCustoCodeHideShow = useCallback(() => {
+    setCustCode(!custCode);
+  }, [custCode]);
+
 
   const handlePrintCurrentPage = () => {
     onPrintClick(visibleItems, currentPage);
@@ -166,13 +245,16 @@ export default function Print1JewelleryBook({
   const renderCard = (e, i, isPrint = false) => (
     <div key={i} className="col1 pagBrkIns" style={{ width: '18%' }}>
       <div className="brbxAll spfntbH">
-        {e?.Customer ? (
-          <div className="w-100 brBtom spaclftTpm spacBtom spfntHead">
-            {e?.Customer}
-          </div>
-        ) : (
-          <div className="minheit brBtom"></div>
-        )}
+        {custCode &&
+          (e?.Customer ? (
+            <div className="w-100 brBtom spaclftTpm spacBtom spfntHead">
+              {e?.Customer}
+            </div>
+          ) : (
+            <div className="minheit brBtom"></div>
+          ))}
+
+
         {withImage && e?.ImageName !== "" && (
           <div className="w-100 brBtom imgwdtheit">
             <img
@@ -228,7 +310,7 @@ export default function Print1JewelleryBook({
                             overflowWrap: 'anywhere',
                           }}
                         >
-                          {leftVal}
+                          {formatPrintValue(row.left, leftVal)}
                         </span>
                       </div>
                     )}
@@ -258,7 +340,7 @@ export default function Print1JewelleryBook({
                             overflowWrap: 'anywhere',
                           }}
                         >
-                          {rightVal}
+                          {formatPrintValue(row.right, rightVal)}
                         </span>
                       </div>
                     )}
@@ -341,6 +423,20 @@ export default function Print1JewelleryBook({
                 id="WithImage"
               />
               With Image
+            </label>
+
+            <label
+              htmlFor="CustomerCode"
+              className="inline-flex items-center cursor-pointer gap-2 fil_sec"
+            >
+              <input
+                type="checkbox"
+                checked={custCode}
+                onChange={handleCustoCodeHideShow}
+                name="CustomerCode"
+                id="CustomerCode"
+              />
+              CustomerCode
             </label>
 
             {/* Dynamic Hide/Show Fields */}

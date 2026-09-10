@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import { DragDropContext } from "@hello-pangea/dnd";
-import { Box, Button, FormControl, InputLabel, MenuItem, Select, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, FormControl, InputLabel, MenuItem, Select, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import "./SpliterReport.scss";
 import { ReportCallApi } from "@/API/ReportCommonAPI/ReportCallApi";
 import MainReport from "../MainReport/MainReport";
@@ -172,7 +172,6 @@ export default function SpliterReport({
 
       if (largeData) {
         if (spliterReportShow) {
-          setIsLoading(false);
           setSpData(OtherKeyData);
           setFilteredReportData(OtherKeyData);
           return;
@@ -194,14 +193,13 @@ export default function SpliterReport({
       } else {
         fetchReportData({}, "0");
       }
-      setIsLoading(false);
     };
     fetchData();
   }, [pid, reportId, largeData, filterState.dateRange]);
 
   const fetchReportData = async (filters = {}, Master, allData = false, dateOverride = null) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
 
       const masterDataBody = {
@@ -233,8 +231,6 @@ export default function SpliterReport({
         ServerFilterValue = filters.ServerFilterValue || "";
       }
 
-
-
       const body = {
         con: JSON.stringify({ mode: "GetFullReport", appuserid: AllData?.LUId, IPAddress: clientIpAddress }),
         p: JSON.stringify({
@@ -256,10 +252,11 @@ export default function SpliterReport({
       setFilteredReportData(response);
       setSelectedFirstPanelKey(null);
       setSelectedSecondPanelKey(null);
+      setIsLoading(false);
     } catch (error) {
+      setIsLoading(false);
       console.error("getReportData failed:", error);
     }
-    setIsLoading(false);
   };
 
   const activeRd3 = useMemo(() => {
@@ -704,10 +701,32 @@ export default function SpliterReport({
   // ────────────────────────────────────────────────────────────────────────────
 
 
+
+  const Loader = ({ isLoading }) => {
+    if (!isLoading) return null;
+
+    return (
+      <Box
+        sx={{
+          position: "fixed",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "rgba(255,255,255,0.4)",
+          backdropFilter: "blur(2px)",
+          zIndex: 9999,
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  };
+
   return (
     <DragDropContext onDragEnd={() => { }}>
+      <Loader isLoading={isLoading} />
       <Box sx={{ height: "100vh", display: "flex", flexDirection: "row" }} ref={containerRef}>
-
         {/* ── FIRST PANEL ── */}
         <div
           className="pane"

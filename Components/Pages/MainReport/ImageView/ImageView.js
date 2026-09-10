@@ -64,7 +64,7 @@ const ImageView = ({
   return (
     <div>
       <Loader isLoading={isLoading} />
-      <div style={{ position: "fixed", width: "100%", backgroundColor: "white" }}>
+      <div style={{ position: "fixed", width: "100%", backgroundColor: "white" , zIndex: 99999999}}>
         <div className="pagination" style={{ marginBottom: 10 }}>
           <IconButton
             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}

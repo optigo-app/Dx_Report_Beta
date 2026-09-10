@@ -187,7 +187,7 @@
     max-width: 100% !important;
     display: flex !important;
     flex-wrap: wrap !important;
-    align-items: stretch !important;      /* ← KEY: all cards in a row = same height */
+    align-items: flex-start !important;
     justify-content: flex-start !important;
     padding: 0 !important;
     margin: 0 !important;
@@ -202,16 +202,17 @@
     max-width: 19.5% !important;
     width: 19.5% !important;
     box-sizing: border-box !important;
-    display: flex !important;             /* ← needed for stretch to work on child */
+    display: flex !important;
     flex-direction: column !important;
+    height: 250px !important;             /* ← fixed uniform card height */
   }
 
   /* Card inner box */
   .brbxAll {
-    flex: 1 !important;                   /* ← stretches to fill col1 height */
+    height: 100% !important;              /* ← fill the fixed col1 height */
     display: flex !important;
     flex-direction: column !important;
-    overflow: hidden !important;          /* ← clips overflow, no layout expansion */
+    overflow: hidden !important;          /* ← clips overflow so height stays fixed */
     box-sizing: border-box !important;
     width: 100% !important;
   }
@@ -283,117 +284,3 @@
     height: 14px !important;
   }
 }
-
-/* @media print {
-  @page {
-    size: A4;
-    margin: 5px;
-    margin-top: 35px;
-  }
-
-  html,
-  body {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-  }
-
-  .pagBrkIns {
-    break-after: auto;
-    break-inside: avoid !important;
-    -webkit-column-break-inside: avoid !important;
-    display: inline-block !important;
-    vertical-align: top;
-    width: 100%; 
-  }
-
-  @media print {
-    .col1 {
-      display: block !important;
-      flex: 0 0 18.5% !important;
-      max-width: 18.5% !important;
-    }
-  }
-
-  .printLabelData {
-    font-size: 8px !important;
-  }
-
-  .container {
-    width: 100% !important;
-    max-width: 100% !important;
-    display: flex !important;
-    flex-wrap: wrap !important;
-    justify-content: center;
-    padding: 0 !important;
-    margin: 0 auto !important;
-    box-sizing: border-box;
-    gap: 10px 10px;
-    height: auto !important;
-    min-height: auto !important;
-    overflow: visible !important;
-  }
-
-  .col1 {
-    flex: 0 0 18.5%;
-    max-width: 18.5%;
-    box-sizing: border-box;
-  }
-  .fil_sec {
-    display: none;
-  }
-
-  .imgwdtheit {
-    width: 115px !important;
-    height: 115px !important;
-    padding: 5px 10px;
-  }
-
-  .imgwdtheit img {
-    width: 100% !important;
-    height: 100% !important;
-  }
-
-  .spaclftTpm {
-    padding-left: 2px;
-    padding-top: 2px;
-  }
-
-  .spacrighTpm {
-    padding-right: 2px;
-  }
-
-  .spacBtom {
-    padding-bottom: 2px;
-  }
-
-  .prnt_btn {
-    display: none;
-  }
-
-  .spfntbH {
-    font-size: 9px;
-    line-height: 10px;
-  }
-
-  .spfntHead {
-    font-size: 10px;
-    line-height: 11px;
-  }
-
-  .minheit {
-    height: 16.2px;
-  }
-
-  .pagination {
-    display: none !important;
-  }
-
-  .printHide {
-    display: none !important;
-  }
-
-  .hideData {
-    display: none !important;
-  }
-} */

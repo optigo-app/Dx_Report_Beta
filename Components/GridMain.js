@@ -46,12 +46,14 @@ const GridMain = ({
   isPrintColumn,
   isPrintColumnData,
   reportsExcelRights,
-  datefilterServerSide
+  datefilterServerSide,
+  popupParamiter,
 }) => {
   
   // http://dxreport.web/beta/?CN=UkRTRF8yMDI2MDgxMDA1MTAyOV8xNDFjNzMyZWFjZjA0ODliOWE0Nzk5NzQzZGM2ODgyZQ==&pid=18577&Token=BBB55FCD-7994-F111-B3D1-F875A496BA9D
   // http://dxreport.web/beta/?CN=UkRTRF8yMDI2MDgxMDA1MTE0OV9jMGFmMjc1ZDg4MGE0MjUwODg4MTNiMmMyZWU2ZDM5Nw==&pid=18380&Token=0F6A5AFD-7994-F111-B3D1-F875A496BA9D
-    // useEffect(() => {
+    
+  // useEffect(() => {
     //   Cookies.set(
     //     "RDSD_20251007040824_ddaf7208d8364814bfb417092784a7b1",
     //     "%7b%22tkn%22%3a%22OTA2NTQ3MTcwMDUzNTY1MQ%3d%3d%22%2c%22pid%22%3a18333%2c%22IsEmpLogin%22%3a0%2c%22IsPower%22%3a0%2c%22SpNo%22%3a%22MA%3d%3d%22%2c%22SpVer%22%3a%22%22%2c%22SV%22%3a%22MA%3d%3d%22%2c%22LId%22%3a%22MTg1Mzg%3d%22%2c%22LUId%22%3a%22amVuaXNAZWcuY29t%22%2c%22DAU%22%3a%22aHR0cDovL256ZW4vam8vYXBpLWxpYi9BcHAvQ2VudHJhbEFwaQ%3d%3d%22%2c%22YearCode%22%3a%22e3tuemVufX17ezIwfX17e29yYWlsMjV9fXt7b3JhaWwyNX19%22%2c%22cuVer%22%3a%22UjUwQjM%3d%22%2c%22rptapiurl%22%3a%22aHR0cDovL25ld25leHRqcy53ZWIvYXBpL3JlcG9ydA%3d%3d%22%7d"
@@ -165,7 +167,8 @@ const GridMain = ({
       isPrintColumnData={isPrintColumnData}
       reportsExcelRights={reportsExcelRights}
       datefilterServerSide={datefilterServerSide}
-    />
+      popupParamiter={popupParamiter}
+      />
   );
 };
 

@@ -204,7 +204,10 @@ export default function ReportHome({
   isPrintColumn,
   isPrintColumnData,
   reportsExcelRights,
-  datefilterServerSide
+  datefilterServerSide,
+  setOpenPopupReportParam,
+  setOpenPopupReportId,
+  popupParamiter,
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -225,6 +228,11 @@ export default function ReportHome({
   const [selectedDateOption, setSelectedDateOption] = useState("");
   const clientIpAddress = sessionStorage.getItem("clientIpAddress");
   const [isPageChanging, setIsPageChanging] = useState(false);
+  const [tableNumber, setTableNumber] = useState(1);
+  const [hasMoreData, setHasMoreData] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false);
+  const lastFiltersRef = useRef({ filters: {}, Master: "0" });
   const formatDate = (d) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
       d.getDate()
@@ -256,6 +264,7 @@ export default function ReportHome({
   }, [largeDataTitle]);
 
   useEffect(() => {
+    if (spliterReportShow) return;
     if (!reportId && !spNumber) return;
     const fetchData = async () => {
       setIsLoading(true);
@@ -291,7 +300,7 @@ export default function ReportHome({
         }
       } else {
         if (datefilterServerSide) {
-          const todayStr = formatDate(new Date()); 
+          const todayStr = formatDate(new Date());
           fetchReportData(
             {
               FilterStartDate: todayStr,
@@ -307,10 +316,20 @@ export default function ReportHome({
     fetchData();
   }, [pid, reportId, largeData]);
 
-  const fetchReportData = async (filters = {}, Master) => {
+  const fetchReportData = async (filters = {}, Master, tableNum = 1) => {
+    const isLoadMore = tableNum > 1;
     try {
-      setIsPageChanging(true);
-      setIsLoading(true);
+      if (isLoadMore) {
+        setLoadingMore(true);
+        loadingMoreRef.current = true;
+        setIsPageChanging(true);
+      } else {
+        setIsPageChanging(true);
+        setIsLoading(true);
+        setTableNumber(1);
+        setHasMoreData(true);
+      }
+      lastFiltersRef.current = { filters, Master };
       let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
       const masterDataBody = {
         con: JSON.stringify({
@@ -364,16 +383,20 @@ export default function ReportHome({
         p: JSON.stringify({
           ReportId: reportId,
           IsMaster: Master,
+          TableNumber: tableNum,
           ...(FilterHeader && { FilterHeader }),
           ...(FilterValue && { FilterValue }),
           ...(ServerFilterHeader && { ServerFilterHeader }),
           ...(ServerFilterValue && { ServerFilterValue }),
           ...(filters.FilterStartDate && {
             FilterStartDate: filters.FilterStartDate,
+            // OpenPopUpReport: true,
+            // PopUpParamiter: 
           }),
           ...(filters.FilterEndDate && {
             FilterEndDate: filters.FilterEndDate,
           }),
+          ...(popupParamiter && { OpenPopUpReport: true, PopUpParamiter: popupParamiter }),
         }),
         f: "DynamicReport ( data )",
       };
@@ -412,17 +435,49 @@ export default function ReportHome({
         setErrorMessage("No Records Found");
         setOpenSnackbar(true);
       } else {
-        // setSpData(sampleData);
-        setSpData(response);
-        setShowReportMaster(false);
+        if (isLoadMore) {
+          // Merge: keep rd, rd1, rd2 etc. from existing spData,
+          // only append new rd3 rows to existing rd3.
+          const newRows = response?.rd3 || [];
+          if (newRows.length === 0) {
+            setHasMoreData(false);
+          } else {
+            setSpData((prev) => ({
+              ...response,
+              rd3: [...(prev?.rd3 || []), ...newRows],
+            }));
+            // Disable after first successful "Show More Data" load
+            setHasMoreData(false);
+          }
+        } else {
+          setSpData(response);
+          setShowReportMaster(false);
+        }
       }
 
-      setIsPageChanging(false);
-      setIsLoading(false);
+      if (isLoadMore) {
+        setLoadingMore(false);
+        loadingMoreRef.current = false;
+        setIsPageChanging(false);
+      } else {
+        setIsPageChanging(false);
+        setIsLoading(false);
+      }
     } catch (error) {
       console.error("getReportData failed:", error);
       setIsLoading(false);
+      setLoadingMore(false);
+      loadingMoreRef.current = false;
+      setIsPageChanging(false);
     }
+  };
+
+  const handleShowMoreData = () => {
+    if (loadingMoreRef.current) return;
+    const nextTable = tableNumber + 1;
+    setTableNumber(nextTable);
+    const { filters, Master } = lastFiltersRef.current;
+    fetchReportData(filters, Master, nextTable);
   };
 
   const handleDateSelection = (option) => {
@@ -845,6 +900,9 @@ export default function ReportHome({
                   isPrintColumnData={isPrintColumnData}
                   reportsExcelRights={reportsExcelRights}
                   datefilterServerSide={datefilterServerSide}
+                  onShowMoreData={handleShowMoreData}
+                  hasMoreData={hasMoreData}
+                  loadingMore={loadingMore}
                 />
               }
             </div>

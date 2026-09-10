@@ -17,9 +17,10 @@ const MultiReportPage = lazy(() =>
   import("@/Components/Pages/MultiReport/MultiReportPage")
 );
 
-export default function RouterContent() {
+export default function RouterContent({ newReportId, popupParamiter }) {
   const searchParams = useSearchParams();
-  const pid = searchParams.get("pid");
+  const urlPid = searchParams.get("pid");
+  const pid = newReportId || urlPid;
   const CN = searchParams.get("CN");
   const newToken = searchParams.get("Token");
 
@@ -68,6 +69,14 @@ export default function RouterContent() {
     getClientIpAddress();
   }, []);
 
+
+  useEffect(() => {
+    setReady(false);
+    setTokenMissing(false);
+    setShowMultiReport(false);
+    setReportId(null);
+    setSpNumber(null);
+  }, [newReportId]);
 
   useEffect(() => {
     const initializeAndFetchReport = async () => {
@@ -302,7 +311,8 @@ export default function RouterContent() {
         isPrintColumnData={isPrintColumnData}
         reportsExcelRights={reportsExcelRights}
         datefilterServerSide={datefilterServerSide}
-      />
+        popupParamiter={popupParamiter}
+     />
     </Suspense>
   );
 }
