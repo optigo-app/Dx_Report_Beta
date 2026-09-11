@@ -32,6 +32,7 @@ import {
   styled,
   Switch,
   TextField,
+  Typography,
 } from "@mui/material";
 import { DragDropContext } from "@hello-pangea/dnd";
 import { useSearchParams } from "next/navigation";
