@@ -313,7 +313,7 @@ export default function MainReport({
   const [activeIframeTab, setActiveIframeTab] = useState(null);
   const [svgFilter, setSvgFilter] = useState(null);
   const [isAskOptigoAiPanelOpen, setIsAskOptigoAiPanelOpen] = useState(false);
-  const panelSpace = isAskOptigoAiPanelOpen ? "380px" : "0px";
+  const panelSpace = isAskOptigoAiPanelOpen ? "400px" : "0px";
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [selectedAuthRow, setSelectedAuthRow] = useState(null);

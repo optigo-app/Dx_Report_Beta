@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import ColumnRearrange from "../../ColumnRearrange/ColumnRearrange";
 import { AiOutlineSetting } from "react-icons/ai";
 import './index.scss'
-import AskOptigoAiDrawer from "./AskOptigoAiDrawer";
+import OptigoBotDrawer from "./OptigoBot/OptigoBotDrawer";
 import { useSearchParams } from "next/navigation";
 
 // ─── helper: safely evaluate formula string with column totals ────────────────
@@ -500,7 +500,7 @@ const SummaryEndFilteredValue = ({
             }
           </div>
           {masterKeyData?.OptigoChatBotAi == "True" &&
-            <AskOptigoAiDrawer open={openAskOptigoAi} onClose={handleCloseAskOptigoAi} />
+            <OptigoBotDrawer open={openAskOptigoAi} onClose={handleCloseAskOptigoAi} />
           }
         </div>
       }
