@@ -1,0 +1,7 @@
+@use "../../../../../../Sass/Variable.scss" as *;
+
+.optigobot-drawer {
+  --primary-btncolor: #{$primary-btncolor};
+  --primary-btncolor-start: #{$primary-btncolor-start};
+  --primary-btncolor-end: #{$primary-btncolor-end};
+}
