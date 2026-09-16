@@ -25,7 +25,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { MdExpandMore, MdOutlineFilterAlt } from "react-icons/md";
 import { ArrowRight, ChartNoAxesCombined, FileSpreadsheet, Image, LayoutGrid, Pencil, PrinterCheck, Search, ShieldAlert, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -148,6 +148,7 @@ const ReportTopFilterEndAction = ({
   highlightedIndex,
   setHighlightedIndex,
   filtersShowDraf,
+  filtersShow,
   setOtherReprot,
   otherReport,
   setAllColumData,
@@ -175,6 +176,7 @@ const ReportTopFilterEndAction = ({
   onShowMoreData,
   hasMoreData,
   loadingMore,
+  clearAllDataSignal,
 }) => {
   const searchParams = useSearchParams();
   const pid = searchParams.get("pid");
@@ -241,6 +243,30 @@ const ReportTopFilterEndAction = ({
       });
     }
   };
+
+  // ── Clear all on-screen + sidebar filters WITHOUT touching the date range ──
+  // Triggered by SpliterReport's "All" button via clearAllDataSignal prop.
+  const clearAllFiltersOnly = () => {
+    setIsPageChanging(true);
+    setTimeout(() => setIsPageChanging(false), 400);
+
+    // ✅ Clear everything except date range (SpliterReport handles its own dates)
+    serverFiltersRef.current = {};   // clear server-side filter ref first
+    setTempInput({});                // clear server-side input text
+    setFiltersShowDraf({});
+    setFiltersShow({});              // this triggers the useEffect → merged becomes []
+    setFilters({});
+    setDraftFilters({});
+    setFilteredValue([]);            // explicitly empty after filtersShow is cleared
+    setCommonSearch("");
+    if (masterKeyData?.MultiDateFilter == "True") setSelectedDateColumn();
+  };
+
+  useEffect(() => {
+    if (clearAllDataSignal > 0) {
+      clearAllFiltersOnly();
+    }
+  }, [clearAllDataSignal]);
 
   const handleColorClick = (id) => {
     setSelectedColors((prev) => {
@@ -673,6 +699,34 @@ const ReportTopFilterEndAction = ({
   };
 
   const [tempInput, setTempInput] = useState({});
+
+  const RENDERED_FILTER_TYPES = [
+    "ServerSideFilter",
+    "MultiSelection",
+    "RangeFilter",
+    "selectDropdownFilter",
+    "NormalFilter",
+    "suggestionFilter",
+  ];
+  const onScreenFilterCount = useMemo(
+    () =>
+      (columnsHide || [])
+        .filter((col) => col?.filterable && col?.IsOnScreenFilter === "True")
+        .reduce(
+          (sum, col) =>
+            sum +
+            (Array.isArray(col.filterTypes)
+              ? col.filterTypes.filter((ft) =>
+                  RENDERED_FILTER_TYPES.includes(ft)
+                ).length
+              : 0),
+          0
+        ),
+    [columnsHide]
+  );
+
+  const onScreenFilterWidth = onScreenFilterCount > 5 ? 150 : 200;
+
   const renderServerSideFilter = (col) => {
     if (!col.filterTypes || col.filterTypes.length === 0) return null;
 
@@ -821,6 +875,15 @@ const ReportTopFilterEndAction = ({
           const uniqueValues = [
             ...new Set(originalRows?.map((row) => row[col.field])),
           ];
+          // ✅ count of applied (searched) selections for this column
+          const appliedMultiCount = Array.isArray(filtersShow?.[col.headerNamesingle])
+            ? filtersShow[col.headerNamesingle].length
+            : 0;
+          // ✅ count of draft (selected but not yet searched) selections
+          const draftMultiCount = Array.isArray(filtersShowDraf?.[col.headerNamesingle])
+            ? filtersShowDraf[col.headerNamesingle].length
+            : 0;
+          const multiCount = appliedMultiCount || draftMultiCount;
           return (
             <div
               key={col.field}
@@ -833,8 +896,10 @@ const ReportTopFilterEndAction = ({
                 disableGutters
                 expanded={openFilter === col.field}
                 sx={{
-                  width: 200,
-                  border: "1px solid #d5d5d573",
+                  width: onScreenFilterWidth,
+                  border: multiCount > 0
+                    ? "1px solid rgb(115, 103, 240)"
+                    : "1px solid #d5d5d573",
                   borderRadius: "8px",
                   position: "relative",
                   "&::before": { display: "none" },
@@ -863,9 +928,41 @@ const ReportTopFilterEndAction = ({
                     },
                   }}
                 >
-                  <p style={{ margin: 0, fontSize: 14 }}>
-                    {col.headerNameSub}
-                  </p>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      width: "100%",
+                      gap: 1,
+                    }}
+                  >
+                    <p style={{ margin: 0, fontSize: 14 }}>
+                      {col.headerNameSub}
+                    </p>
+                    {multiCount > 0 && (
+                      <Box
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minWidth: 20,
+                          height: 20,
+                          px: 0.5,
+                          borderRadius: "10px",
+                          backgroundColor: "rgb(115, 103, 240)",
+                          color: "#fff",
+                          fontSize: "0.7rem",
+                          fontWeight: 600,
+                          lineHeight: 1,
+                          flexShrink: 0,
+                          marginRight: 1
+                        }}
+                      >
+                        {multiCount}
+                      </Box>
+                    )}
+                  </Box>
                 </AccordionSummary>
 
                 <AccordionDetails
@@ -892,19 +989,33 @@ const ReportTopFilterEndAction = ({
                       zIndex: 2,
                       background: "#fff",
                       display: "flex",
-                      justifyContent: "flex-end",
+                      justifyContent: "space-between",
+                      alignItems: "center",
                       padding: "6px 8px",
                       borderBottom: "1px solid #eee",
-                      flexDirection: 'column'
+                      gap: 8,
                     }}
                   >
-                    <Button size="small" variant="outlined" onClick={handleApplyFilter}
-                      style={{
-                        borderColor: 'rgb(115, 103, 240)',
-                        color: 'rgb(115, 103, 240)'
-                      }}>
-                      Search
-                    </Button>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={handleApplyFilter}
+                        style={{
+                          borderColor: "rgb(115, 103, 240)",
+                          color: "rgb(115, 103, 240)",
+                        }}
+                      >
+                        Search
+                      </Button>
+                    </Box>
+                  </div>
                     <div
                       style={{
                         maxHeight: 220,
@@ -955,7 +1066,6 @@ const ReportTopFilterEndAction = ({
                         </label>
                       ))}
                     </div>
-                  </div>
                 </AccordionDetails>
               </Accordion>
             </div>
@@ -1137,9 +1247,9 @@ const ReportTopFilterEndAction = ({
               key={`filter-${col.field}-selectDropdownFilter`}
               style={{ width: "100%", margin: "0px" }}
             >
-              <FormControl fullWidth size="small" style={{ width: '200px' }}
+              <FormControl fullWidth size="small" style={{ width: `${onScreenFilterWidth}px` }}
                 sx={{
-                  width: 200,
+                  width: onScreenFilterWidth,
 
                   "& .MuiOutlinedInput-root": {
                     borderRadius: "6px",

@@ -234,6 +234,7 @@ export default function MainReport({
   onShowMoreData,
   hasMoreData,
   loadingMore,
+  clearAllDataSignal,
 }) {
   const noFoundImg = "./images/noFound.jpg";
   const [isLoading, setIsLoading] = useState(isLoadingChek);
@@ -327,6 +328,9 @@ export default function MainReport({
   const [selectedDeleteRow, setSelectedDeleteRow] = useState(null);
   const [selectedDeleteCol, setSelectedDeleteCol] = useState(null);
   const [deletedRowIds, setDeletedRowIds] = useState(() => new Set());
+  useEffect(() => {
+    setDeletedRowIds(new Set());
+  }, [allRowData]);
   const [openPopupReport, setOpenPopupReport] = useState(false);
   const [openPopupReportid, setOpenPopupReportid] = useState(null);
   const [openPopupReportParam, setOpenPopupReportParam] = useState(null);
@@ -2234,19 +2238,35 @@ export default function MainReport({
           masterKeyData?.AllDataButton == "True")
       ) {
 
-        // "2025-12-31T10:16:49.000Z"
-        // Use UTC date-only so filter matches the UTC date shown in the grid
-        const toUTCDateOnly = (d) =>
-          new Date(
-            Date.UTC(
-              new Date(d).getUTCFullYear(),
-              new Date(d).getUTCMonth(),
-              new Date(d).getUTCDate()
-            )
-          );
-        const rowDate = toUTCDateOnly(row[selectedDateColumn]);
-        const parsedStart = toUTCDateOnly(startDate);
-        const parsedEnd = toUTCDateOnly(endDate);
+        // "2025-12-31T10:16:49.000Z" or "29 Feb 2026"
+        // Row dates are ISO strings displayed in UTC → extract UTC components
+        // Filter dates are local Date objects from date picker → extract LOCAL components
+        const toDateOnly = (d) => {
+          if (!d && d !== 0) return new Date(NaN);
+          if (d instanceof Date) {
+            // Local date picker — use local components
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+          }
+          const str = String(d).trim();
+          // Already formatted: "29 Feb 2026", "1 Jan 2026"
+          const formattedMatch = str.match(/^(\d{1,2})\s([A-Za-z]{3,})\s(\d{4})$/);
+          if (formattedMatch) {
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const monthIdx = monthNames.indexOf(formattedMatch[2]);
+            if (monthIdx >= 0) {
+              return new Date(+formattedMatch[3], monthIdx, +formattedMatch[1]);
+            }
+          }
+          // ISO string — use UTC components to match grid display
+          const dateObj = new Date(str);
+          if (!isNaN(dateObj.getTime())) {
+            return new Date(dateObj.getUTCFullYear(), dateObj.getUTCMonth(), dateObj.getUTCDate());
+          }
+          return new Date(NaN);
+        };
+        const rowDate = toDateOnly(row[selectedDateColumn]);
+        const parsedStart = toDateOnly(startDate);
+        const parsedEnd = toDateOnly(endDate);
 
         if (
           isNaN(rowDate.getTime()) ||
@@ -3122,6 +3142,7 @@ export default function MainReport({
             highlightedIndex={highlightedIndex}
             setHighlightedIndex={setHighlightedIndex}
             filtersShowDraf={filtersShowDraf}
+            filtersShow={filtersShow}
             setOtherReprot={setOtherReport}
             otherReport={otherReport}
             setAllColumData={setAllColumData}
@@ -3148,6 +3169,7 @@ export default function MainReport({
             onShowMoreData={onShowMoreData}
             hasMoreData={hasMoreData}
             loadingMore={loadingMore}
+            clearAllDataSignal={clearAllDataSignal}
           />
         }
 

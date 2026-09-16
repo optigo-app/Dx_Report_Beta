@@ -849,7 +849,10 @@ export default function ReportHome({
                   isMultiTab={isMultiTab}
                   isRightBaseColumMaster={isRightBaseColum}
                   printMasterData={printMasterData}
-                  refreshFunction={() => fetchReportData({}, "0")}
+                  refreshFunction={() => {
+                    const { filters: lastFilters, Master: lastMaster } = lastFiltersRef.current;
+                    fetchReportData(lastFilters || {}, lastMaster || "0");
+                  }}
                   isPageChanging={isPageChanging}
                   setIsPageChanging={setIsPageChanging}
                   isFormulaBasedSummary={isFormulaBasedSummary}
@@ -881,7 +884,10 @@ export default function ReportHome({
                   currencyMaster={currencyMaster}
                   chartViewData={chartViewData}
                   imageViewData={imageViewData}
-                  refreshFunction={() => fetchReportData({}, "0")}
+                  refreshFunction={() => {
+                    const { filters: lastFilters, Master: lastMaster } = lastFiltersRef.current;
+                    fetchReportData(lastFilters || {}, lastMaster || "0");
+                  }}
                   defaultShowAllData={defaultShowAllData}
                   printViewData={printViewData}
                   isMultiTab={isMultiTab}
