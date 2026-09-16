@@ -1,6 +1,11 @@
 import React, { useRef, useState } from "react";
 import {
   Box,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
   Typography,
   Table,
   TableBody,
@@ -12,7 +17,10 @@ import {
   ListItem,
   ListItemText,
   Paper,
+  Tooltip,
 } from "@mui/material";
+import { Maximize2, X, Download } from "lucide-react";
+import { alpha } from "@mui/material/styles";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -21,7 +29,7 @@ import {
   LineElement,
   PointElement,
   ArcElement,
-  Tooltip,
+  Tooltip as ChartTooltip,
   Legend,
   Filler,
 } from "chart.js";
@@ -35,7 +43,7 @@ ChartJS.register(
   LineElement,
   PointElement,
   ArcElement,
-  Tooltip,
+  ChartTooltip,
   Legend,
   Filler
 );
@@ -124,10 +132,14 @@ const isMoneyColumn = (columnName) => {
 
 // Format a cell value with optional column context:
 // - title-case names
-// - format as ₹ currency ONLY if the column is a money column
-// - else return as-is (rank, qty, etc. stay plain)
+// - format as ₹ currency ONLY if the column is a money column AND the
+//   value is a raw number (not already formatted with commas/₹)
+// - else return as-is (rank, qty, already-formatted values stay plain)
 const formatCell = (value, columnName) => {
   if (isNameLike(value)) return titleCase(value);
+  const raw = String(value ?? "");
+  // If the value is already formatted (has commas or ₹), return as-is.
+  if (/[₹$]/.test(raw) || (/[,]/.test(raw) && isNumericLike(raw))) return raw;
   if (isNumericLike(value) && isMoneyColumn(columnName)) return formatCurrency(value);
   return value;
 };
@@ -155,10 +167,10 @@ function TextBlock({ content }) {
         sx={{
           fontSize: 11,
           lineHeight: 1.4,
-          color: "#94a3b8",
+          color: "text.disabled",
           mt: 1,
           pt: 0.75,
-          borderTop: "1px solid #f1f5f9",
+          borderTop: "1px solid", borderTopColor: "grey.100",
           fontStyle: "italic",
         }}
       >
@@ -173,13 +185,168 @@ function TextBlock({ content }) {
       sx={{
         fontSize: 14,
         lineHeight: 1.5,
-        color: "#334155",
+        color: "text.primary",
         my: 0.5,
         whiteSpace: "pre-line",
       }}
     >
       {content}
     </Typography>
+  );
+}
+
+function HeadingBlock({ content }) {
+  return (
+    <Typography
+      sx={{
+        fontSize: 16,
+        fontWeight: 700,
+        color: "text.primary",
+        mt: 0.5,
+        mb: 0.75,
+        lineHeight: 1.35,
+      }}
+    >
+      {content}
+    </Typography>
+  );
+}
+
+// Format a raw number with Indian numbering and commas for the tooltip.
+const formatRawValue = (value, currency) => {
+  if (value == null || isNaN(value)) return String(value ?? "");
+  const formatted = new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 2,
+  }).format(value);
+  return currency === "INR" ? `₹${formatted}` : formatted;
+};
+
+// Extract the formatted value from content (e.g. "₹40.44 lakh" from
+// "Total sales: ₹40.44 lakh\nTransactions: 31").
+const extractFormattedValue = (content) => {
+  if (!content) return "";
+  // Match currency-like patterns: ₹, $, numbers with units (lakh, crore, K, etc.)
+  const match = String(content).match(/(₹|$\s?)?[\d,.]+\s?(lakh|crore|Cr|L|K|million|billion)?/i);
+  return match ? match[0].trim() : "";
+};
+
+function MetricBlock({ content, raw_value, currency, label, record_count }) {
+  // Split content into lines — first line is the main metric, rest are sub-info.
+  const lines = String(content || "").split("\n").filter(Boolean);
+  const mainLine = lines[0] || "";
+  const subLines = lines.slice(1);
+
+  // Extract the value portion from the main line for the tooltip.
+  const formattedValue = extractFormattedValue(mainLine);
+  const tooltipText = formatRawValue(raw_value, currency);
+
+  return (
+    <Box
+      sx={{
+        my: 1,
+        p: 1.5,
+        pl: 2,
+        backgroundColor: "common.white",
+        border: "1px solid",
+        borderColor: "grey.100",
+        borderLeft: "3px solid var(--primary-btncolor-start)",
+        boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)",
+        borderRadius: "14px",
+        // Size to the metric content instead of stretching full width.
+        width: "fit-content",
+        maxWidth: "100%",
+        transition: "box-shadow 0.2s ease, transform 0.2s ease",
+        "&:hover": {
+          boxShadow: "0 2px 4px rgba(15,23,42,0.06), 0 8px 20px rgba(100,0,184,0.08)",
+          transform: "translateY(-1px)",
+        },
+      }}
+    >
+      {label && (
+        <Typography
+          sx={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: "text.secondary",
+            textTransform: "uppercase",
+            letterSpacing: "0.4px",
+            mb: 0.5,
+          }}
+        >
+          {label}
+        </Typography>
+      )}
+      <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.5, flexWrap: "wrap" }}>
+        {formattedValue && raw_value != null ? (
+          <Tooltip
+            title={`Exact amount: ${tooltipText}`}
+            placement="top"
+            arrow
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  backgroundColor: "grey.900",
+                  fontSize: 11.5,
+                  fontWeight: 500,
+                  px: 1.5,
+                  py: 0.75,
+                  borderRadius: "8px",
+                },
+              },
+              arrow: {
+                sx: { color: "grey.900" },
+              },
+            }}
+          >
+            <Typography
+              component="span"
+              sx={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: "var(--primary-btncolor-start)",
+                cursor: "default",
+              }}
+            >
+              {formattedValue}
+            </Typography>
+          </Tooltip>
+        ) : (
+          <Typography
+            component="span"
+            sx={{
+              fontSize: 20,
+              fontWeight: 700,
+              color: "var(--primary-btncolor-start)",
+            }}
+          >
+            {mainLine}
+          </Typography>
+        )}
+      </Box>
+      {(subLines.length > 0 || record_count != null) && (
+        <Box
+          sx={{
+            mt: 1,
+            pt: 0.75,
+            borderTop: "1px solid", borderTopColor: "grey.100",
+            display: "flex",
+            flexDirection: "column",
+            gap: 0.5,
+          }}
+        >
+          {subLines.map((line, i) => (
+            <Typography key={i} sx={{ fontSize: 12.5, color: "text.disabled", fontWeight: 500, lineHeight: 1.4 }}>
+              {line}
+            </Typography>
+          ))}
+          {record_count != null && !subLines.some((l) => /transaction|record|count/i.test(l)) && (
+            <Typography sx={{ fontSize: 12.5, color: "text.disabled", fontWeight: 500, lineHeight: 1.4 }}>
+              Records: {record_count}
+            </Typography>
+          )}
+        </Box>
+      )}
+    </Box>
   );
 }
 
@@ -193,7 +360,156 @@ const isRankColumn = (columnName) => {
   return RANK_COLUMN_KEYWORDS.some((kw) => lower === kw || lower.startsWith(kw));
 };
 
+// Check if a cell value is negative (handles raw numbers and formatted
+// strings like "-1,234.56" or "₹-1,234.56").
+const isNegativeValue = (value) => {
+  if (value == null) return false;
+  const raw = String(value).trim();
+  if (!raw) return false;
+  // Check for leading minus sign or minus after currency symbol.
+  if (/^-/.test(raw) || /^₹-/.test(raw) || /^-?₹-/.test(raw)) return true;
+  // Parse and check if negative.
+  const n = parseNumeric(value);
+  return !isNaN(n) && n < 0;
+};
+
+// Maximum rows visible in the chat bubble before scrolling kicks in.
+const TABLE_MAX_HEIGHT = 280;
+// Show "Expand" button when rows exceed this count.
+const TABLE_EXPAND_THRESHOLD = 8;
+
+// Reusable table content renderer (shared by inline table and dialog).
+function renderTableContent(columns, rows, colIsNumeric, colAlignRight) {
+  return (
+    <Table size="small">
+      <TableHead>
+        <TableRow>
+          {columns.map((col, i) => {
+            const isMoney = colAlignRight[i];
+            return (
+              <TableCell
+                key={i}
+                sx={{
+                  fontWeight: 500,
+                  color: isMoney ? "var(--primary-btncolor-start)" : "text.secondary",
+                  fontSize: 11,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.4px",
+                  whiteSpace: "nowrap",
+                  borderBottom: "1px solid",
+                  borderBottomColor: "divider",
+                  textAlign: colAlignRight[i] ? "right" : "left",
+                  width: colIsNumeric[i] ? "1%" : "auto",
+                  whiteSpace: colIsNumeric[i] ? "nowrap" : "normal",
+                }}
+              >
+                {col}
+              </TableCell>
+            );
+          })}
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {rows.map((row, ri) => {
+          const isGrowthRow = /^growth$/i.test(String(row[0]).trim());
+          const isSummaryRow = isGrowthRow || /^(total|sum|average|avg)$/i.test(String(row[0]).trim());
+          return (
+            <TableRow
+              key={ri}
+              sx={{
+                backgroundColor: isSummaryRow
+                  ? "grey.100"
+                  : ri % 2 === 0
+                    ? "common.white"
+                    : "grey.50",
+                "&:hover": { backgroundColor: "grey.100" },
+                ...(isSummaryRow
+                  ? { borderTop: "1px solid", borderTopColor: "grey.300" }
+                  : {}),
+              }}
+            >
+              {row.map((cell, ci) => {
+                const colName = columns[ci];
+                const isNumeric = colIsNumeric[ci];
+                const alignRight = colAlignRight[ci];
+                const isNegative = isNegativeValue(cell);
+                const isEmpty = String(cell ?? "").trim() === "";
+                const isPercentage = /growth\s*%/i.test(String(colName));
+                const isPositiveGrowth = isPercentage && isGrowthRow && !isEmpty && !isNegative;
+                const isMoney = alignRight && !isPercentage;
+                return (
+                  <TableCell
+                    key={ci}
+                    sx={{
+                      color: isNegative
+                        ? "error.dark"
+                        : isPositiveGrowth
+                          ? "success.main"
+                          : isMoney && !isEmpty
+                            ? "var(--primary-btncolor-start)"
+                            : isSummaryRow
+                              ? "text.primary"
+                              : "text.primary",
+                      fontWeight: isSummaryRow || (isMoney && !isEmpty) ? 600 : 400,
+                      whiteSpace: isNumeric ? "nowrap" : "normal",
+                      wordBreak: isNumeric ? "keep-all" : "break-word",
+                      textAlign: alignRight ? "right" : "left",
+                      borderBottom: isSummaryRow ? "none" : "1px solid", borderBottomColor: isSummaryRow ? "transparent" : "grey.100",
+                      position: "relative",
+                      overflow: "hidden",
+                      backgroundColor: isNegative
+                        ? (theme) => alpha(theme.palette.error.main, 0.08)
+                        : undefined,
+                      ...(isNegative
+                        ? {
+                            "&::before": {
+                              content: '""',
+                              position: "absolute",
+                              top: 0,
+                              right: 0,
+                              width: "60%",
+                              height: "100%",
+                              background:
+                                "linear-gradient(225deg, rgba(220,38,38,0.12) 0%, transparent 70%)",
+                              pointerEvents: "none",
+                            },
+                            "&::after": {
+                              content: '""',
+                              position: "absolute",
+                              top: 4,
+                              right: 4,
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              backgroundColor: "error.main",
+                              boxShadow: "0 0 6px rgba(220,38,38,0.5)",
+                              pointerEvents: "none",
+                            },
+                          }
+                        : {}),
+                    }}
+                  >
+                    {isEmpty ? (
+                      <Typography component="span" sx={{ color: "grey.400" }}>
+                        —
+                      </Typography>
+                    ) : (
+                      formatCell(cell, colName)
+                    )}
+                  </TableCell>
+                );
+              })}
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
 function TableBlock({ columns, rows }) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   if (!Array.isArray(columns) || !Array.isArray(rows)) return null;
 
   // Detect which columns are numeric (rank, revenue, etc.) vs text (names).
@@ -203,87 +519,109 @@ function TableBlock({ columns, rows }) {
   // Right-align only money columns; rank/serial columns stay left-aligned.
   const colAlignRight = columns.map((col) => isMoneyColumn(col) && !isRankColumn(col));
 
+  const showExpand = rows.length > TABLE_EXPAND_THRESHOLD;
+
   return (
-    <TableContainer
-      component={Paper}
-      elevation={0}
-      sx={{
-        my: 1,
-        border: "1px solid #eef2f7",
-        borderRadius: 1.5,
-        overflow: "hidden",
-        width: "100%",
-        backgroundColor: "#fbfcfe",
-        "& .MuiTable-root": {
+    <>
+      <TableContainer
+        component={Paper}
+        elevation={0}
+        sx={{
+          my: 1,
+          border: "1px solid",
+          borderColor: "grey.100",
+          boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)",
+          borderRadius: "14px",
+          overflow: "hidden",
           width: "100%",
-          tableLayout: "auto",
-        },
-        "& .MuiTableCell-root": {
-          fontFamily: "var(--font-poppins), 'Poppins', sans-serif",
-          py: 0.75,
-          px: 1.25,
-          fontSize: 13,
-        },
-      }}
-    >
-      <Table size="small">
-        <TableHead sx={{ backgroundColor: "#f4f7fb" }}>
-          <TableRow>
-            {columns.map((col, i) => (
-              <TableCell
-                key={i}
-                sx={{
-                  fontWeight: 600,
-                  color: "#64748b",
-                  fontSize: 11,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.4px",
-                  whiteSpace: "nowrap",
-                  borderBottom: "1px solid #e2e8f0",
-                  // Money columns right-aligned + narrow; others left.
-                  textAlign: colAlignRight[i] ? "right" : "left",
-                  width: colIsNumeric[i] ? "1%" : "auto",
-                  whiteSpace: colIsNumeric[i] ? "nowrap" : "normal",
-                }}
-              >
-                {col}
-              </TableCell>
-            ))}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map((row, ri) => (
-            <TableRow
-              key={ri}
-              sx={{
-                backgroundColor: ri % 2 === 0 ? "#fff" : "#f8fafc",
-                "&:hover": { backgroundColor: "#f1f5f9" },
-              }}
-            >
-              {row.map((cell, ci) => {
-                const colName = columns[ci];
-                const isNumeric = colIsNumeric[ci];
-                const alignRight = colAlignRight[ci];
-                return (
-                  <TableCell
-                    key={ci}
-                    sx={{
-                      color: "#1e293b",
-                      whiteSpace: isNumeric ? "nowrap" : "normal",
-                      wordBreak: isNumeric ? "keep-all" : "break-word",
-                      textAlign: alignRight ? "right" : "left",
-                      borderBottom: "1px solid #f1f5f9",
-                    }}
-                  >
-                    {formatCell(cell, colName)}
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          backgroundColor: "common.white",
+          position: "relative",
+          transition: "box-shadow 0.2s ease",
+          "&:hover": {
+            boxShadow: "0 2px 4px rgba(15,23,42,0.06), 0 8px 20px rgba(15,23,42,0.07)",
+          },
+          // Height limit with scroll for big tables.
+          maxHeight: TABLE_MAX_HEIGHT,
+          "& .MuiTable-root": {
+            width: "100%",
+            tableLayout: "auto",
+          },
+          "& .MuiTableCell-root": {
+            fontFamily: "var(--font-poppins), 'Poppins', sans-serif",
+            py: 0.75,
+            px: 1.25,
+            fontSize: 13,
+          },
+        }}
+      >
+        {renderTableContent(columns, rows, colIsNumeric, colAlignRight)}
+      </TableContainer>
+      {showExpand && (
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: -0.5, mb: 0.5 }}>
+          <Button
+            size="small"
+            startIcon={<Maximize2 size={14} />}
+            onClick={() => setDialogOpen(true)}
+            sx={{
+              textTransform: "none",
+              fontSize: 12,
+              color: "var(--primary-btncolor-start)",
+              "&:hover": { backgroundColor: "#f5f3ff" },
+            }}
+          >
+            Expand
+          </Button>
+        </Box>
+      )}
+
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 2, maxHeight: "85vh" },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            pb: 1,
+            fontSize: 16,
+            fontWeight: 600,
+            color: "text.primary",
+          }}
+        >
+          Table View ({rows.length} rows)
+          <IconButton onClick={() => setDialogOpen(false)} size="small">
+            <X size={20} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          <TableContainer
+            component={Paper}
+            elevation={0}
+            sx={{
+              border: "1px solid", borderColor: "grey.100",
+              borderRadius: 0,
+              overflow: "auto",
+              maxHeight: "calc(85vh - 56px)",
+              backgroundColor: "grey.50",
+              "& .MuiTableCell-root": {
+                fontFamily: "var(--font-poppins), 'Poppins', sans-serif",
+                py: 1,
+                px: 1.5,
+                fontSize: 13,
+              },
+            }}
+          >
+            {renderTableContent(columns, rows, colIsNumeric, colAlignRight)}
+          </TableContainer>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -299,10 +637,10 @@ function ListBlock({ style, items }) {
             display: "list-item",
             pl: 0,
             py: 0.25,
-            color: "#1f2937",
+            color: "text.primary",
             fontSize: 15,
             lineHeight: 1.5,
-            "&::marker": isNumbered ? undefined : { color: "#6400b8" },
+            "&::marker": isNumbered ? undefined : { color: "var(--primary-btncolor-start)" },
           }}
         >
           <ListItemText primary={item} />
@@ -495,7 +833,7 @@ function ChartBlock({ chart_type, x_key, series }) {
         type: useHorizontalBar ? "linear" : "category",
         ticks: {
           font: { size: 11, family: "'Poppins', sans-serif" },
-          color: "#475569",
+          color: "text.secondary",
           // Vertical bars: allow up to 45° rotation for long names, auto-skip
           // to prevent overlap. Horizontal bars: format + auto-skip values.
           ...(useHorizontalBar
@@ -510,7 +848,7 @@ function ChartBlock({ chart_type, x_key, series }) {
         type: useHorizontalBar ? "category" : "linear",
         ticks: {
           font: { size: 11, family: "'Poppins', sans-serif" },
-          color: "#475569",
+          color: "text.secondary",
           autoSkip: true,
           maxTicksLimit: 6,
           ...(useHorizontalBar
@@ -586,15 +924,22 @@ function ChartBlock({ chart_type, x_key, series }) {
     <Box
       sx={{
         my: 1,
-        border: "1px solid #e2e8f0",
-        borderRadius: 1.5,
+        border: "1px solid",
+        borderColor: "grey.100",
+        boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)",
+        borderRadius: "14px",
         p: 1.5,
         width: "100%",
         // Pie: auto height so legend + chart both fit. Bar/line: fixed.
         height: chart_type === "pie" ? "auto" : chartHeight,
         overflow: "visible",
-        backgroundColor: "#f8fafc",
+        backgroundColor: "common.white",
         backgroundImage: "radial-gradient(circle at 20% 0%, #f1f5ff 0%, #f8fafc 60%)",
+        transition: "box-shadow 0.2s ease, transform 0.2s ease",
+        "&:hover": {
+          boxShadow: "0 2px 4px rgba(15,23,42,0.06), 0 8px 20px rgba(100,0,184,0.08)",
+          transform: "translateY(-1px)",
+        },
       }}
     >
       {chart_type === "pie" ? (
@@ -643,7 +988,8 @@ function ChartBlock({ chart_type, x_key, series }) {
               gap: 1,
               mt: 1.5,
               pt: 1,
-              borderTop: "1px solid #e2e8f0",
+              borderTop: "1px solid",
+              borderTopColor: "divider",
             }}
           >
             {pieLegendItems.map((item) => (
@@ -664,7 +1010,7 @@ function ChartBlock({ chart_type, x_key, series }) {
                   sx={{
                     fontSize: 10,
                     fontWeight: 700,
-                    color: "#334155",
+                    color: "text.primary",
                     textAlign: "center",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -678,7 +1024,7 @@ function ChartBlock({ chart_type, x_key, series }) {
                 <Typography
                   sx={{
                     fontSize: 9,
-                    color: "#64748b",
+                    color: "text.secondary",
                     textAlign: "center",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -705,25 +1051,6 @@ function ChartBlock({ chart_type, x_key, series }) {
   );
 }
 
-function AssumptionBlock({ content }) {
-  return (
-    <Box
-      sx={{
-        my: 1,
-        px: 1.5,
-        py: 1,
-        backgroundColor: "#fffbeb",
-        border: "1px solid #fde68a",
-        borderRadius: 1,
-        fontSize: 14,
-        color: "#92400e",
-      }}
-    >
-      <Box component="span" sx={{ fontWeight: 600 }}>Assumed:</Box> {content}
-    </Box>
-  );
-}
-
 function ErrorBlock({ content }) {
   return (
     <Box
@@ -731,11 +1058,11 @@ function ErrorBlock({ content }) {
         my: 1,
         px: 1.5,
         py: 1,
-        backgroundColor: "#fef2f2",
-        border: "1px solid #fecaca",
-        borderRadius: 1,
+        backgroundColor: (theme) => alpha(theme.palette.error.main, 0.06),
+        border: "1px solid", borderColor: "error.light",
+        borderRadius: "14px",
         fontSize: 14,
-        color: "#b91c1c",
+        color: "error.dark",
       }}
     >
       {content}
@@ -750,12 +1077,12 @@ function ClarifyBlock({ content }) {
         my: 1,
         px: 1.5,
         py: 1.25,
-        backgroundColor: "#eff6ff",
-        border: "1px solid #bfdbfe",
-        borderRadius: 1.5,
+        backgroundColor: (theme) => alpha(theme.palette.info.main, 0.06),
+        border: "1px solid", borderColor: "info.light",
+        borderRadius: "14px",
         fontSize: 14,
         lineHeight: 1.6,
-        color: "#1e40af",
+        color: "info.dark",
         display: "flex",
         gap: 1,
         alignItems: "flex-start",
@@ -768,8 +1095,8 @@ function ClarifyBlock({ content }) {
           width: 20,
           height: 20,
           borderRadius: "50%",
-          backgroundColor: "#3b82f6",
-          color: "#fff",
+          backgroundColor: "info.main",
+          color: "common.white",
           fontSize: 12,
           fontWeight: 700,
           display: "flex",
@@ -788,17 +1115,86 @@ function ClarifyBlock({ content }) {
   );
 }
 
+function SuggestionsBlock({ items, onSuggestionClick }) {
+  const list = Array.isArray(items) ? items : [];
+  if (!list.length) return null;
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, my: 1 }}>
+      {list.map((item, i) => {
+        const text = typeof item === "string" ? item : item?.text || item?.label || "";
+        if (!text) return null;
+        return (
+          <Button
+            key={i}
+            size="small"
+            onClick={() => onSuggestionClick?.(text)}
+            sx={{
+              textTransform: "none",
+              fontSize: 12.5,
+              color: "var(--primary-btncolor-start)",
+              backgroundColor: "#f5f3ff",
+              border: "1px solid #e9e0ff",
+              borderRadius: "16px",
+              padding: "5px 12px",
+              boxShadow: "none",
+              "&:hover": {
+                backgroundColor: "#ede8ff",
+                boxShadow: "none",
+              },
+            }}
+          >
+            {text}
+          </Button>
+        );
+      })}
+    </Box>
+  );
+}
+
+function DownloadBlock({ url }) {
+  if (!url) return null;
+  return (
+    <Box sx={{ my: 1 }}>
+      <Button
+        component="a"
+        href={url}
+        download
+        target="_blank"
+        rel="noopener noreferrer"
+        size="small"
+        startIcon={<Download size={14} />}
+        sx={{
+          textTransform: "none",
+          fontSize: 12.5,
+          fontWeight: 500,
+          color: "common.white",
+          background: "var(--primary-btncolor)",
+          borderRadius: "16px",
+          padding: "6px 16px",
+          boxShadow: "0 2px 8px rgba(100,0,184,0.25)",
+          "&:hover": { opacity: 0.9 },
+        }}
+      >
+        Download report
+      </Button>
+    </Box>
+  );
+}
+
 const BLOCK_COMPONENTS = {
   text: TextBlock,
+  heading: HeadingBlock,
+  metric: MetricBlock,
   table: TableBlock,
   list: ListBlock,
   chart: ChartBlock,
-  assumption: AssumptionBlock,
   error: ErrorBlock,
   clarify: ClarifyBlock,
+  suggestions: SuggestionsBlock,
+  download: DownloadBlock,
 };
 
-export default function ChatBlockRenderer({ blocks }) {
+export default function ChatBlockRenderer({ blocks, onSuggestionClick }) {
   if (!Array.isArray(blocks) || blocks.length === 0) {
     return <ErrorBlock content="No response received." />;
   }
@@ -809,7 +1205,13 @@ export default function ChatBlockRenderer({ blocks }) {
         const Component = BLOCK_COMPONENTS[block?.type];
         if (!Component) return null;
         try {
-          return <Component key={idx} {...block} />;
+          return (
+            <Component
+              key={idx}
+              {...block}
+              {...(block?.type === "suggestions" ? { onSuggestionClick } : {})}
+            />
+          );
         } catch {
           return <ErrorBlock key={idx} content="Couldn't render part of this response." />;
         }

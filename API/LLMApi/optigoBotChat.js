@@ -1,4 +1,4 @@
-const DEFAULT_COMPANY_CODE = "DEMO";
+const DEFAULT_COMPANY_CODE = "orail25";
 const DEFAULT_RESPONSE_MODE = "wide";
 const REQUEST_TIMEOUT_MS = 30000;
 
@@ -8,12 +8,15 @@ const API_BASE =
 const sendChatMessage = async (req, signal) => {
   const body = {
     question: req.question,
+    pid: req.pid,
     company_code: req.company_code || DEFAULT_COMPANY_CODE,
     user_id: req.user_id,
     session_id: req.session_id,
     response_mode: req.response_mode || DEFAULT_RESPONSE_MODE,
     filters: req.filters,
     export: req.export,
+    // When true, the backend should skip any cached answer and regenerate.
+    regenerate: req.regenerate === true,
   };
 
   const timeoutCtrl = new AbortController();

@@ -493,7 +493,7 @@ const SummaryEndFilteredValue = ({
                     >
                       <Box component="img" src="./icons/ai-icon.svg" alt="Optigo AI"
                         sx={{ width: 18, height: 18, borderRadius: "50%", mr: 0.8 }} />
-                      Ask OptigoAi
+                      Ask OptigoAI
                     </Button>
                   }
                 </Box>

@@ -1,66 +1,182 @@
-import { Box, Paper } from "@mui/material";
+import { useEffect, useState } from "react";
+import { Box, Paper, Typography } from "@mui/material";
 import ChatBlockRenderer from "./ChatBlockRenderer";
+import MessageActions from "./MessageActions";
 
-function TypingIndicator() {
+// Small AI avatar shown to the left of every bot response.
+// ai-icon.svg is a square image with its own purple gradient — clip it to a
+// circle instead of wrapping it in another gradient background.
+function AiAvatar({ loading = false }) {
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, px: 1, py: 1.5 }}>
-      {[0, 1, 2].map((i) => (
+    <Box
+      sx={{
+        position: "relative",
+        width: 28,
+        height: 28,
+        flexShrink: 0,
+        mt: 0.25,
+      }}
+    >
+      {loading && (
         <Box
-          key={i}
           sx={{
-            width: 8,
-            height: 8,
+            position: "absolute",
+            inset: -4,
             borderRadius: "50%",
-            backgroundColor: "#9ca3af",
-            animation: "optigobot-bounce 1.4s infinite ease-in-out both",
-            animationDelay: `${i * 0.16 - 0.32}s`,
+            border: "2px solid transparent",
+            borderTopColor: "var(--primary-btncolor-start)",
+            borderRightColor: "var(--primary-btncolor-start)",
+            animation: "optigobot-spin 0.8s linear infinite",
           }}
         />
-      ))}
+      )}
+      <Box
+        component="img"
+        src="./icons/ai-icon.svg"
+        alt="Optigo AI"
+        sx={{
+          width: 28,
+          height: 28,
+          borderRadius: "50%",
+          display: "block",
+          boxShadow: "0 2px 6px rgba(100,0,184,0.25)",
+        }}
+      />
+      {loading && (
+        <style>{`
+          @keyframes optigobot-spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      )}
+    </Box>
+  );
+}
+
+// Jewelry-industry themed loading phrases — rotate while waiting for a response.
+const LOADING_PHRASES = [
+  "Analyzing sales data",
+  "Polishing insights",
+  "Counting carats",
+  "Checking inventory",
+  "Reading the report",
+  "Weighing the numbers",
+  "Inspecting the details",
+  "Cutting through the data",
+];
+
+function TypingIndicator() {
+  const [phraseIndex, setPhraseIndex] = useState(() =>
+    Math.floor(Math.random() * LOADING_PHRASES.length)
+  );
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPhraseIndex((i) => (i + 1) % LOADING_PHRASES.length);
+    }, 2200);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", py: 0.5 }}>
+      <Typography
+        key={phraseIndex}
+        sx={{
+          fontSize: 12.5,
+          color: "text.secondary",
+          fontStyle: "italic",
+          animation: "optigobot-phrase 0.3s ease-out",
+        }}
+      >
+        {LOADING_PHRASES[phraseIndex]}…
+      </Typography>
       <style>{`
-        @keyframes optigobot-bounce {
-          0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
-          40% { transform: scale(1); opacity: 1; }
+        @keyframes optigobot-phrase {
+          0% { opacity: 0; transform: translateY(4px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </Box>
   );
 }
 
-export default function ChatMessage({ role, blocks, isLoading }) {
+export default function ChatMessage({
+  role,
+  blocks,
+  isLoading,
+  onSuggestionClick,
+  raw,
+  sessionId,
+  onRegenerate,
+}) {
   const isBot = role === "assistant";
+  const showActions = isBot && !isLoading && raw && !raw.error;
 
+  // --- Bot message: flat layout, no bubble ---
+  if (isBot) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          gap: 1,
+          mb: 2,
+          maxWidth: "100%",
+        }}
+      >
+        <AiAvatar loading={isLoading} />
+        <Box sx={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+          {isLoading ? (
+            <TypingIndicator />
+          ) : (
+            <>
+              <ChatBlockRenderer blocks={blocks} onSuggestionClick={onSuggestionClick} />
+              {showActions && (
+                <MessageActions
+                  sessionId={sessionId}
+                  raw={raw}
+                  onRegenerate={onRegenerate}
+                />
+              )}
+            </>
+          )}
+        </Box>
+      </Box>
+    );
+  }
+
+  // --- User message: right-aligned tinted bubble ---
+  const textBlock = blocks?.find((b) => b?.type === "text");
   return (
     <Box
       sx={{
         display: "flex",
-        justifyContent: isBot ? "flex-start" : "flex-end",
+        justifyContent: "flex-end",
         mb: 1.5,
+        maxWidth: "100%",
       }}
     >
       <Paper
         elevation={0}
         sx={{
-          maxWidth: "100%",
+          maxWidth: "85%",
           minWidth: 0,
-          overflow: "hidden",
           px: 1.5,
-          py: 1.25,
-          borderRadius: isBot ? "16px 16px 16px 4px" : "16px 16px 4px 16px",
-          background: isBot ? "#ffffff" : "var(--primary-btncolor)",
-          color: isBot ? "#1f2937" : "#ffffff",
-          border: isBot ? "1px solid #eceff5" : "none",
-          boxShadow: isBot
-            ? "0 1px 3px rgba(15,23,42,0.06)"
-            : "0 3px 10px rgba(100,0,184,0.18)",
+          py: 1,
+          borderRadius: "16px 16px 4px 16px",
+          background: "linear-gradient(135deg, #ede9fe, #e9d5ff)",
+          color: "#3b0764",
+          border: "1px solid #e9d5ff",
+          boxShadow: "0 1px 2px rgba(100,0,184,0.06), 0 2px 8px rgba(100,0,184,0.05)",
           wordBreak: "break-word",
+          fontSize: 14,
+          lineHeight: 1.5,
+          transition: "box-shadow 0.2s ease",
+          "&:hover": {
+            boxShadow: "0 2px 4px rgba(100,0,184,0.08), 0 4px 12px rgba(100,0,184,0.08)",
+          },
         }}
       >
-        {isLoading ? (
-          <TypingIndicator />
-        ) : (
-          <ChatBlockRenderer blocks={blocks} />
-        )}
+        {textBlock?.content || ""}
       </Paper>
     </Box>
   );
