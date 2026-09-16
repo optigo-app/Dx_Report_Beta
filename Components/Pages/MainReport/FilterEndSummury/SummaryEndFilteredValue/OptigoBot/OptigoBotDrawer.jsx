@@ -24,8 +24,8 @@ const OptigoBotDrawer = ({ open, onClose }) => {
           width: 400,
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#f8f9ff",
-          borderLeft: "1px solid #e0e0e0",
+          backgroundColor: "grey.50",
+          borderLeft: "1px solid", borderLeftColor: "divider",
           boxShadow: "-4px 0 12px rgba(0,0,0,0.05)",
         },
       }}
