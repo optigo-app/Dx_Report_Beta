@@ -1,5 +1,5 @@
 const API_BASE =
-  process.env.NEXT_PUBLIC_FASTAPI_URL || "http://localhost:8001";
+  process.env.NEXT_PUBLIC_FASTAPI_URL || "http://optigollm.web";
 
 /**
  * Submit feedback (thumbs up/down) for a chat answer.

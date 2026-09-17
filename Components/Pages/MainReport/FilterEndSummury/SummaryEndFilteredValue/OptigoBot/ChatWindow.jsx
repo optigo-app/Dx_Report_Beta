@@ -53,6 +53,7 @@ export default function ChatWindow({ onClose }) {
     resetChat,
     cancelRequest,
     sessionId,
+    lastUserQuestion,
   } = useChatbot({ responseMode: "wide" });
   const [inputValue, setInputValue] = useState("");
   const [showScrollPill, setShowScrollPill] = useState(false);
@@ -108,6 +109,13 @@ export default function ChatWindow({ onClose }) {
   const handleNewChat = () => {
     resetChat();
     setInputValue("");
+  };
+
+  // Stop mid-request: the dangling question is removed from the chat and
+  // restored into the input so it can be resent with one click.
+  const handleCancel = () => {
+    cancelRequest();
+    setInputValue((prev) => (prev ? prev : lastUserQuestion));
   };
 
   // Latest user question to display in the header row.
@@ -258,6 +266,7 @@ export default function ChatWindow({ onClose }) {
                 sx={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
+                  gridAutoRows: "1fr",
                   gap: 1,
                   width: "100%",
                 }}
@@ -274,7 +283,12 @@ export default function ChatWindow({ onClose }) {
                       borderColor: "divider",
                       backgroundColor: "common.white",
                       cursor: "pointer",
-                      textAlign: "left",
+                      // Equal-height cells + centered text keeps the grid
+                      // visually even regardless of label length.
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      textAlign: "center",
                       fontSize: 12.5,
                       color: "text.primary",
                       boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
@@ -379,7 +393,7 @@ export default function ChatWindow({ onClose }) {
             {isLoading ? (
               <Tooltip title="Stop generating">
                 <IconButton
-                  onClick={cancelRequest}
+                  onClick={handleCancel}
                   size="small"
                   sx={{
                     width: 36,

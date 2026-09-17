@@ -16,7 +16,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Paper,
   Tooltip,
 } from "@mui/material";
 import { Maximize2, X, Download } from "lucide-react";
@@ -35,7 +34,6 @@ import {
 } from "chart.js";
 import { Bar, Line, Doughnut } from "react-chartjs-2";
 
-// Register chart.js components once at module load (project pattern).
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -53,8 +51,35 @@ const CHART_COLORS = [
   "#8B5CF6", "#06B6D4", "#84CC16", "#EC4899", "#A855F7",
 ];
 
-// Title-case a string: "sungs jinwoo" -> "Sungs Jinwoo".
-// Preserves short words like "of", "the" lowercase unless they're first.
+// The API sometimes returns UTF-8 text decoded as Latin-1 — the rupee sign
+// arrives as "â¹" (or "â\x82¹"). Fix the common ₹ case, then try a full
+// UTF-8 re-decode for anything else still mangled.
+const fixMojibake = (s) => {
+  if (typeof s !== "string") return s;
+  let out = s.replace(/â[\x80-\x9F]?¹/g, "₹");
+  if (!/[âÃð]/.test(out)) return out;
+  try {
+    const decoded = new TextDecoder("utf-8").decode(
+      Uint8Array.from(out, (c) => c.charCodeAt(0) & 0xff)
+    );
+    return decoded.includes("\uFFFD") ? out : decoded;
+  } catch {
+    return out;
+  }
+};
+
+// Recursively sanitize every string inside a block payload.
+const sanitizeBlock = (v) =>
+  typeof v === "string"
+    ? fixMojibake(v)
+    : Array.isArray(v)
+      ? v.map(sanitizeBlock)
+      : v && typeof v === "object"
+        ? Object.fromEntries(
+            Object.entries(v).map(([k, val]) => [k, sanitizeBlock(val)])
+          )
+        : v;
+
 const TITLE_SMALL_WORDS = new Set(["of", "the", "and", "or", "a", "an", "to", "in", "on", "at", "by", "for"]);
 const titleCase = (str) => {
   if (str == null) return str;
@@ -70,82 +95,61 @@ const titleCase = (str) => {
     .join(" ");
 };
 
-// Heuristic: does this cell value look like a person/entity name?
-// Used to apply title-casing only to name-like strings, not numbers/dates/amounts.
 const isNameLike = (value) => {
   if (value == null) return false;
   const s = String(value).trim();
   if (!s || s.length < 2) return false;
-  // Reject anything with digits, currency, or percent signs.
   if (/[0-9₹$%]/.test(s)) return false;
-  // Must contain at least one letter and be mostly alphabetic (allow spaces, hyphens, apostrophes).
   if (!/[A-Za-z]/.test(s)) return false;
   return /^[A-Za-z][A-Za-z\s'-]*$/.test(s);
 };
 
-// Heuristic: does this cell value look like a number/currency/amount?
-// Matches: "1234", "1,234.56", "₹1000", "$500", "1000.50", "12,34,567.89"
 const isNumericLike = (value) => {
   if (value == null) return false;
   const s = String(value).trim();
   if (!s) return false;
-  // Strip currency symbols and spaces, then test the rest is digits/commas/dots.
   const stripped = s.replace(/[₹$\s]/g, "").replace(/[,]/g, "");
   return stripped !== "" && !isNaN(Number(stripped)) && /^[+-]?[\d.]+$/.test(stripped);
 };
 
-// Parse a numeric-like string into a Number (handles ₹, $, commas).
 const parseNumeric = (value) => {
   if (value == null) return NaN;
   const s = String(value).trim().replace(/[₹$\s,]/g, "");
   return Number(s);
 };
 
-// Indian currency formatter: 3157737402.74 -> "₹3,15,77,37,402.74"
 const indianCurrencyFormatter = new Intl.NumberFormat("en-IN", {
   style: "currency",
   currency: "INR",
   maximumFractionDigits: 2,
 });
 
-// Format a numeric value as Indian rupee currency.
 const formatCurrency = (value) => {
   const n = typeof value === "number" ? value : parseNumeric(value);
   if (isNaN(n)) return value;
   return indianCurrencyFormatter.format(n);
 };
 
-// Column headers that indicate a money/amount column (case-insensitive).
-// Only these columns get ₹ currency formatting; rank/serial/qty columns stay plain.
 const MONEY_COLUMN_KEYWORDS = [
   "revenue", "amount", "sales", "price", "cost", "total",
   "value", "payment", "balance", "discount", "tax", "profit",
   "loss", "expense", "income", "turnover", "bill", "deposit",
 ];
 
-// Check if a column header suggests a money column.
 const isMoneyColumn = (columnName) => {
   if (!columnName) return false;
   const lower = String(columnName).toLowerCase();
   return MONEY_COLUMN_KEYWORDS.some((kw) => lower.includes(kw));
 };
 
-// Format a cell value with optional column context:
-// - title-case names
-// - format as ₹ currency ONLY if the column is a money column AND the
-//   value is a raw number (not already formatted with commas/₹)
-// - else return as-is (rank, qty, already-formatted values stay plain)
 const formatCell = (value, columnName) => {
   if (isNameLike(value)) return titleCase(value);
   const raw = String(value ?? "");
-  // If the value is already formatted (has commas or ₹), return as-is.
   if (/[₹$]/.test(raw) || (/[,]/.test(raw) && isNumericLike(raw))) return raw;
   if (isNumericLike(value) && isMoneyColumn(columnName)) return formatCurrency(value);
   return value;
 };
 
-// Compact number formatter for Y-axis ticks (Indian numbering: K, L, Cr).
-// 1500 -> "1.5K", 100000 -> "1L", 10000000 -> "1Cr".
 const formatCompactNumber = (n) => {
   if (n == null || isNaN(n)) return "";
   const abs = Math.abs(n);
@@ -156,8 +160,6 @@ const formatCompactNumber = (n) => {
 };
 
 function TextBlock({ content }) {
-  // Source/citation lines (e.g. "Sources: Sales Report") render as a
-  // smaller, brighter footer-style note instead of full body text.
   const isSourceLine = /^sources?\s*:/i.test(String(content).trim());
 
   if (isSourceLine) {
@@ -212,7 +214,6 @@ function HeadingBlock({ content }) {
   );
 }
 
-// Format a raw number with Indian numbering and commas for the tooltip.
 const formatRawValue = (value, currency) => {
   if (value == null || isNaN(value)) return String(value ?? "");
   const formatted = new Intl.NumberFormat("en-IN", {
@@ -221,38 +222,52 @@ const formatRawValue = (value, currency) => {
   return currency === "INR" ? `₹${formatted}` : formatted;
 };
 
-// Extract the formatted value from content (e.g. "₹40.44 lakh" from
-// "Total sales: ₹40.44 lakh\nTransactions: 31").
 const extractFormattedValue = (content) => {
   if (!content) return "";
-  // Match currency-like patterns: ₹, $, numbers with units (lakh, crore, K, etc.)
-  const match = String(content).match(/(₹|$\s?)?[\d,.]+\s?(lakh|crore|Cr|L|K|million|billion)?/i);
-  return match ? match[0].trim() : "";
+  const s = String(content);
+  const idx = s.lastIndexOf(":");
+  if (idx !== -1) {
+    const after = s.slice(idx + 1).trim();
+    if (/\d/.test(after)) return after;
+  }
+  const matches = s.match(/(₹|$\s?)?[\d,.]+\s?(lakh|crore|Cr|L|K|million|billion)?/gi);
+  return matches ? matches[matches.length - 1].trim() : "";
 };
 
-function MetricBlock({ content, raw_value, currency, label, record_count }) {
-  // Split content into lines — first line is the main metric, rest are sub-info.
+function MetricBlock({ content, raw_value, currency, unit, unit_label, label, record_count, value, subtext }) {
   const lines = String(content || "").split("\n").filter(Boolean);
   const mainLine = lines[0] || "";
-  const subLines = lines.slice(1);
+  const subLines = [...lines.slice(1), ...(subtext ? [subtext] : [])];
 
-  // Extract the value portion from the main line for the tooltip.
-  const formattedValue = extractFormattedValue(mainLine);
-  const tooltipText = formatRawValue(raw_value, currency);
+  const isCurrency =
+    unit === "currency" || (currency === "INR" && (!unit || unit === "currency"));
+
+  const formattedValue =
+    value != null && String(value).trim() !== ""
+      ? String(value).trim()
+      : raw_value != null && !isNaN(Number(raw_value))
+        ? isCurrency
+          ? formatCurrency(Number(raw_value))
+          : `${formatRawValue(raw_value)}${unit_label ? ` ${unit_label}` : ""}`
+        : extractFormattedValue(mainLine);
+  const tooltipText = `${formatRawValue(raw_value, isCurrency ? "INR" : undefined)}${
+    !isCurrency && unit_label ? ` ${unit_label}` : ""
+  }`;
+
+  const labelText = mainLine.includes(":")
+    ? mainLine.slice(0, mainLine.lastIndexOf(":")).trim()
+    : label;
 
   return (
     <Box
       sx={{
         my: 1,
         p: 1.5,
-        pl: 2,
         backgroundColor: "common.white",
         border: "1px solid",
         borderColor: "grey.100",
-        borderLeft: "3px solid var(--primary-btncolor-start)",
         boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)",
         borderRadius: "14px",
-        // Size to the metric content instead of stretching full width.
         width: "fit-content",
         maxWidth: "100%",
         transition: "box-shadow 0.2s ease, transform 0.2s ease",
@@ -262,24 +277,24 @@ function MetricBlock({ content, raw_value, currency, label, record_count }) {
         },
       }}
     >
-      {label && (
+      {labelText && (
         <Typography
           sx={{
             fontSize: 11,
             fontWeight: 600,
             color: "text.secondary",
-            textTransform: "uppercase",
+            textTransform: "capitalize",
             letterSpacing: "0.4px",
             mb: 0.5,
           }}
         >
-          {label}
+          {labelText}
         </Typography>
       )}
       <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.5, flexWrap: "wrap" }}>
         {formattedValue && raw_value != null ? (
           <Tooltip
-            title={`Exact amount: ${tooltipText}`}
+            title={`Exact: ${tooltipText}`}
             placement="top"
             arrow
             componentsProps={{
@@ -381,21 +396,22 @@ const TABLE_EXPAND_THRESHOLD = 8;
 // Reusable table content renderer (shared by inline table and dialog).
 function renderTableContent(columns, rows, colIsNumeric, colAlignRight) {
   return (
-    <Table size="small">
+    <Table size="small" stickyHeader>
       <TableHead>
         <TableRow>
           {columns.map((col, i) => {
-            const isMoney = colAlignRight[i];
             return (
               <TableCell
                 key={i}
                 sx={{
                   fontWeight: 500,
-                  color: isMoney ? "var(--primary-btncolor-start)" : "text.secondary",
+                  color: "text.secondary",
                   fontSize: 11,
-                  textTransform: "uppercase",
+                  textTransform: "capitalize",
                   letterSpacing: "0.4px",
-                  whiteSpace: "nowrap",
+                  // Opaque tinted background so the sticky header reads
+                  // distinctly and body rows don't show through on scroll.
+                  backgroundColor: "#f5f3ff",
                   borderBottom: "1px solid",
                   borderBottomColor: "divider",
                   textAlign: colAlignRight[i] ? "right" : "left",
@@ -507,6 +523,48 @@ function renderTableContent(columns, rows, colIsNumeric, colAlignRight) {
   );
 }
 
+// Totals strip pinned at the top-right of a table card — sums each money
+// column so the grand total is visible without scrolling to the bottom.
+function TableTotalsBar({ moneyTotals }) {
+  if (!moneyTotals.length) return null;
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "flex-end",
+        alignItems: "baseline",
+        flexWrap: "wrap",
+        columnGap: 2,
+        rowGap: 0.25,
+        px: 1.5,
+        py: 1,
+        borderBottom: "1px solid",
+        borderBottomColor: "grey.100",
+        backgroundColor: "grey.50",
+      }}
+    >
+      {moneyTotals.map((t, i) => (
+        <Typography
+          key={i}
+          sx={{ fontSize: 13.5, fontWeight: 500, color: "text.secondary" }}
+        >
+          Total {t.col}:{" "}
+          <Box
+            component="span"
+            sx={{
+              color: "var(--primary-btncolor-start)",
+              fontWeight: 700,
+              fontSize: 15,
+            }}
+          >
+            {formatCurrency(t.sum)}
+          </Box>
+        </Typography>
+      ))}
+    </Box>
+  );
+}
+
 function TableBlock({ columns, rows }) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -519,13 +577,25 @@ function TableBlock({ columns, rows }) {
   // Right-align only money columns; rank/serial columns stay left-aligned.
   const colAlignRight = columns.map((col) => isMoneyColumn(col) && !isRankColumn(col));
 
+  // Sum each money column for the totals strip (skip columns with no data).
+  const moneyTotals = columns
+    .map((col, ci) => {
+      if (!colAlignRight[ci]) return null;
+      let hasNumeric = false;
+      const sum = rows.reduce((acc, row) => {
+        const n = parseNumeric(row[ci]);
+        if (!isNaN(n)) hasNumeric = true;
+        return isNaN(n) ? acc : acc + n;
+      }, 0);
+      return hasNumeric ? { col, sum } : null;
+    })
+    .filter(Boolean);
+
   const showExpand = rows.length > TABLE_EXPAND_THRESHOLD;
 
   return (
     <>
-      <TableContainer
-        component={Paper}
-        elevation={0}
+      <Box
         sx={{
           my: 1,
           border: "1px solid",
@@ -540,22 +610,29 @@ function TableBlock({ columns, rows }) {
           "&:hover": {
             boxShadow: "0 2px 4px rgba(15,23,42,0.06), 0 8px 20px rgba(15,23,42,0.07)",
           },
-          // Height limit with scroll for big tables.
-          maxHeight: TABLE_MAX_HEIGHT,
-          "& .MuiTable-root": {
-            width: "100%",
-            tableLayout: "auto",
-          },
-          "& .MuiTableCell-root": {
-            fontFamily: "var(--font-poppins), 'Poppins', sans-serif",
-            py: 0.75,
-            px: 1.25,
-            fontSize: 13,
-          },
         }}
       >
-        {renderTableContent(columns, rows, colIsNumeric, colAlignRight)}
-      </TableContainer>
+        <TableTotalsBar moneyTotals={moneyTotals} />
+        <TableContainer
+          sx={{
+            // Height limit with scroll for big tables.
+            maxHeight: TABLE_MAX_HEIGHT,
+            overflow: "auto",
+            "& .MuiTable-root": {
+              width: "100%",
+              tableLayout: "auto",
+            },
+            "& .MuiTableCell-root": {
+              fontFamily: "var(--font-poppins), 'Poppins', sans-serif",
+              py: 0.75,
+              px: 1.25,
+              fontSize: 13,
+            },
+          }}
+        >
+          {renderTableContent(columns, rows, colIsNumeric, colAlignRight)}
+        </TableContainer>
+      </Box>
       {showExpand && (
         <Box sx={{ display: "flex", justifyContent: "flex-end", mt: -0.5, mb: 0.5 }}>
           <Button
@@ -577,10 +654,18 @@ function TableBlock({ columns, rows }) {
       <Dialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        maxWidth="lg"
+        maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: { borderRadius: 2, maxHeight: "85vh" },
+        slotProps={{
+          root: {
+            sx: {
+              "& .MuiDialog-paper": {
+                borderRadius: "16px",
+                overflow: "hidden",
+                maxHeight: "85vh",
+              },
+            },
+          },
         }}
       >
         <DialogTitle
@@ -592,6 +677,8 @@ function TableBlock({ columns, rows }) {
             fontSize: 16,
             fontWeight: 600,
             color: "text.primary",
+            borderBottom: "1px solid",
+            borderBottomColor: "grey.100",
           }}
         >
           Table View ({rows.length} rows)
@@ -599,26 +686,32 @@ function TableBlock({ columns, rows }) {
             <X size={20} />
           </IconButton>
         </DialogTitle>
-        <DialogContent sx={{ p: 0 }}>
-          <TableContainer
-            component={Paper}
-            elevation={0}
+        <DialogContent sx={{ px: 2, pb: 2, pt: 1 }}>
+          <Box
             sx={{
-              border: "1px solid", borderColor: "grey.100",
-              borderRadius: 0,
-              overflow: "auto",
-              maxHeight: "calc(85vh - 56px)",
+              border: "1px solid",
+              borderColor: "grey.200",
+              borderRadius: "12px",
+              overflow: "hidden",
               backgroundColor: "grey.50",
-              "& .MuiTableCell-root": {
-                fontFamily: "var(--font-poppins), 'Poppins', sans-serif",
-                py: 1,
-                px: 1.5,
-                fontSize: 13,
-              },
             }}
           >
-            {renderTableContent(columns, rows, colIsNumeric, colAlignRight)}
-          </TableContainer>
+            <TableTotalsBar moneyTotals={moneyTotals} />
+            <TableContainer
+              sx={{
+                overflow: "auto",
+                maxHeight: "calc(85vh - 160px)",
+                "& .MuiTableCell-root": {
+                  fontFamily: "var(--font-poppins), 'Poppins', sans-serif",
+                  py: 1,
+                  px: 1.5,
+                  fontSize: 13,
+                },
+              }}
+            >
+              {renderTableContent(columns, rows, colIsNumeric, colAlignRight)}
+            </TableContainer>
+          </Box>
         </DialogContent>
       </Dialog>
     </>
@@ -784,15 +877,19 @@ function ChartBlock({ chart_type, x_key, series }) {
     });
   }
 
-  // Dynamic height: more points need more room. Horizontal bars need more
-  // vertical space per bar so names don't squeeze. Vertical bars need more
-  // height so bars + axis labels don't crowd.
-  const chartHeight =
+  // Full canvas height so each bar/label stays readable — but the visible
+  // card height is capped at CHART_VIEWPORT_HEIGHT and scrolls internally,
+  // so a 25/50-item chart doesn't blow up to thousands of pixels.
+  const CHART_VIEWPORT_HEIGHT = 420;
+  const chartContentHeight =
     chart_type === "pie"
       ? 320
       : useHorizontalBar
         ? Math.max(320, pointCount * 56)
         : Math.max(340, pointCount * 60);
+  const chartCardHeight =
+    chart_type === "pie" ? "auto" : Math.min(chartContentHeight, CHART_VIEWPORT_HEIGHT);
+  const chartNeedsScroll = chartContentHeight > CHART_VIEWPORT_HEIGHT;
 
   // Shared options for bar/line charts.
   const cartesianOptions = {
@@ -865,7 +962,6 @@ function ChartBlock({ chart_type, x_key, series }) {
     maintainAspectRatio: false,
     cutout: "65%",
     plugins: {
-      // Disable Chart.js's built-in legend — we render a custom one below.
       legend: { display: false },
       tooltip: {
         ...CHART_TOOLTIP_STYLE,
@@ -893,18 +989,13 @@ function ChartBlock({ chart_type, x_key, series }) {
         : datasets,
   };
 
-  // ── Custom legend state for pie charts ───────────────────────────────
-  // Tracks which slices are hidden. Clicking a legend item toggles it,
-  // and Chart.js re-scales the visible slices to fill the doughnut.
   const toggleSlice = (idx) => {
     const chart = chartRef.current;
     if (!chart) return;
     const meta = chart.getDatasetMeta(0);
     if (!meta?.data?.[idx]) return;
-    // Toggle visibility on the chart's internal meta.
     meta.data[idx].hidden = !meta.data[idx].hidden;
     chart.update();
-    // Mirror state to re-render the custom legend styling.
     setHiddenSlices((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
@@ -930,8 +1021,7 @@ function ChartBlock({ chart_type, x_key, series }) {
         borderRadius: "14px",
         p: 1.5,
         width: "100%",
-        // Pie: auto height so legend + chart both fit. Bar/line: fixed.
-        height: chart_type === "pie" ? "auto" : chartHeight,
+        height: chartCardHeight,
         overflow: "visible",
         backgroundColor: "common.white",
         backgroundImage: "radial-gradient(circle at 20% 0%, #f1f5ff 0%, #f8fafc 60%)",
@@ -944,7 +1034,6 @@ function ChartBlock({ chart_type, x_key, series }) {
     >
       {chart_type === "pie" ? (
         <>
-          {/* TOP: color boxes only — no text, no amount */}
           <Box
             sx={{
               display: "grid",
@@ -975,12 +1064,10 @@ function ChartBlock({ chart_type, x_key, series }) {
             ))}
           </Box>
 
-          {/* MIDDLE: doughnut chart */}
           <Box sx={{ width: "100%", height: 260, position: "relative" }}>
             <Doughnut ref={chartRef} data={data} options={pieOptions} />
           </Box>
 
-          {/* BOTTOM: metal name + amount row */}
           <Box
             sx={{
               display: "grid",
@@ -1038,13 +1125,23 @@ function ChartBlock({ chart_type, x_key, series }) {
             ))}
           </Box>
         </>
-      ) : chart_type === "bar" ? (
-        <Box sx={{ width: "100%", height: chartHeight - 20, position: "relative" }}>
-          <Bar data={data} options={cartesianOptions} />
-        </Box>
       ) : (
-        <Box sx={{ width: "100%", height: chartHeight - 20, position: "relative" }}>
-          <Line data={data} options={cartesianOptions} />
+        <Box
+          className="optigobot-chart-scroll"
+          sx={{
+            width: "100%",
+            height: "100%",
+            overflowY: chartNeedsScroll ? "auto" : "hidden",
+            overflowX: "hidden",
+          }}
+        >
+          <Box sx={{ width: "100%", height: chartContentHeight - 24, position: "relative" }}>
+            {chart_type === "bar" ? (
+              <Bar data={data} options={cartesianOptions} />
+            ) : (
+              <Line data={data} options={cartesianOptions} />
+            )}
+          </Box>
         </Box>
       )}
     </Box>
@@ -1181,10 +1278,32 @@ function DownloadBlock({ url }) {
   );
 }
 
+function SourcesBlock({ items }) {
+  const list = (Array.isArray(items) ? items : []).filter(Boolean);
+  if (!list.length) return null;
+  return (
+    <Typography
+      component="p"
+      sx={{
+        fontSize: 11,
+        lineHeight: 1.4,
+        color: "text.disabled",
+        mt: 1,
+        pt: 0.75,
+        borderTop: "1px solid", borderTopColor: "grey.100",
+        fontStyle: "italic",
+      }}
+    >
+      Sources: {list.join(", ")}
+    </Typography>
+  );
+}
+
 const BLOCK_COMPONENTS = {
   text: TextBlock,
   heading: HeadingBlock,
   metric: MetricBlock,
+  metric_card: MetricBlock,
   table: TableBlock,
   list: ListBlock,
   chart: ChartBlock,
@@ -1192,16 +1311,30 @@ const BLOCK_COMPONENTS = {
   clarify: ClarifyBlock,
   suggestions: SuggestionsBlock,
   download: DownloadBlock,
+  sources: SourcesBlock,
 };
 
 export default function ChatBlockRenderer({ blocks, onSuggestionClick }) {
   if (!Array.isArray(blocks) || blocks.length === 0) {
     return <ErrorBlock content="No response received." />;
   }
+  const hasTable = blocks.some((b) => b?.type === "table");
+  const metricCardValues = new Set(
+    blocks
+      .filter((b) => b?.type === "metric_card")
+      .map((b) => b?.raw_value)
+  );
+  const visibleBlocks = blocks.filter(
+    (b) =>
+      b?.type !== "metric" ||
+      (!hasTable && !metricCardValues.has(b?.raw_value))
+  );
 
   return (
     <Box className="chat-message-content">
-      {blocks.map((block, idx) => {
+      {visibleBlocks.map((rawBlock, idx) => {
+        // Fix any mojibake (e.g. "â¹" → "₹") in every string field.
+        const block = sanitizeBlock(rawBlock);
         const Component = BLOCK_COMPONENTS[block?.type];
         if (!Component) return null;
         try {

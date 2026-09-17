@@ -6,8 +6,9 @@
   --primary-btncolor-end: #{$primary-btncolor-end};
 }
 
-// Chat transcript scroll container — smooth, styled scrollbar.
-.optigobot-scroll {
+// Chat transcript + in-card chart scroll containers — smooth, styled scrollbar.
+.optigobot-scroll,
+.optigobot-chart-scroll {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 
