@@ -127,7 +127,7 @@ const SummaryEndFilteredValue = ({
 
     return (
       <Box sx={{ padding: { xs: "8px", sm: "12px" }, width: "100%", boxSizing: "border-box", flex: 1 }}>
-        <Grid container spacing={1} rowSpacing={2.5} alignItems="stretch">
+        <Grid container spacing={1} rowSpacing={1} alignItems="stretch">
 
           {/* ── existing column summaries ── */}
           {sortedSummaryColumns.map((col) => {

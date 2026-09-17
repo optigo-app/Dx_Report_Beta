@@ -138,6 +138,7 @@ export default function SpliterReport({
   const [collapsed, setCollapsed] = useState([false, false]);
   const savedWidths = useRef(spliterReportSecondPanel ? [18, 18] : [18]);
   const COLLAPSED_W = 38;
+  const [clearAllDataSignal, setClearAllDataSignal] = useState(0);
 
   // ─── NEW: active second-panel field (first or second option) ──────────────
   // "first"  → use spliterReportSecondPanel  (e.g. "Department")
@@ -806,6 +807,11 @@ export default function SpliterReport({
                         startDate.setMonth(startDate.getMonth() - monthCount);
                         startDate.setDate(1);
                         setFilterState({ dateRange: { startDate, endDate } });
+                        // ✅ clear sidebar (panel) filters
+                        setFirstPanelSearch("");
+                        setSecondPanelSearch("");
+                        // ✅ clear MainReport on-screen + drawer filters
+                        setClearAllDataSignal((prev) => prev + 1);
                         fetchReportData({}, 0, false, { startDate, endDate });
                       }}
                       sx={{
@@ -1238,6 +1244,7 @@ export default function SpliterReport({
             isPrintColumn={isPrintColumn}
             isRightBaseColumMaster={isRightBaseColumMaster}
             reportsExcelRights={reportsExcelRights}
+            clearAllDataSignal={clearAllDataSignal}
           />
         </div>
       </Box>

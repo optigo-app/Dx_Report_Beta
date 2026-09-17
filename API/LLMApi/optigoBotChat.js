@@ -3,7 +3,7 @@ const DEFAULT_RESPONSE_MODE = "wide";
 const REQUEST_TIMEOUT_MS = 30000;
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_FASTAPI_URL || "http://localhost:8001";
+  process.env.NEXT_PUBLIC_FASTAPI_URL || "http://192.168.0.66:8001";
 
 const sendChatMessage = async (req, signal) => {
   const body = {
