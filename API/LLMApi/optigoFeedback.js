@@ -1,5 +1,4 @@
-const API_BASE =
-  process.env.NEXT_PUBLIC_FASTAPI_URL || "http://optigollm.web";
+import { postJson } from "./llmFetch";
 
 /**
  * Submit feedback (thumbs up/down) for a chat answer.
@@ -28,12 +27,7 @@ const submitFeedback = async (params) => {
   };
 
   try {
-    const res = await fetch(`${API_BASE}/v1/feedback`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    return await res.json();
+    return await postJson("/v1/feedback", body);
   } catch {
     return { status: "error", message: "Failed to submit feedback" };
   }

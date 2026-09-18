@@ -148,18 +148,6 @@ export default function ChatWindow({ onClose }) {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0, flex: 1 }}>
-          <Box
-            component="img"
-            src="./icons/ai-icon.svg"
-            alt="Optigo AI"
-            sx={{
-              width: 26,
-              height: 26,
-              borderRadius: "50%",
-              flexShrink: 0,
-              display: "block",
-            }}
-          />
           <Box sx={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
             {latestUserQuestion ? (
               <Tooltip title={latestUserQuestion}>
