@@ -34,7 +34,6 @@ export default function FeedbackButtons({
 }) {
   const theme = useTheme();
   const [vote, setVote] = useState(null); // "up" | "down" | null
-  const [submitted, setSubmitted] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedReason, setSelectedReason] = useState(null);
   const [comment, setComment] = useState("");
@@ -43,7 +42,7 @@ export default function FeedbackButtons({
     const fullComment = reason
       ? `[${reason}]${commentText ? ` ${commentText}` : ""}`
       : commentText || "";
-    const res = await submitFeedback({
+    await submitFeedback({
       session_id: sessionId,
       question,
       answer,
@@ -52,9 +51,6 @@ export default function FeedbackButtons({
       rating,
       comment: fullComment,
     });
-    if (res?.status === "ok") {
-      setSubmitted(true);
-    }
   };
 
   const handleThumbsUp = () => {
@@ -86,32 +82,7 @@ export default function FeedbackButtons({
     setVote(null);
   };
 
-  // --- Submitted confirmation state ---
-  if (submitted) {
-    return (
-      <Box
-        sx={{
-          mt: 0.5,
-          display: "flex",
-          alignItems: "center",
-          gap: 0.5,
-        }}
-      >
-        <Check size={16} color={theme.palette.success.main} strokeWidth={2.5} />
-        <Typography
-          sx={{
-            fontSize: 12,
-            color: "text.secondary",
-            fontStyle: "italic",
-          }}
-        >
-          Thanks for your feedback
-        </Typography>
-      </Box>
-    );
-  }
-
-  // --- Default: icon row outside the bubble ---
+  // --- Icon row stays visible after voting; the chosen thumb is filled. ---
   return (
     <>
       <Box
@@ -162,8 +133,10 @@ export default function FeedbackButtons({
         onClose={handleCancelDownvote}
         maxWidth="sm"
         fullWidth
-        PaperProps={{
-          sx: { borderRadius: "16px", overflow: "hidden" },
+        slotProps={{
+          paper: {
+            sx: { borderRadius: "16px", overflow: "hidden" },
+          },
         }}
       >
         <DialogTitle

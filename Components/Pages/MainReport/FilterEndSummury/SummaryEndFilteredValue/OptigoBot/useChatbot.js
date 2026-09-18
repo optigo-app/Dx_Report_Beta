@@ -91,10 +91,22 @@ export function useChatbot({ responseMode = "wide" } = {}) {
           ctrl.signal
         );
 
-        if (res?.session_id) {
-          sessionIdRef.current = res.session_id;
-          setSessionId(res.session_id);
+        const newSessionId = res?.session_id || res?.metadata?.session_id;
+        if (newSessionId) {
+          sessionIdRef.current = newSessionId;
+          setSessionId(newSessionId);
         }
+
+        // `answer` can be a string or a structured object
+        // { title, value, subtext } — flatten it for fallback/copy.
+        const answerText =
+          typeof res?.answer === "string"
+            ? res.answer
+            : res?.answer && typeof res.answer === "object"
+              ? [res.answer.title, res.answer.value, res.answer.subtext]
+                  .filter(Boolean)
+                  .join("\n")
+              : null;
 
         // Build blocks: use res.blocks if present, else fall back to answer.
         let botBlocks =
@@ -102,14 +114,16 @@ export function useChatbot({ responseMode = "wide" } = {}) {
             ? res.blocks
             : res?.error
               ? [{ type: "error", content: res.error }]
-              : [{ type: "text", content: res?.answer || "No response received." }]);
+              : [{ type: "text", content: answerText || "No response received." }]);
 
         // When pid is present (report context is known), drop "Sources:" text
-        // blocks from the response since the source is already implied.
+        // blocks and `sources` blocks — the source is already implied.
         if (pidRef.current && Array.isArray(botBlocks)) {
           botBlocks = botBlocks.filter(
             (b) =>
-              !(b?.type === "text" && /^sources?\s*:/i.test(String(b.content || "").trim()))
+              b?.type !== "sources" &&
+              !(b?.type === "text" &&
+                /^sources?\s*:/i.test(String(b.content || "").trim()))
           );
         }
 
@@ -125,8 +139,15 @@ export function useChatbot({ responseMode = "wide" } = {}) {
         }
 
         // Surface a download link as a dedicated block when the API returns one.
-        if (res?.download_url) {
-          botBlocks = [...botBlocks, { type: "download", url: res.download_url }];
+        const downloadUrl = res?.download_url || res?.actions?.download_url;
+        if (downloadUrl) {
+          botBlocks = [...botBlocks, { type: "download", url: downloadUrl }];
+        }
+
+        // Follow-up suggestions live under actions.suggestions in the new shape.
+        const suggestions = res?.actions?.suggestions;
+        if (Array.isArray(suggestions) && suggestions.length) {
+          botBlocks = [...botBlocks, { type: "suggestions", items: suggestions }];
         }
 
         // Collapse consecutive identical blocks — guards against the backend
@@ -144,10 +165,27 @@ export function useChatbot({ responseMode = "wide" } = {}) {
 
         setMessages((prev) => [
           ...prev,
-          { id: nextId(), role: "assistant", blocks: botBlocks, raw: { ...res, _originalQuestion: trimmed } },
+          {
+            id: nextId(),
+            role: "assistant",
+            blocks: botBlocks,
+            raw: {
+              ...res,
+              _originalQuestion: trimmed,
+              // report_key moved under report.key; answer is now an object —
+              // keep flattened copies for copy/feedback actions.
+              report_key: res?.report_key || res?.report?.key,
+              answer_text: answerText,
+            },
+          },
         ]);
       } catch (err) {
-        if (err?.name === "AbortError") return;
+        if (err?.name === "AbortError") {
+          // Cancelled mid-request — drop the dangling user bubble; the
+          // question is handed back via lastUserQuestion for a quick resend.
+          setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
+          return;
+        }
         setMessages((prev) => [
           ...prev,
           {

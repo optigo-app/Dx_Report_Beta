@@ -12,7 +12,11 @@ export default function MessageActions({ sessionId, raw, onRegenerate }) {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(raw?.answer || "");
+      // `raw.answer` may be a structured object — use the flattened text.
+      const answerText =
+        raw?.answer_text ||
+        (typeof raw?.answer === "string" ? raw.answer : "");
+      await navigator.clipboard.writeText(answerText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -57,7 +61,10 @@ export default function MessageActions({ sessionId, raw, onRegenerate }) {
         sessionId={sessionId}
         reportKey={raw?.report_key}
         question={raw?._originalQuestion || ""}
-        answer={raw?.answer}
+        answer={
+          raw?.answer_text ||
+          (typeof raw?.answer === "string" ? raw.answer : "")
+        }
       />
 
       {onRegenerate && raw?._originalQuestion && (
