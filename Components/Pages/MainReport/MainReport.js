@@ -2232,23 +2232,16 @@ export default function MainReport({
           }
         }
       }
-
       if (isMatch && !spliterReportShow && filterState && selectedDateColumn &&
         (masterKeyData?.MainDateFilter == "True" ||
           masterKeyData?.AllDataButton == "True")
       ) {
-
-        // "2025-12-31T10:16:49.000Z" or "29 Feb 2026"
-        // Row dates are ISO strings displayed in UTC → extract UTC components
-        // Filter dates are local Date objects from date picker → extract LOCAL components
         const toDateOnly = (d) => {
           if (!d && d !== 0) return new Date(NaN);
           if (d instanceof Date) {
-            // Local date picker — use local components
             return new Date(d.getFullYear(), d.getMonth(), d.getDate());
           }
           const str = String(d).trim();
-          // Already formatted: "29 Feb 2026", "1 Jan 2026"
           const formattedMatch = str.match(/^(\d{1,2})\s([A-Za-z]{3,})\s(\d{4})$/);
           if (formattedMatch) {
             const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -2257,7 +2250,6 @@ export default function MainReport({
               return new Date(+formattedMatch[3], monthIdx, +formattedMatch[1]);
             }
           }
-          // ISO string — use UTC components to match grid display
           const dateObj = new Date(str);
           if (!isNaN(dateObj.getTime())) {
             return new Date(dateObj.getUTCFullYear(), dateObj.getUTCMonth(), dateObj.getUTCDate());
@@ -2278,20 +2270,27 @@ export default function MainReport({
       }
 
       if (isMatch && commonSearch) {
-        const searchText = commonSearch.toLowerCase();
+        // ✅ Normalize spaces: collapse multiple spaces into one
+        const searchText = commonSearch.toLowerCase().trim().replace(/\s+/g, " ");
 
-        // only visible/searchable fields
         const searchableFields = columns
           ?.filter((col) => col.field !== "id")
           ?.map((col) => col.field);
 
-        const hasMatch = searchableFields.some((field) => {
-          const value = row[field];
+        const twoColumnFields = columns
+          ?.filter((col) => col.TwoColumnData && col.TwoColumnData !== "")
+          ?.map((col) => col.TwoColumnData);
 
-          return value
-            ?.toString()
-            .toLowerCase()
-            .includes(searchText);
+        const allSearchFields = [...new Set([...searchableFields, ...twoColumnFields])];
+
+        const hasMatch = allSearchFields.some((field) => {
+          const value = row[field];
+          if (!value) return false;
+
+          // ✅ Also normalize cell value spaces
+          const cellValue = value.toString().toLowerCase().trim().replace(/\s+/g, " ");
+
+          return cellValue.includes(searchText);
         });
 
         if (!hasMatch) {
@@ -2317,7 +2316,6 @@ export default function MainReport({
 
       return isMatch;
     });
-
     let rowsWithSrNo = newFilteredRows?.map((row, index) => ({
       ...row,
       srNo: index + 1,
