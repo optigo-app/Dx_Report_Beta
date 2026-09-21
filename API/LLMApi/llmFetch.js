@@ -1,9 +1,13 @@
-// Shared fetch helper for Optigo AI/LLM endpoints — JSON requests, timeout,
-// and external abort-signal combining live here so each API file only
-// declares its endpoint and body shape.
+// Local/dev hostnames hit the local LLM server; everything else uses production.
+const isLocal =
+  typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1", "nzen", "dxreport.web"].includes(
+    window.location.hostname
+  );
 
-export const LLM_API_BASE =
-  process.env.NEXT_PUBLIC_FASTAPI_URL || "http://localhost:8001"; // "http://optigollm.web";
+export const LLM_API_BASE = isLocal
+  ? "http://localhost:8001"
+  : "http://optigollm.web";
 
 const DEFAULT_TIMEOUT_MS = 30000;
 
