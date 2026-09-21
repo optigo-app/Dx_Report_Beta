@@ -7,9 +7,17 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { PencilLine, X, ArrowUp, Square, ChevronDown } from "lucide-react";
+import {
+  PencilLine,
+  X,
+  ArrowUp,
+  Square,
+  ChevronDown,
+  Plus,
+} from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { useChatbot } from "./useChatbot";
+import fetchSuggestedQuestions from "@/API/LLMApi/optigoSuggestedQuestions";
 
 const PREMADE_QUESTIONS_MASTER = [
   {
@@ -60,9 +68,41 @@ export default function ChatWindow({ onClose }) {
   const [currentUrl] = useState(() =>
     typeof window !== "undefined" ? window.location.href : ""
   );
+  const [apiQuestions, setApiQuestions] = useState(null);
+  const [userName] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const raw = sessionStorage.getItem("reportVarible");
+      const data = raw ? JSON.parse(raw) : null;
+      return (
+        data?.UserName ||
+        data?.user_name ||
+        data?.username ||
+        data?.Name ||
+        data?.FirstName ||
+        ""
+      );
+    } catch {
+      return "";
+    }
+  });
   const scrollRef = useRef(null);
 
-  const suggestions = getUrlWiseSuggestions(currentUrl);
+  // Report-aware suggested questions from the API; URL-based list is the fallback.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const pid = new URLSearchParams(window.location.search).get("pid");
+    if (!pid) return;
+    const ctrl = new AbortController();
+    fetchSuggestedQuestions(pid, ctrl.signal).then((res) => {
+      if (res?.questions?.length) setApiQuestions(res.questions);
+    });
+    return () => ctrl.abort();
+  }, []);
+
+  const suggestions = apiQuestions?.length
+    ? apiQuestions
+    : getUrlWiseSuggestions(currentUrl);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -169,7 +209,7 @@ export default function ChatWindow({ onClose }) {
                 sx={{
                   fontSize: 14,
                   fontWeight: 600,
-                  color: "var(--primary-btncolor-start)",
+                  color: "#6400b8",
                 }}
               >
                 Optigo AI
@@ -211,81 +251,84 @@ export default function ChatWindow({ onClose }) {
                 height: "100%",
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                textAlign: "center",
+                alignItems: "flex-start",
+                justifyContent: "flex-end",
+                textAlign: "left",
                 px: 1,
+                pb: 1,
+                // Shared entrance keyframe — children stagger via animationDelay.
+                "@keyframes fadeUp": {
+                  from: { opacity: 0, transform: "translateY(10px)" },
+                  to: { opacity: 1, transform: "translateY(0)" },
+                },
               }}
             >
-              <Box
-                component="img"
-                src="./icons/ai-icon.svg"
-                alt="Optigo AI"
-                sx={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: "50%",
-                  display: "block",
-                  boxShadow: "0 6px 18px rgba(100,0,184,0.25)",
-                  mb: 2,
-                }}
-              />
               <Typography
                 sx={{
-                  fontSize: 18,
-                  fontWeight: 600,
+                  fontSize: 25,
+                  fontWeight: 500,
+                  color: "#6400b8",
+                  animation: "fadeUp 0.45s ease both",
+                }}
+              >
+                Hello{userName ? `, ${userName}` : ""}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: 22,
+                  fontWeight: 500,
                   color: "text.primary",
                   mb: 0.5,
+                  animation: "fadeUp 0.45s ease 0.08s both",
                 }}
               >
                 How can I help you today?
               </Typography>
               <Typography
                 sx={{
-                  fontSize: 12.5,
+                  fontSize: 13,
                   color: "text.secondary",
                   mb: 3,
+                  animation: "fadeUp 0.45s ease 0.16s both",
                 }}
               >
                 Ask about sales, performance, trends, or this report.
               </Typography>
 
+              {/* One suggestion pill per row — sized to its content */}
               <Box
                 sx={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gridAutoRows: "1fr",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
                   gap: 1,
                   width: "100%",
                 }}
               >
-                {suggestions.slice(0, 4).map((question, i) => (
+                {suggestions.slice(0, 3).map((question, i) => (
                   <Box
                     key={i}
                     onClick={() => handleSend(question)}
                     sx={{
-                      px: 1.5,
+                      px: 2,
                       py: 1.25,
-                      borderRadius: "14px",
-                      border: "1px solid",
-                      borderColor: "divider",
-                      backgroundColor: "common.white",
+                      borderRadius: "999px",
+                      backgroundColor: "#f5f3ff",
                       cursor: "pointer",
-                      // Equal-height cells + centered text keeps the grid
-                      // visually even regardless of label length.
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      textAlign: "center",
-                      fontSize: 12.5,
+                      textAlign: "left",
+                      fontSize: 15,
+                      fontWeight: 500,
                       color: "text.primary",
-                      boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+                      width: "fit-content",
+                      maxWidth: "100%",
                       transition: "all 0.2s ease",
+                      animation: `fadeUp 0.4s ease ${0.24 + i * 0.07}s both`,
                       "&:hover": {
-                        borderColor: "var(--primary-btncolor-start)",
-                        backgroundColor: "#f5f3ff",
-                        boxShadow: "0 4px 12px rgba(100,0,184,0.1)",
-                        transform: "translateY(-2px)",
+                        backgroundColor: "#ede8ff",
+                        transform: "translateY(-1px)",
+                      },
+                      "&:active": {
+                        transform: "translateY(0) scale(0.98)",
                       },
                     }}
                   >
@@ -377,7 +420,31 @@ export default function ChatWindow({ onClose }) {
             disabled={isLoading}
             sx={{ fontSize: 15, flex: 1, alignItems: "flex-start" }}
           />
-          <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 0.75, mt: 1 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 0.75, mt: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              {false && (
+                <Tooltip title="Attach file">
+                  <IconButton
+                    size="small"
+                    sx={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: "50%",
+                      color: "text.secondary",
+                      border: "1px solid", borderColor: "divider",
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        color: "var(--primary-btncolor-start)",
+                        borderColor: "var(--primary-btncolor-start)",
+                        backgroundColor: "#f5f3ff",
+                      },
+                    }}
+                  >
+                    <Plus size={15} />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Box>
             {isLoading ? (
               <Tooltip title="Stop generating">
                 <IconButton
