@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -13,17 +13,20 @@ import {
   Typography,
 } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
-import { ThumbsUp, ThumbsDown, Check, X, MessageSquare } from "lucide-react";
+import { Check, X, MessageSquare } from "lucide-react";
+import { FaThumbsUp, FaThumbsDown, FaRegThumbsUp, FaRegThumbsDown } from "react-icons/fa";
 import submitFeedback from "@/API/LLMApi/optigoFeedback";
 
-// Reason chips shown in the feedback dialog.
+// Reason chips shown in the feedback dialog — aligned with the QA taxonomy.
 const DOWNVOTE_REASONS = [
-  { id: "inaccurate", label: "Inaccurate" },
-  { id: "unhelpful", label: "Unhelpful" },
-  { id: "too_long", label: "Too Long" },
-  { id: "incomplete", label: "Incomplete" },
-  { id: "other", label: "Other" },
+  { id: "offensive_unsafe", label: "Offensive / Unsafe" },
+  { id: "not_factually_correct", label: "Not factually correct" },
+  { id: "didnt_follow_instructions", label: "Didn't follow instructions" },
+  { id: "personalization_issue", label: "Personalization issue" },
+  { id: "other", label: "Other / More" },
 ];
+
+const SEVERITY_LEVELS = ["Low", "Medium", "High"];
 
 export default function FeedbackButtons({
   sessionId,
@@ -36,13 +39,22 @@ export default function FeedbackButtons({
   const [vote, setVote] = useState(null); // "up" | "down" | null
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedReason, setSelectedReason] = useState(null);
+  const [severity, setSeverity] = useState("Medium");
   const [comment, setComment] = useState("");
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+
+  useEffect(() => {
+    if (!toastOpen) return;
+    const t = setTimeout(() => setToastOpen(false), 2500);
+    return () => clearTimeout(t);
+  }, [toastOpen]);
 
   const handleSubmit = async (rating, reason, commentText) => {
     const fullComment = reason
       ? `[${reason}]${commentText ? ` ${commentText}` : ""}`
       : commentText || "";
-    await submitFeedback({
+    const res = await submitFeedback({
       session_id: sessionId,
       question,
       answer,
@@ -51,14 +63,26 @@ export default function FeedbackButtons({
       rating,
       comment: fullComment,
     });
+    if (res?.status !== "error") {
+      setToastMessage("Thanks for your feedback!");
+      setToastOpen(true);
+    }
   };
 
   const handleThumbsUp = () => {
+    if (vote === "up") {
+      setVote(null); // toggle off
+      return;
+    }
     setVote("up");
     handleSubmit("up");
   };
 
   const handleThumbsDown = () => {
+    if (vote === "down") {
+      setVote(null); // toggle off
+      return;
+    }
     setVote("down");
     setDialogOpen(true);
   };
@@ -69,15 +93,18 @@ export default function FeedbackButtons({
 
   const handleSubmitDownvote = () => {
     const reasonLabel = DOWNVOTE_REASONS.find((r) => r.id === selectedReason)?.label;
-    handleSubmit("down", reasonLabel, comment);
+    const taggedReason = severity ? `${reasonLabel} | severity: ${severity}` : reasonLabel;
+    handleSubmit("down", taggedReason, comment);
     setDialogOpen(false);
     setSelectedReason(null);
+    setSeverity("Medium");
     setComment("");
   };
 
   const handleCancelDownvote = () => {
     setDialogOpen(false);
     setSelectedReason(null);
+    setSeverity("Medium");
     setComment("");
     setVote(null);
   };
@@ -89,23 +116,46 @@ export default function FeedbackButtons({
         sx={{
           display: "flex",
           alignItems: "center",
+          "@keyframes thumbPop": {
+            "0%": { transform: "scale(0.5) rotate(-12deg)", opacity: 0.4 },
+            "60%": { transform: "scale(1.25) rotate(6deg)" },
+            "100%": { transform: "scale(1) rotate(0deg)", opacity: 1 },
+          },
         }}
       >
+        {/* Shared gradient defs for the voted thumbs */}
+        <svg width="0" height="0" style={{ position: "absolute" }}>
+          <defs>
+            <linearGradient id="optigo-thumb-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#6400b8" />
+              <stop offset="100%" stopColor="#8d0096" />
+            </linearGradient>
+          </defs>
+        </svg>
         <Tooltip title="Good response">
           <IconButton
             onClick={handleThumbsUp}
             sx={{
-              color: vote === "up" ? "success.main" : "text.disabled",
+              color: vote === "up" ? "var(--primary-btncolor-start)" : "text.disabled",
               padding: "6px",
               borderRadius: "16px",
               transition: "all 0.15s ease",
               "&:hover": {
-                color: "success.main",
-                backgroundColor: alpha(theme.palette.success.main, 0.08),
+                color: "var(--primary-btncolor-start)",
+                backgroundColor: "#f5f3ff",
               },
+              "& svg": {
+                transition: "transform 0.15s ease",
+                animation: vote === "up" ? "thumbPop 0.35s cubic-bezier(0.34,1.56,0.64,1)" : "none",
+              },
+              "&:active svg": { transform: "scale(0.85)" },
             }}
           >
-            <ThumbsUp size={15} strokeWidth={2} fill={vote === "up" ? theme.palette.success.main : "none"} />
+            {vote === "up" ? (
+              <FaThumbsUp size={14} fill="url(#optigo-thumb-grad)" />
+            ) : (
+              <FaRegThumbsUp size={14} />
+            )}
           </IconButton>
         </Tooltip>
         <Tooltip title="Bad response">
@@ -120,9 +170,18 @@ export default function FeedbackButtons({
                 color: "error.main",
                 backgroundColor: alpha(theme.palette.error.main, 0.08),
               },
+              "& svg": {
+                transition: "transform 0.15s ease",
+                animation: vote === "down" ? "thumbPop 0.35s cubic-bezier(0.34,1.56,0.64,1)" : "none",
+              },
+              "&:active svg": { transform: "scale(0.85)" },
             }}
           >
-            <ThumbsDown size={15} strokeWidth={2} fill={vote === "down" ? theme.palette.error.main : "none"} />
+            {vote === "down" ? (
+              <FaThumbsDown size={14} />
+            ) : (
+              <FaRegThumbsDown size={14} />
+            )}
           </IconButton>
         </Tooltip>
       </Box>
@@ -192,6 +251,38 @@ export default function FeedbackButtons({
                       selectedReason === reason.id
                         ? alpha(theme.palette.error.main, 0.14)
                         : "grey.100",
+                  },
+                }}
+              />
+            ))}
+          </Box>
+
+          {/* Severity selector */}
+          <Typography sx={{ fontSize: 13, color: "text.secondary", mb: 1 }}>
+            How severe is this issue?
+          </Typography>
+          <Box sx={{ display: "flex", gap: 0.75, mb: 2 }}>
+            {SEVERITY_LEVELS.map((level) => (
+              <Chip
+                key={level}
+                label={level}
+                onClick={() => setSeverity(level)}
+                sx={{
+                  fontSize: 12,
+                  height: 26,
+                  cursor: "pointer",
+                  borderRadius: "13px",
+                  backgroundColor:
+                    severity === level
+                      ? alpha(theme.palette.error.main, 0.08)
+                      : "transparent",
+                  color: severity === level ? "error.main" : "text.secondary",
+                  border: "1px solid",
+                  borderColor:
+                    severity === level ? "error.light" : "divider",
+                  fontWeight: severity === level ? 600 : 400,
+                  "&:hover": {
+                    backgroundColor: alpha(theme.palette.error.main, 0.12),
                   },
                 }}
               />
@@ -272,6 +363,39 @@ export default function FeedbackButtons({
           </Box>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation toast — full-width dark bar sliding up from the bottom
+          of the message area (anchored to the drawer's relative wrapper). */}
+      {toastOpen && (
+        <Box
+          onClick={() => setToastOpen(false)}
+          sx={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            px: 2,
+            py: 1.25,
+            backgroundColor: "grey.900",
+            color: "common.white",
+            fontSize: 13,
+            fontWeight: 500,
+            zIndex: 50,
+            cursor: "pointer",
+            "@keyframes toastUp": {
+              from: { transform: "translateY(100%)", opacity: 0 },
+              to: { transform: "translateY(0)", opacity: 1 },
+            },
+            animation: "toastUp 0.3s ease both",
+          }}
+        >
+          <Check size={15} color="#4ade80" />
+          {toastMessage}
+        </Box>
+      )}
     </>
   );
 }

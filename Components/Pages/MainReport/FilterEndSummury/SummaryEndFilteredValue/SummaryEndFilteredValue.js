@@ -52,6 +52,8 @@ const SummaryEndFilteredValue = ({
   setDraftFilters,
   activeIframeTab,
   onAskOptigoAiPanelToggle,
+  optigoPanelWidth,
+  onOptigoPanelWidthChange,
   isFormulaBasedSummary,
   summaryViewData,
   isLoading,
@@ -554,21 +556,63 @@ const SummaryEndFilteredValue = ({
                   )}
 
                   {masterKeyData?.OptigoChatBotAi == "True" &&
-                    <Button
-                      variant="contained"
-                      onClick={handleAskOptigoAi}
-                      className={`AibuttonClassname ${openAskOptigoAi ? "no-anim" : ""}`}
-                    >
-                      <Box component="img" src="./icons/ai-icon.svg" alt="Optigo AI"
-                        sx={{ width: 18, height: 18, borderRadius: "50%", mr: 0.8 }} />
-                      Ask OptigoAI
-                    </Button>
+                    (openAskOptigoAi ? (
+                      // Panel open: collapse to a circular avatar only.
+                      <IconButton
+                        onClick={handleAskOptigoAi}
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          p: 0,
+                          borderRadius: "50%",
+                          "@keyframes popIn": {
+                            "0%": { transform: "scale(0.6)", opacity: 0 },
+                            "60%": { transform: "scale(1.08)" },
+                            "100%": { transform: "scale(1)", opacity: 1 },
+                          },
+                          "@keyframes softGlow": {
+                            "0%, 100%": { boxShadow: "0 0 0 0 rgba(100,0,184,0.25)" },
+                            "50%": { boxShadow: "0 0 0 6px rgba(100,0,184,0)" },
+                          },
+                          animation: "popIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both, softGlow 2.4s ease-in-out infinite",
+                          "&:hover": { transform: "scale(1.05)" },
+                          transition: "transform 0.15s ease",
+                        }}
+                      >
+                        <Box
+                          component="img"
+                          src="./icons/ai-icon.svg"
+                          alt="Optigo AI"
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: "50%",
+                            display: "block",
+                          }}
+                        />
+                      </IconButton>
+                    ) : (
+                      <Button
+                        variant="contained"
+                        onClick={handleAskOptigoAi}
+                        className={`AibuttonClassname ${openAskOptigoAi ? "no-anim" : ""}`}
+                      >
+                        <Box component="img" src="./icons/ai-icon.svg" alt="Optigo AI"
+                          sx={{ width: 18, height: 18, borderRadius: "50%", mr: 0.8 }} />
+                        Ask OptigoAI
+                      </Button>
+                    ))
                   }
                 </Box>
             }
           </div>
           {masterKeyData?.OptigoChatBotAi == "True" &&
-            <OptigoBotDrawer open={openAskOptigoAi} onClose={handleCloseAskOptigoAi} />
+            <OptigoBotDrawer
+              open={openAskOptigoAi}
+              onClose={handleCloseAskOptigoAi}
+              width={optigoPanelWidth}
+              onWidthCommit={onOptigoPanelWidthChange}
+            />
           }
         </div>
       }

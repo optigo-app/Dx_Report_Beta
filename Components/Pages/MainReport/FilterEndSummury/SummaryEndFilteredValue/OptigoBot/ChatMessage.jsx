@@ -11,10 +11,9 @@ function AiAvatar({ loading = false }) {
     <Box
       sx={{
         position: "relative",
-        width: 28,
-        height: 28,
+        width: 36,
+        height: 36,
         flexShrink: 0,
-        mt: 0.25,
       }}
     >
       {loading && (
@@ -32,14 +31,12 @@ function AiAvatar({ loading = false }) {
       )}
       <Box
         component="img"
-        src="./icons/ai-icon.svg"
+        src="./icons/ai-icon.png"
         alt="Optigo AI"
         sx={{
-          width: 28,
-          height: 28,
-          borderRadius: "50%",
+          width: 36,
+          height: 36,
           display: "block",
-          boxShadow: "0 2px 6px rgba(100,0,184,0.25)",
         }}
       />
       {loading && (
@@ -112,13 +109,14 @@ export default function ChatMessage({
   const isBot = role === "assistant";
   const showActions = isBot && !isLoading && raw && !raw.error;
 
-  // --- Bot message: flat layout, no bubble ---
+  // --- Bot message: avatar on its own row, content below ---
   if (isBot) {
     return (
       <Box
         sx={{
           display: "flex",
-          gap: 1,
+          flexDirection: "column",
+          gap: 0.25,
           mb: 2,
           maxWidth: "100%",
         }}

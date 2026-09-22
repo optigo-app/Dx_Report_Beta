@@ -315,7 +315,8 @@ export default function MainReport({
   const [activeIframeTab, setActiveIframeTab] = useState(null);
   const [svgFilter, setSvgFilter] = useState(null);
   const [isAskOptigoAiPanelOpen, setIsAskOptigoAiPanelOpen] = useState(false);
-  const panelSpace = isAskOptigoAiPanelOpen ? "400px" : "0px";
+  const [optigoPanelWidth, setOptigoPanelWidth] = useState(400);
+  const panelSpace = isAskOptigoAiPanelOpen ? `${optigoPanelWidth}px` : "0px";
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [selectedAuthRow, setSelectedAuthRow] = useState(null);
@@ -2864,7 +2865,7 @@ export default function MainReport({
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div
-        className="dynamic_sample_report_main"
+        className="dynamic_sample_report_main dx-main-report-wrap"
         style={{
           display: "flex",
           flexDirection: "column",
@@ -3087,7 +3088,12 @@ export default function MainReport({
             setFiltersShow={setFiltersShow}
             setFilters={setFilters}
             setDraftFilters={setDraftFilters}
-            onAskOptigoAiPanelToggle={setIsAskOptigoAiPanelOpen}
+            onAskOptigoAiPanelToggle={(open) => {
+              setIsAskOptigoAiPanelOpen(open);
+              if (open) setOptigoPanelWidth(400); // always open at default width
+            }}
+            optigoPanelWidth={optigoPanelWidth}
+            onOptigoPanelWidthChange={setOptigoPanelWidth}
             isFormulaBasedSummary={isFormulaBasedSummary}
             summaryViewData={summaryViewData}
             isLoading={isLoading}

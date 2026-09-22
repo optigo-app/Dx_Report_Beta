@@ -258,6 +258,16 @@ function MetricBlock({ content, raw_value, currency, unit, unit_label, label, re
     ? mainLine.slice(0, mainLine.lastIndexOf(":")).trim()
     : label;
 
+  // Split a trailing unit label ("48.600 gms" → "48.600" + "gms") so the
+  // number stays large/bold while the unit renders smaller and lighter.
+  const unitSuffix = String(unit_label || "").trim();
+  let mainValue = formattedValue;
+  let trailingUnit = "";
+  if (unitSuffix && mainValue.toLowerCase().endsWith(unitSuffix.toLowerCase())) {
+    mainValue = mainValue.slice(0, -unitSuffix.length).trim();
+    trailingUnit = unitSuffix;
+  }
+
   return (
     <Box
       sx={{
@@ -322,7 +332,15 @@ function MetricBlock({ content, raw_value, currency, unit, unit_label, label, re
                 cursor: "default",
               }}
             >
-              {formattedValue}
+              {mainValue}
+              {trailingUnit && (
+                <Box
+                  component="span"
+                  sx={{ fontSize: 13, fontWeight: 500, color: "text.secondary", ml: 0.5 }}
+                >
+                  {trailingUnit}
+                </Box>
+              )}
             </Typography>
           </Tooltip>
         ) : (
@@ -414,7 +432,7 @@ function renderTableContent(columns, rows, colIsNumeric, colAlignRight) {
                   backgroundColor: "#f5f3ff",
                   borderBottom: "1px solid",
                   borderBottomColor: "divider",
-                  textAlign: colAlignRight[i] ? "right" : "left",
+                  textAlign: colAlignRight[i] ? "right" : "center",
                   width: colIsNumeric[i] ? "1%" : "auto",
                   whiteSpace: colIsNumeric[i] ? "nowrap" : "normal",
                 }}
@@ -461,15 +479,11 @@ function renderTableContent(columns, rows, colIsNumeric, colAlignRight) {
                         ? "error.dark"
                         : isPositiveGrowth
                           ? "success.main"
-                          : isMoney && !isEmpty
-                            ? "var(--primary-btncolor-start)"
-                            : isSummaryRow
-                              ? "text.primary"
-                              : "text.primary",
+                          : "text.primary",
                       fontWeight: isSummaryRow || (isMoney && !isEmpty) ? 600 : 400,
                       whiteSpace: isNumeric ? "nowrap" : "normal",
                       wordBreak: isNumeric ? "keep-all" : "break-word",
-                      textAlign: alignRight ? "right" : "left",
+                      textAlign: alignRight ? "right" : "center",
                       borderBottom: isSummaryRow ? "none" : "1px solid", borderBottomColor: isSummaryRow ? "transparent" : "grey.100",
                       position: "relative",
                       overflow: "hidden",
@@ -552,7 +566,7 @@ function TableTotalsBar({ moneyTotals }) {
           <Box
             component="span"
             sx={{
-              color: "var(--primary-btncolor-start)",
+              color: "text.primary",
               fontWeight: 700,
               fontSize: 15,
             }}
