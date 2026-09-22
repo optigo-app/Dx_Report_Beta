@@ -1,5 +1,5 @@
 import { Button, Dialog, IconButton, Tooltip, Box, Typography, Grid, Card, Skeleton } from "@mui/material";
-import { ArrowLeft, RotateCcw } from "lucide-react";
+import { ArrowLeft, RotateCcw, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import ColumnRearrange from "../../ColumnRearrange/ColumnRearrange";
 import { AiOutlineSetting } from "react-icons/ai";
@@ -47,6 +47,9 @@ const SummaryEndFilteredValue = ({
   setOtherReprot,
   refreshFunction,
   setFilteredValue,
+  setFiltersShow,
+  setFilters,
+  setDraftFilters,
   activeIframeTab,
   onAskOptigoAiPanelToggle,
   isFormulaBasedSummary,
@@ -284,6 +287,57 @@ const SummaryEndFilteredValue = ({
   const handleAskOptigoAi = () => setOpenAskOptigoAi(true);
   const handleCloseAskOptigoAi = () => setOpenAskOptigoAi(false);
 
+  // ─── remove a single filter chip and clear it from all filter states ──────────
+  const handleRemoveFilter = (filterItem) => {
+    const headerName = filterItem?.name;
+    if (!headerName) return;
+
+    // map headerName (headerNamesingle) → FieldName using allColumData
+    const colMeta = Object.values(allColumData || {})?.find(
+      (c) => c?.HeaderName === headerName
+    );
+    const fieldName = colMeta?.FieldName || headerName;
+
+    // 1️⃣ remove from filtersShow (keyed by headerNamesingle) → stops useEffect re-adding
+    if (setFiltersShow) {
+      setFiltersShow((prev) => {
+        const copy = { ...prev };
+        delete copy[headerName];
+        return copy;
+      });
+    }
+
+    // 2️⃣ remove from filters (keyed by FieldName) → stops row filtering
+    if (setFilters) {
+      setFilters((prev) => {
+        const copy = { ...prev };
+        delete copy[fieldName];
+        // also clear range filter variants
+        delete copy[`${fieldName}_min`];
+        delete copy[`${fieldName}_max`];
+        return copy;
+      });
+    }
+
+    // 3️⃣ remove from draftFilters (keyed by FieldName) → clears draft selection
+    if (setDraftFilters) {
+      setDraftFilters((prev) => {
+        const copy = { ...prev };
+        delete copy[fieldName];
+        delete copy[`${fieldName}_min`];
+        delete copy[`${fieldName}_max`];
+        return copy;
+      });
+    }
+
+    // 4️⃣ remove from filteredValue directly (covers external / server-side filters)
+    if (setFilteredValue) {
+      setFilteredValue((prev) =>
+        Array.isArray(prev) ? prev.filter((f) => f.name !== headerName) : []
+      );
+    }
+  };
+
   const containerRef = useRef(null);
   const [showScroll, setShowScroll] = useState(false);
   useEffect(() => {
@@ -359,7 +413,6 @@ const SummaryEndFilteredValue = ({
                     <Card
                       elevation={0}
                       sx={{
-
                         display: "flex", flexDirection: "column", justifyContent: "space-between",
                         width: "100%", height: "100%", padding: "6px 12px", borderRadius: "8px",
                         backgroundColor: "aliceblue", border: "1px solid #E5E7EB",
@@ -386,8 +439,23 @@ const SummaryEndFilteredValue = ({
                           filteredValueState.map((data, i) => (
                             <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 0.75, borderRadius: "999px" }}>
                               <Typography variant="caption" className="fontFamily"
-                                sx={{ fontWeight: 500, color: "#71717A", fontSize: "13px", letterSpacing: "-0.01em" }}>
-                                - {data.name}
+                                sx={{ fontWeight: 500, color: "#71717A", fontSize: "13px", letterSpacing: "-0.01em", display:'flex', gap: '5px', alignItems: 'center' }}>
+                                <span
+                                  role="button"
+                                  tabIndex={0}
+                                  className="removebtn"
+                                  title="Remove filter"
+                                  onClick={() => handleRemoveFilter(data)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      handleRemoveFilter(data);
+                                    }
+                                  }}
+                                >
+                                  <X size={11} />
+                                </span>
+                                {data.name}
                               </Typography>
                               <Box sx={{ width: "3px", height: "3px", borderRadius: "50%", bgcolor: "#D4D4D8" }} />
                               <Typography variant="caption" className="fontFamily"

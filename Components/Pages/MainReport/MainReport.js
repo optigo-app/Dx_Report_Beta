@@ -2232,10 +2232,11 @@ export default function MainReport({
           }
         }
       }
+
       if (isMatch && !spliterReportShow && filterState && selectedDateColumn &&
         (masterKeyData?.MainDateFilter == "True" ||
           masterKeyData?.AllDataButton == "True")
-      ) {
+        ) {
         const toDateOnly = (d) => {
           if (!d && d !== 0) return new Date(NaN);
           if (d instanceof Date) {
@@ -2260,10 +2261,17 @@ export default function MainReport({
         const parsedStart = toDateOnly(startDate);
         const parsedEnd = toDateOnly(endDate);
 
+        // ✅ Only apply date filtering when a valid date range is selected.
+        // When "All Data" is clicked, startDate/endDate are cleared (""),
+        // so skip filtering — this shows rows with null/empty dates too.
+        const hasValidRange =
+          !isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime());
+
         if (
-          isNaN(rowDate.getTime()) ||
-          rowDate < parsedStart ||
-          rowDate > parsedEnd
+          hasValidRange &&
+          (isNaN(rowDate.getTime()) ||
+            rowDate < parsedStart ||
+            rowDate > parsedEnd)
         ) {
           isMatch = false;
         }
@@ -3076,6 +3084,9 @@ export default function MainReport({
             setOtherReprot={setOtherReport}
             refreshFunction={refreshFunction}
             setFilteredValue={setFilteredValue}
+            setFiltersShow={setFiltersShow}
+            setFilters={setFilters}
+            setDraftFilters={setDraftFilters}
             onAskOptigoAiPanelToggle={setIsAskOptigoAiPanelOpen}
             isFormulaBasedSummary={isFormulaBasedSummary}
             summaryViewData={summaryViewData}
