@@ -2314,24 +2314,26 @@ const ReportTopFilterEndAction = ({
                       }
                     ]);
                   }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start" sx={{ color: "#71717a", mr: 0.5 }}>
-                        <Search size={16} color="#71717a" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: commonSearch ? (
-                      <InputAdornment position="end">
-                        <IconButton
-                          edge="end"
-                          size="small"
-                          onClick={() => setCommonSearch("")}
-                          aria-label="clear"
-                        >
-                          <X size={15} color="#71717a" />
-                        </IconButton>
-                      </InputAdornment>
-                    ) : null,
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start" sx={{ color: "#71717a", mr: 0.5 }}>
+                          <Search size={16} color="#71717a" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: commonSearch ? (
+                        <InputAdornment position="end">
+                          <IconButton
+                            edge="end"
+                            size="small"
+                            onClick={() => setCommonSearch("")}
+                            aria-label="clear"
+                          >
+                            <X size={15} color="#71717a" />
+                          </IconButton>
+                        </InputAdornment>
+                      ) : null,
+                    },
                   }}
                   sx={{
                     width: "280px",
