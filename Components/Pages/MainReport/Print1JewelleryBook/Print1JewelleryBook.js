@@ -16,6 +16,7 @@ export default function Print1JewelleryBook({
   printViewData,
   selectionModel, // ✅ new
 }) {
+  console.log('visibleItemsMain: ', visibleItemsMain);
   const img = "./images/noFound.jpg";
   const [msg, setMsg] = useState("");
   const [loader, setLoader] = useState(false);
@@ -281,10 +282,18 @@ export default function Print1JewelleryBook({
               const showLeft = row.left && !isZeroValue(leftVal);
               const showRight = row.right && !isZeroValue(rightVal);
 
+              if (!showLeft && !showRight) return null; // nothing to show, skip row entirely
+
               return (
                 <div
                   key={index}
-                  style={{ padding: '2px', display: 'flex', justifyContent: 'space-between', gap: '6px' }}
+                  style={{
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '6px',
+                  }}
                 >
                   {/* Left */}
                   <div style={{ width: '50%', minWidth: 0 }}>
@@ -315,6 +324,11 @@ export default function Print1JewelleryBook({
                       </div>
                     )}
                   </div>
+
+                  {/* Separator — only when both sides have content */}
+                  {showLeft && showRight && (
+                    <span style={{ flexShrink: 0 }}>|</span>
+                  )}
 
                   {/* Right */}
                   <div style={{ width: '50%', minWidth: 0, textAlign: 'right' }}>

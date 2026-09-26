@@ -491,6 +491,10 @@ export default function MainReport({
         ...prev,
         dateRange: { startDate: "", endDate: "" },
       }));
+      // ✅ still mark first load as ready so the date-filter useEffect can fire
+      setTimeout(() => {
+        firstTimeLoadedRef.current = true;
+      }, 0);
       return;
     }
     const formattedDate = formatToMMDDYYYY(now);
@@ -525,11 +529,15 @@ export default function MainReport({
   useEffect(() => {
     if (!firstTimeLoadedRef.current) return;
     const { startDate: s, endDate: e } = filterState.dateRange;
-    if (!s || !e) return;
 
     if (datefilterServerSide) {
+      // ✅ For server-side date filtering, always call onSearchFilter.
+      // When range is cleared (e.g. defaultShowAllData or "All Data" click),
+      // send empty FilterStartDate/FilterEndDate so the API returns all data.
       const formatServerDate = (d) => {
+        if (!d) return "";
         const dateObj = new Date(d);
+        if (isNaN(dateObj.getTime())) return "";
         const yyyy = dateObj.getFullYear();
         const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
         const dd = String(dateObj.getDate()).padStart(2, "0");
@@ -549,6 +557,8 @@ export default function MainReport({
         );
       }
     } else {
+      // ✅ Client-side date filtering: skip when range is empty (All Data)
+      if (!s || !e) return;
       const formattedStart = formatToMMDDYYYY(new Date(s));
       const formattedEnd = formatToMMDDYYYY(new Date(e));
       fetchData(formattedStart, formattedEnd);
@@ -2109,6 +2119,31 @@ export default function MainReport({
   const [filters, setFilters] = useState({});
   const [filtersShow, setFiltersShow] = useState({});
   const [filtersShowDraf, setFiltersShowDraf] = useState({});
+  const [gridSortedIds, setGridSortedIds] = useState(null);
+
+  // Jab tak grid mounted hai, uska real sorted order save karte raho
+  useEffect(() => {
+    if (showImageView || chartView) return; // grid unmounted hai, stale api use mat karo
+    const api = apiRef.current;
+    if (!api?.subscribeEvent) return;
+
+    const update = () => setGridSortedIds([...api.getSortedRowIds()]);
+    update();
+
+    const unsubscribe = api.subscribeEvent("sortedRowsSet", update);
+    return () => unsubscribe?.();
+  }, [showImageView, chartView, filteredRows, sortModel]);
+
+  const sortedRowsForViews = useMemo(() => {
+    if (!Array.isArray(filteredRows)) return [];
+    if (!gridSortedIds?.length) return filteredRows;
+
+    const rowMap = new Map(filteredRows.map((r) => [r.id, r]));
+    const ordered = gridSortedIds.map((id) => rowMap.get(id)).filter(Boolean);
+
+    // rows change ho gayi ho to safe fallback
+    return ordered.length === filteredRows.length ? ordered : filteredRows;
+  }, [filteredRows, gridSortedIds]);
 
   const applyMultiSort = (rows, model) => {
     if (!Array.isArray(rows) || !model?.length) return rows;
@@ -2234,10 +2269,11 @@ export default function MainReport({
         }
       }
 
-      if (isMatch && !spliterReportShow && filterState && selectedDateColumn &&
+      // ✅ Client-side date filtering only when server-side date filtering is OFF
+      if (isMatch && !spliterReportShow && !datefilterServerSide && filterState && selectedDateColumn &&
         (masterKeyData?.MainDateFilter == "True" ||
           masterKeyData?.AllDataButton == "True")
-        ) {
+      ) {
         const toDateOnly = (d) => {
           if (!d && d !== 0) return new Date(NaN);
           if (d instanceof Date) {
@@ -2605,7 +2641,7 @@ export default function MainReport({
     // Only preload the images for the page that is actually printed
     // (must match itemsPerPage in Print1JewelleryBook), not the whole dataset.
     const PRINT_ITEMS_PER_PAGE = 1000;
-    const allItems = currentPageItems ?? getSortedFilteredRows();
+    const allItems = currentPageItems ?? printData;   // ✅ pehle: getSortedFilteredRows()
     const startIdx = (page - 1) * PRINT_ITEMS_PER_PAGE;
     const items = currentPageItems
       ? allItems
@@ -2807,6 +2843,8 @@ export default function MainReport({
     }
   };
 
+
+
   if (showPrintView) {
     return (
       <div
@@ -2851,7 +2889,7 @@ export default function MainReport({
           </Button>
         </div>
         <Print1JewelleryBook
-          visibleItemsMain={getSortedFilteredRows()}  // ✅ was: printData
+          visibleItemsMain={printData}   // ✅ was: getSortedFilteredRows()
           onPrintClick={handlePrintNow}
           preparingPrint={preparingPrint}
           currentPrintPage={currentPrintPage}
@@ -3064,6 +3102,17 @@ export default function MainReport({
             />
           </Dialog>
         </LocalizationProvider>
+        {/* <div>
+          <p
+            style={{
+              margin: "0px",
+              backgroundColor: "#5c6bdc",
+              color: "white",
+              textAlign: "center",
+              padding: "3px",
+              fontSize: "12px"
+            }}>This report is the under maintenace so dont compare the data on it</p>
+        </div> */}
         <div style={{ flexShrink: 0 }}>
           <SummaryEndFilteredValue
             setSummaryColumns={setSummaryColumns}
@@ -3185,6 +3234,7 @@ export default function MainReport({
             hasMoreData={hasMoreData}
             loadingMore={loadingMore}
             clearAllDataSignal={clearAllDataSignal}
+            sortedRowsForViews={sortedRowsForViews}   // ✅ new
           />
         }
 
@@ -3223,11 +3273,11 @@ export default function MainReport({
           {showImageView ? (
             <div>
               <ImageView
-                // Grid is unmounted in image view, so getSortedFilteredRows()
+                // Grid is unmounted in image view, so getSortedFilteredRows
                 // (which relies on the grid apiRef) returns an unstable row set
                 // on re-render and breaks selection. filteredRows is already
                 // sorted/grouped and stable across selection changes.
-                filteredRows={filteredRows}
+                filteredRows={sortedRowsForViews}
                 sortModel={sortModel}
                 columns={columns}
                 imageViewData={imageViewData}

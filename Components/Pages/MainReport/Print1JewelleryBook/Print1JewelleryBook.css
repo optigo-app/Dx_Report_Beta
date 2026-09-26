@@ -162,7 +162,7 @@
 
 @media print {
   @page {
-    size: A4;                  /* ← portrait, as you want */
+    size: A4;
     margin: 5mm;
   }
 
@@ -181,13 +181,13 @@
     display: none !important;
   }
 
-  /* Main container */
+  /* Main container — flex row with stretch so all cards in a row match height */
   .container {
     width: 100% !important;
     max-width: 100% !important;
     display: flex !important;
     flex-wrap: wrap !important;
-    align-items: flex-start !important;
+    align-items: stretch !important;      /* ← KEY: all cards in a row stretch to tallest */
     justify-content: flex-start !important;
     padding: 0 !important;
     margin: 0 !important;
@@ -196,7 +196,7 @@
     overflow: visible !important;
   }
 
-  /* Card column */
+  /* Card column — NO fixed height, grows with content, stretches to row height */
   .col1 {
     flex: 0 0 19.5% !important;
     max-width: 19.5% !important;
@@ -204,25 +204,24 @@
     box-sizing: border-box !important;
     display: flex !important;
     flex-direction: column !important;
-    height: 250px !important;             /* ← fixed uniform card height */
+    height: auto !important;              /* ← no fixed height */
   }
 
-  /* Card inner box */
+  /* Card inner box — fills full col1 height so border stretches too */
   .brbxAll {
-    height: 100% !important;              /* ← fill the fixed col1 height */
+    flex: 1 !important;                   /* ← fills the col1 height */
     display: flex !important;
     flex-direction: column !important;
-    overflow: hidden !important;          /* ← clips overflow so height stays fixed */
+    overflow: visible !important;         /* ← NO clipping */
     box-sizing: border-box !important;
     width: 100% !important;
+    height: 100% !important;
   }
 
   /* Prevent card splitting across pages */
   .pagBrkIns {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    display: block !important;
-    width: 100% !important;
   }
 
   /* Image box */
@@ -235,7 +234,7 @@
     justify-content: center !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
-    flex-shrink: 0 !important;            /* ← image area never shrinks */
+    flex-shrink: 0 !important;
   }
 
   .imgwdtheit img {

@@ -780,6 +780,28 @@ export default function SpliterReport({
               >
                 {Array.isArray(filteredColumns) && filteredColumns[0]?.HeaderName || "Panel 1"}
               </Box>
+              {selectedFirstPanelKey && (
+                <Box
+                  sx={{
+                    writingMode: "vertical-rl",
+                    textOrientation: "mixed",
+                    transform: "rotate(180deg)",
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                    color: "#09090b",
+                    letterSpacing: "0.02em",
+                    py: 1,
+                    maxHeight: "60%",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {selectedFirstPanelKey === "__ALL__"
+                    ? "ALL"
+                    : getDisplayValue(selectedFirstPanelKey, spliterReportFirstPanel)}
+                </Box>
+              )}
             </Box>
           ) : (
             <Box sx={{ display: "flex", flexDirection: "column", height: "100%", px: 1, pt: 1 }}>
@@ -1129,6 +1151,28 @@ export default function SpliterReport({
                   >
                     {activeSecondPanelField || "Panel 2"}
                   </Box>
+                  {selectedSecondPanelKey && (
+                    <Box
+                      sx={{
+                        writingMode: "vertical-rl",
+                        textOrientation: "mixed",
+                        transform: "rotate(180deg)",
+                        fontSize: "0.7rem",
+                        fontWeight: 600,
+                        color: "#09090b",
+                        letterSpacing: "0.02em",
+                        py: 1,
+                        maxHeight: "60%",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {selectedSecondPanelKey === "__ALL__"
+                        ? "ALL"
+                        : getDisplayValue(selectedSecondPanelKey, activeSecondPanelField)}
+                    </Box>
+                  )}
                 </Box>
               ) : (
                 <Box sx={{ display: "flex", flexDirection: "column", height: "100%", px: 1, pt: 1 }}>
