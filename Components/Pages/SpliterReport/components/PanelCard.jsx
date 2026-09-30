@@ -44,7 +44,8 @@ const PanelCard = ({ label, selected, onClick, summary = {} }) => {
         userSelect: "none",
         background: selected ? "#f5f3ff" : "transparent",
         border: "1px solid",
-        borderColor: selected ? "rgba(124, 108, 240, 0.22)" : "transparent",
+        borderColor: "rgba(124, 108, 240, 0.22)",
+        // borderColor: selected ? "rgba(124, 108, 240, 0.22)" : "transparent",
         boxShadow: selected ? "0 1px 3px rgba(124, 108, 240, 0.06)" : "none",
         transition: "all 0.15s ease",
         "&:hover": {
@@ -79,7 +80,7 @@ const PanelCard = ({ label, selected, onClick, summary = {} }) => {
           }}
           title={label}
         >
-          {label}
+          {label ? label  : "No Title Data"}
         </Typography>
 
         {selected && (

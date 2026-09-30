@@ -205,8 +205,6 @@ export default function ReportHome({
   isPrintColumnData,
   reportsExcelRights,
   datefilterServerSide,
-  setOpenPopupReportParam,
-  setOpenPopupReportId,
   popupParamiter,
 }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -299,7 +297,7 @@ export default function ReportHome({
           setLoadingMaster(false);
         }
       } else {
-        if (datefilterServerSide) {
+        if (datefilterServerSide && defaultShowAllData != true) {
           const todayStr = formatDate(new Date());
           fetchReportData(
             {
@@ -308,6 +306,9 @@ export default function ReportHome({
             },
             "0"
           );
+        } else if (datefilterServerSide && defaultShowAllData == true) {
+          // ✅ defaultShowAllData: don't pass date filters on initial load
+          fetchReportData({}, "0");
         } else {
           fetchReportData({}, "0");
         }

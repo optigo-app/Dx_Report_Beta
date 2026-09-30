@@ -103,7 +103,6 @@ export default function RouterContent({ newReportId, popupParamiter }) {
           sessionStorage.setItem(newToken, JSON.stringify(parsedData));
           sessionStorage.setItem("reportVarible", JSON.stringify(parsedData));
         } else {
-          
           const tokenBody = {
             ReqData: `[{"ForEvt":"GetTokenVal","Token":"${newToken}"}]`,
           };

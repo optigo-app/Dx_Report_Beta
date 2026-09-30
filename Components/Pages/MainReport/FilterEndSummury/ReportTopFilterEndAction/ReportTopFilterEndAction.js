@@ -177,6 +177,7 @@ const ReportTopFilterEndAction = ({
   hasMoreData,
   loadingMore,
   clearAllDataSignal,
+  sortedRowsForViews
 }) => {
   const searchParams = useSearchParams();
   const pid = searchParams.get("pid");
@@ -312,11 +313,15 @@ const ReportTopFilterEndAction = ({
   };
 
   const handleOpenPrintPreview = async () => {
-    const sorted = getSortedRows();
+    const sourceRows =
+      Array.isArray(sortedRowsForViews) && sortedRowsForViews.length > 0
+        ? sortedRowsForViews
+        : filteredRows;
+
     const filteredData =
       selectionModel?.length > 0
-        ? sorted.filter((row) => selectionModel.includes(row.id))
-        : sorted;
+        ? sourceRows.filter((row) => selectionModel.includes(row.id))
+        : sourceRows;
 
     setShowPrintView(true);
     setPrintData(filteredData);
@@ -717,8 +722,8 @@ const ReportTopFilterEndAction = ({
             sum +
             (Array.isArray(col.filterTypes)
               ? col.filterTypes.filter((ft) =>
-                  RENDERED_FILTER_TYPES.includes(ft)
-                ).length
+                RENDERED_FILTER_TYPES.includes(ft)
+              ).length
               : 0),
           0
         ),
@@ -1016,56 +1021,56 @@ const ReportTopFilterEndAction = ({
                       </Button>
                     </Box>
                   </div>
-                    <div
-                      style={{
-                        maxHeight: 220,
-                        overflowY: "auto",
-                        padding: "6px 10px",
-                      }}
-                    >
-                      {uniqueValues.map((value) => (
-                        <label
-                          key={value}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                            padding: "4px 0",
-                            fontSize: "13px"
+                  <div
+                    style={{
+                      maxHeight: 220,
+                      overflowY: "auto",
+                      padding: "6px 10px",
+                    }}
+                  >
+                    {uniqueValues.map((value) => (
+                      <label
+                        key={value}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "4px 0",
+                          fontSize: "13px"
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={(draftFilters[col.field] || []).includes(value)}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+
+                            setDraftFilters((prev) => {
+                              const existing = prev[col.field] || [];
+                              return {
+                                ...prev,
+                                [col.field]: checked
+                                  ? [...existing, value]
+                                  : existing.filter((v) => v !== value),
+                              };
+                            });
+
+                            setFiltersShowDraf((prev) => {
+                              const key = col.headerNamesingle;
+                              const existing = prev[key] || [];
+                              return {
+                                ...prev,
+                                [key]: checked
+                                  ? [...new Set([...existing, value])]
+                                  : existing.filter((v) => v !== value),
+                              };
+                            });
                           }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={(draftFilters[col.field] || []).includes(value)}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-
-                              setDraftFilters((prev) => {
-                                const existing = prev[col.field] || [];
-                                return {
-                                  ...prev,
-                                  [col.field]: checked
-                                    ? [...existing, value]
-                                    : existing.filter((v) => v !== value),
-                                };
-                              });
-
-                              setFiltersShowDraf((prev) => {
-                                const key = col.headerNamesingle;
-                                const existing = prev[key] || [];
-                                return {
-                                  ...prev,
-                                  [key]: checked
-                                    ? [...new Set([...existing, value])]
-                                    : existing.filter((v) => v !== value),
-                                };
-                              });
-                            }}
-                          />
-                          {value}
-                        </label>
-                      ))}
-                    </div>
+                        />
+                        {value}
+                      </label>
+                    ))}
+                  </div>
                 </AccordionDetails>
               </Accordion>
             </div>

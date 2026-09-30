@@ -79,14 +79,7 @@ const GridMain = ({
 
   if (tokenMissing) {
     return (
-      <div
-        style={{
-          height: "80vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <div style={{ height: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <Box
           display="flex"
           justifyContent="center"
@@ -104,13 +97,7 @@ const GridMain = ({
               textAlign: "center",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginBottom: "16px",
-              }}
-            >
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
               <AlertTriangle size={48} color="#f44336" />
             </div>
             <Typography variant="h5" fontWeight={600} gutterBottom>
@@ -156,9 +143,7 @@ const GridMain = ({
       isFormulaBasedSummary={isFormulaBasedSummary}
       summaryViewData={summaryViewData}
       spliterReportFirstPanelFilter={spliterReportFirstPanelFilter}
-      spliterReportSecondPanelSecondoption={
-        spliterReportSecondPanelSecondoption
-      }
+      spliterReportSecondPanelSecondoption={spliterReportSecondPanelSecondoption}
       svgIconData={svgIconData}
       otherPrintOptionShow={otherPrintOptionShow}
       otherPrintOptionShowData={otherPrintOptionShowData}
