@@ -108,7 +108,8 @@ export default function SpliterReport({
   isPrintColumn,
   isRightBaseColumMaster,
   onSearchFilter,
-  reportsExcelRights
+  reportsExcelRights,
+  reportAlertData
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -1289,6 +1290,7 @@ export default function SpliterReport({
             isRightBaseColumMaster={isRightBaseColumMaster}
             reportsExcelRights={reportsExcelRights}
             clearAllDataSignal={clearAllDataSignal}
+            reportAlertData={reportAlertData}
           />
         </div>
       </Box>

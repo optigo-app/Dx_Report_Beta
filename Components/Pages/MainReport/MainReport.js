@@ -235,6 +235,7 @@ export default function MainReport({
   hasMoreData,
   loadingMore,
   clearAllDataSignal,
+  reportAlertData
 }) {
   const noFoundImg = "./images/noFound.jpg";
   const [isLoading, setIsLoading] = useState(isLoadingChek);
@@ -3102,17 +3103,20 @@ export default function MainReport({
             />
           </Dialog>
         </LocalizationProvider>
-        {/* <div>
+        {reportAlertData[0]?.ReportAlert && <div>
           <p
             style={{
               margin: "0px",
-              backgroundColor: "#5c6bdc",
-              color: "white",
+              backgroundColor: reportAlertData[0]?.ReportAlertBackgroundColor,
+              color: reportAlertData[0]?.ReportAlertColor,
               textAlign: "center",
               padding: "3px",
               fontSize: "12px"
-            }}>This report is the under maintenace so dont compare the data on it</p>
-        </div> */}
+            }}>
+            {reportAlertData[0]?.ReportAlertMessage}
+          </p>
+        </div>
+        }
         <div style={{ flexShrink: 0 }}>
           <SummaryEndFilteredValue
             setSummaryColumns={setSummaryColumns}
@@ -3137,6 +3141,7 @@ export default function MainReport({
             setFiltersShow={setFiltersShow}
             setFilters={setFilters}
             setDraftFilters={setDraftFilters}
+            setFiltersShowDraf={setFiltersShowDraf}
             onAskOptigoAiPanelToggle={(open) => {
               setIsAskOptigoAiPanelOpen(open);
               if (open) setOptigoPanelWidth(400); // always open at default width
@@ -3450,7 +3455,7 @@ export default function MainReport({
           ) : (
             <Warper>
               <DataGrid
-                loading={isLoading}
+                loading={!spliterReportShow && isLoading}
                 apiRef={apiRef}
                 rows={filteredRows ?? []}
                 columns={columns ?? []}

@@ -45,11 +45,13 @@ export default function RouterContent({ newReportId, popupParamiter }) {
   const [spliterReportAllDataButton, setSpliterReportAllDataButton] = useState();
   const [otherPrintOptionShow, setOtherPrintOptionShow] = useState();
   const [otherPrintOptionShowData, setOtherPrintOptionShowData] = useState();
+  const [reportAlertData, setReportAlertData] = useState();
   const [svgIconData, setSvgIconData] = useState();
   const [summaryViewData, setSummuaryViewData] = useState();
   const [chartViewData, setChartViewData] = useState();
   const [imageViewData, setImageViewData] = useState();
   const [printViewData, setPrintViewData] = useState();
+  const [isShowPreFilterModal, setIsShowPreFilterModal] = useState();
   const [isMultiTab, setIsMultiTab] = useState();
   const [isRightBaseColum, setIsRightBaseColum] = useState();
   const [spliterReportSecondPanel, setSpliterReportSecondPanel] = useState();
@@ -176,6 +178,7 @@ export default function RouterContent({ newReportId, popupParamiter }) {
         setAuthActionDropdownMaster(response?.rd6)
         setReportsExcelRights(response?.rd8)
         setIsRightBaseColum(response?.rd9);
+        setReportAlertData(response?.rd10);
         const masterName = response?.rd?.[0]?.PrintMasterName;
         const matched = response?.rd4?.find(
           (item) => item.PrintMaster === masterName
@@ -197,6 +200,7 @@ export default function RouterContent({ newReportId, popupParamiter }) {
           setSpliterReportFirstPanelShowAll(data?.SpliterFirstPanelAll);
           setSpliterReportAllDataButton(data?.SpliterReportAllDataButton);
           setIsPrintColumn(data?.IsPrintColumn);
+          setIsShowPreFilterModal(data?.isShowPreFilterModal);
           setIsPrintColumnData(data?.MainPrintColumn);
           setOtherPrintOptionShow(data?.otherPrintOptionShow);
           setSpliterReportSecondPanelShowAll(data?.SpliterSecondPanelAll);
@@ -311,6 +315,8 @@ export default function RouterContent({ newReportId, popupParamiter }) {
         reportsExcelRights={reportsExcelRights}
         datefilterServerSide={datefilterServerSide}
         popupParamiter={popupParamiter}
+        reportAlertData={reportAlertData}
+        isShowPreFilterModal={isShowPreFilterModal}
      />
     </Suspense>
   );
