@@ -16,9 +16,11 @@ import {
   List,
   ListItem,
   ListItemText,
+  Chip,
   Tooltip,
 } from "@mui/material";
-import { Maximize2, X, Download, Check } from "lucide-react";
+import { Maximize2, X, Download, Check, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { alpha } from "@mui/material/styles";
 import {
   Chart as ChartJS,
@@ -239,7 +241,37 @@ const extractFormattedValue = (content) => {
   return matches ? matches[matches.length - 1].trim() : "";
 };
 
-function MetricBlock({ content, raw_value, currency, unit, unit_label, label, record_count, value, subtext }) {
+// Period-comparison badge — green up / red down / grey flat|new.
+function DeltaBadge({ delta, trend }) {
+  if (!delta) return null;
+  const tone =
+    trend === "up"
+      ? { bg: "#f0fdf4", fg: "success.dark", border: "#bbf7d0", Icon: TrendingUp }
+      : trend === "down"
+        ? { bg: "#fef2f2", fg: "error.main", border: "#fecaca", Icon: TrendingDown }
+        : { bg: "grey.100", fg: "text.secondary", border: "grey.300", Icon: Minus };
+  const { Icon } = tone;
+  return (
+    <Chip
+      size="small"
+      icon={<Icon size={13} />}
+      label={delta}
+      sx={{
+        height: 22,
+        fontSize: 11.5,
+        fontWeight: 600,
+        backgroundColor: tone.bg,
+        color: tone.fg,
+        border: "1px solid",
+        borderColor: tone.border,
+        "& .MuiChip-icon": { color: "inherit", ml: 0.75 },
+        "& .MuiChip-label": { px: 0.75 },
+      }}
+    />
+  );
+}
+
+function MetricBlock({ content, raw_value, currency, unit, unit_label, label, record_count, value, subtext, delta, trend, comparison }) {
   const lines = String(content || "").split("\n").filter(Boolean);
   const mainLine = lines[0] || "";
   const subLines = [...lines.slice(1), ...(subtext ? [subtext] : [])];
@@ -369,6 +401,16 @@ function MetricBlock({ content, raw_value, currency, unit, unit_label, label, re
           </Typography>
         )}
       </Box>
+      {(delta || comparison) && (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.75, flexWrap: "wrap" }}>
+          <DeltaBadge delta={delta} trend={trend} />
+          {comparison && (
+            <Typography component="span" sx={{ fontSize: 11.5, color: "text.secondary" }}>
+              {comparison}
+            </Typography>
+          )}
+        </Box>
+      )}
       {(subLines.length > 0 || record_count != null) && (
         <Box
           sx={{
@@ -687,28 +729,61 @@ function TableBlock({ columns, rows }) {
   );
 }
 
-function ListBlock({ style, items }) {
+// Insights-style lists carry a parallel `severity` array aligned by index:
+// info (neutral) | positive | negative | warning (amber/red — needs attention).
+const SEVERITY_TONES = {
+  positive: { text: "success.dark", marker: "#16a34a" },
+  negative: { text: "error.dark", marker: "#dc2626" },
+  warning: { text: "#b45309", marker: "#f59e0b" },
+  info: { text: "text.primary", marker: "#94a3b8" },
+};
+
+function ListBlock({ title, style, items, severity }) {
   if (!Array.isArray(items)) return null;
   const isNumbered = style === "number";
   return (
-    <List dense sx={{ my: 1, ml: 2, listStyleType: isNumbered ? "decimal" : "disc", pl: 1 }}>
-      {items.map((item, i) => (
-        <ListItem
-          key={i}
+    <Box sx={{ my: 1 }}>
+      {title && (
+        <Typography
           sx={{
-            display: "list-item",
-            pl: 0,
-            py: 0.25,
-            color: "text.primary",
-            fontSize: 15,
-            lineHeight: 1.5,
-            "&::marker": isNumbered ? undefined : { color: "var(--primary-btncolor-start)" },
+            fontSize: 12,
+            fontWeight: 600,
+            color: "text.secondary",
+            textTransform: "capitalize",
+            letterSpacing: "0.4px",
+            mb: 0.5,
           }}
         >
-          <ListItemText primary={item} />
-        </ListItem>
-      ))}
-    </List>
+          {title}
+        </Typography>
+      )}
+      <List dense sx={{ ml: 2, listStyleType: isNumbered ? "decimal" : "disc", pl: 1 }}>
+        {items.map((item, i) => {
+          const tone = SEVERITY_TONES[severity?.[i]];
+          return (
+            <ListItem
+              key={i}
+              sx={{
+                display: "list-item",
+                pl: 0,
+                py: 0.25,
+                color: tone?.text || "text.primary",
+                fontSize: 15,
+                lineHeight: 1.5,
+                "&::marker": isNumbered
+                  ? undefined
+                  : { color: tone?.marker || "var(--primary-btncolor-start)" },
+              }}
+            >
+              <ListItemText
+                primary={item}
+                primaryTypographyProps={{ fontSize: 14, fontWeight: tone ? 500 : 400 }}
+              />
+            </ListItem>
+          );
+        })}
+      </List>
+    </Box>
   );
 }
 
@@ -1242,25 +1317,22 @@ const dispatchOption = (opt, { onSuggestionClick, onAction } = {}) => {
 // Green "✓ choice" chip shown in place of a widget once it's been answered.
 function ResolvedChip({ label }) {
   return (
-    <Box
+    <Chip
+      size="small"
+      icon={<Check size={13} />}
+      label={label}
       sx={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 0.75,
+        height: 26,
         fontSize: 12.5,
         fontWeight: 600,
         color: "success.dark",
         backgroundColor: "#f0fdf4",
         border: "1px solid",
         borderColor: "#bbf7d0",
-        borderRadius: "16px",
-        px: 1.5,
-        py: 0.5,
+        "& .MuiChip-icon": { color: "inherit", ml: 1 },
+        "& .MuiChip-label": { px: 1 },
       }}
-    >
-      <Check size={13} />
-      {label}
-    </Box>
+    />
   );
 }
 
@@ -1370,8 +1442,8 @@ function DateRangeInputBlock({
   onSuggestionClick,
   onAction,
 }) {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(null); // dayjs | null
+  const [endDate, setEndDate] = useState(null);
   const [resolved, setResolved] = useState(null);
   const presetList = Array.isArray(presets) ? presets : [];
 
@@ -1397,17 +1469,17 @@ function DateRangeInputBlock({
 
   const handleApply = () => {
     if (resolved || !startDate || !endDate) return;
+    const sd = startDate.format("YYYY-MM-DD");
+    const ed = endDate.format("YYYY-MM-DD");
     const template = submit_action?.display || submit_message_template;
-    const display =
-      fillTemplate(template, startDate, endDate) ||
-      `${startDate} to ${endDate}`;
+    const display = fillTemplate(template, sd, ed) || `${sd} to ${ed}`;
     if (submit_action && onAction) {
       onAction({
         ...submit_action,
         payload: {
           ...(submit_action.payload || {}),
-          start_date: startDate,
-          end_date: endDate,
+          start_date: sd,
+          end_date: ed,
         },
         display,
       });
@@ -1417,17 +1489,16 @@ function DateRangeInputBlock({
     setResolved(display);
   };
 
-  const inputSx = {
-    fontSize: 13,
-    fontFamily: "inherit",
-    color: "text.primary",
-    border: "1px solid",
-    borderColor: "divider",
-    borderRadius: "10px",
-    px: 1,
-    py: 0.5,
-    outline: "none",
-    "&:focus": { borderColor: "var(--primary-btncolor-start)" },
+  const pickerFieldProps = {
+    size: "small",
+    sx: {
+      width: 150,
+      "& .MuiInputBase-input": { fontSize: 13 },
+      "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+        borderColor: "var(--primary-btncolor-start)",
+        borderWidth: 1,
+      },
+    },
   };
 
   return (
@@ -1482,22 +1553,22 @@ function DateRangeInputBlock({
             </Box>
           )}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-            <Box
-              component="input"
-              type="date"
+            <DatePicker
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              sx={inputSx}
+              onChange={(v) => setStartDate(v)}
+              maxDate={endDate || undefined}
+              format="YYYY-MM-DD"
+              slotProps={{ textField: pickerFieldProps }}
             />
             <Typography component="span" sx={{ fontSize: 12, color: "text.secondary" }}>
               to
             </Typography>
-            <Box
-              component="input"
-              type="date"
+            <DatePicker
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              sx={inputSx}
+              onChange={(v) => setEndDate(v)}
+              minDate={startDate || undefined}
+              format="YYYY-MM-DD"
+              slotProps={{ textField: pickerFieldProps }}
             />
             <Button
               size="small"
@@ -1514,6 +1585,11 @@ function DateRangeInputBlock({
                 px: 1.75,
                 boxShadow: "none",
                 "&:hover": { opacity: 0.9, boxShadow: "none" },
+                "&.Mui-disabled": {
+                  backgroundColor: "grey.300",
+                  backgroundImage: "none",
+                  color: "grey.600",
+                },
               }}
             >
               {submit_label || "Apply"}
