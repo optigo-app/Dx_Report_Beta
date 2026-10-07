@@ -36,11 +36,12 @@ import {
 } from "@mui/material";
 import { DragDropContext } from "@hello-pangea/dnd";
 import { useSearchParams } from "next/navigation";
-import { AlertTriangle, CheckCircle2, CheckSquare, Eye, Menu, ShieldAlert, Square, ToggleLeft, ToggleRight, Trash, X, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CheckSquare, Eye, Menu, Recycle, ShieldAlert, Square, ToggleLeft, ToggleRight, Trash, X, XCircle } from "lucide-react";
 import { GoCopy } from "react-icons/go";
 import Warper from "@/Components/warper";
 import { CallApi } from "@/API/CallApi/CallApi";
 import Print1JewelleryBook from "@/Components/Pages/MainReport/Print1JewelleryBook/Print1JewelleryBook";
+import GridPrintView from "@/Components/Pages/MainReport/GridPrintView/GridPrintView";
 import {
   CustomPagination,
   evaluateRightBaseFormula,
@@ -264,6 +265,8 @@ export default function MainReport({
   const [showReportMaster, setShowReportMaster] = useState(showBackErrow);
   const [showPrintView, setShowPrintView] = useState(false);
   const [printData, setPrintData] = useState([]);
+  const [showGridPrintView, setShowGridPrintView] = useState(false);
+  const [gridPrintData, setGridPrintData] = useState([]);
   const [navigationData, setNavigationData] = useState();
   const [sideFilterOpen, setSideFilterOpen] = useState(false);
   const [selectedColors, setSelectedColors] = useState([]);
@@ -325,9 +328,15 @@ export default function MainReport({
   const [authLoadingCell, setAuthLoadingCell] = useState(null); // keep state only
   const authLoadingCellRef = useRef(null); // keep ref too
   const sortedFilteredRowsRef = useRef([]);
+  // locally committed auth input (icon 4) values keyed by `recordId||fieldName`
+  // so they survive refetches / filteredRows rebuilds
+  const [authInputOverrides, setAuthInputOverrides] = useState(new Map());
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteModalOpencheck, setDeleteModalOpenCheck] = useState(false);
   const [selectedDeleteRow, setSelectedDeleteRow] = useState(null);
+  const [authSuccessCell, setAuthSuccessCell] = useState(null); // {rowId, fieldName} shows ✓ anim
+  const [slideOutRowIds, setSlideOutRowIds] = useState(() => new Set()); // rows animating out
   const [selectedDeleteCol, setSelectedDeleteCol] = useState(null);
   const [deletedRowIds, setDeletedRowIds] = useState(() => new Set());
   useEffect(() => {
@@ -343,15 +352,19 @@ export default function MainReport({
     setOpenPopupReportParam(null);
   };
 
-  const handleSaveAreaChart = () => {
+  const handleSaveAreaChart = (name) => {
     setSavedAreaCharts((prev) => [
       ...prev,
       {
         id: Date.now(),
-        title: `Saved Area Chart ${prev.length + 1}`,
+        title: name,
         rows: filteredRows ? [...filteredRows] : [],
       },
     ]);
+  };
+
+  const handleDeleteAreaChart = (id) => {
+    setSavedAreaCharts((prev) => prev.filter((c) => c.id !== id));
   };
 
   const handleMakeNewAreaChart = () => {
@@ -1000,6 +1013,13 @@ export default function MainReport({
     try {
       const response = await ReportCallApi(body, spNumber);
       if (response?.rd[0]?.stat == 1) {
+        if (recordId != null && recordId !== "") {
+          setAuthInputOverrides((prev) => {
+            const next = new Map(prev);
+            next.set(`${recordId}||${fieldName}`, newValue);
+            return next;
+          });
+        }
         setFilteredRows((prev) =>
           prev.map((r) =>
             r.id === rowId ? { ...r, [fieldName]: newValue } : r
@@ -1228,6 +1248,14 @@ export default function MainReport({
                     if (Number(col?.IsAuthActionIcon) == 5) {
                       setSelectedDeleteRow(params.row);
                       setSelectedDeleteCol(col);
+                      setDeleteModalOpenCheck(true);
+                      setDeleteModalOpen(true);
+                      return;
+                    }
+                    if (Number(col?.IsAuthActionIcon) == 6) {
+                      setSelectedDeleteRow(params.row);
+                      setSelectedDeleteCol(col);
+                      setDeleteModalOpenCheck(false)
                       setDeleteModalOpen(true);
                       return;
                     }
@@ -1243,9 +1271,31 @@ export default function MainReport({
                   }}
                 >
                   {isLoading ? (
-                    <div className="auth_dot_loader">
-                      <span /><span /><span /><span />
-                    </div>
+                    Number(col?.IsAuthActionIcon) == 5 ||
+                      Number(col?.IsAuthActionIcon) == 6 ? (
+                      <CircularProgress
+                        size={18}
+                        thickness={5}
+                        sx={{
+                          color:
+                            Number(col?.IsAuthActionIcon) == 6
+                              ? "#2e7d32"
+                              : "#ef4444",
+                        }}
+                      />
+                    ) : (
+                      <div className="auth_dot_loader">
+                        <span /><span /><span /><span />
+                      </div>
+                    )
+                  ) : authSuccessCell?.rowId === params.row.id &&
+                    authSuccessCell?.fieldName === col.FieldName ? (
+                    <CheckCircle2
+                      className="auth-success-check"
+                      size={22}
+                      color="#22c55e"
+                      strokeWidth={2.5}
+                    />
                   ) : selectedIconGroup?.id === 1 ? (
                     <Checkbox
                       checked={isActive}
@@ -1274,6 +1324,8 @@ export default function MainReport({
                     />
                   ) : Number(col?.IsAuthActionIcon) == 5 ? (
                     <Trash size={20} color="#ef4444" strokeWidth={2.5} />
+                  ) : Number(col?.IsAuthActionIcon) == 6 ? (
+                    <Recycle size={25} color="#2e7d32" strokeWidth={3} />
                   ) : isActive ? (
                     selectedIconGroup?.activeIcon || (
                       <CheckCircle2 size={20} color="#22c55e" strokeWidth={2.5} />
@@ -1986,6 +2038,10 @@ export default function MainReport({
 
     setDeleteModalOpen(false);
 
+    // show circular loader inside that cell while the API runs
+    authLoadingCellRef.current = { rowId, fieldName };
+    setAuthLoadingCell({ rowId, fieldName });
+
     const keyPrefix = `${pid}_`;
     const matchingKey = Object.keys(sessionStorage).find((key) =>
       key.startsWith(keyPrefix)
@@ -2014,21 +2070,47 @@ export default function MainReport({
     try {
       const response = await ReportCallApi(body, spNumber);
       if (response?.rd[0]?.stat == 1) {
-        // Track the deleted row id so originalRows (useMemo) permanently
-        // excludes it. Row ids stay stable (allRowData is untouched), so the
-        // grid removes the correct row and it will NOT reappear when the
-        // filtering effect re-runs (e.g. checking a Sr# checkbox).
-        setDeletedRowIds((prev) => {
-          const next = new Set(prev);
-          next.add(rowId);
-          return next;
-        });
-        // Immediate UI update until originalRows/filteredRows recompute.
-        setFilteredRows((prev) => prev.filter((row) => row.id !== rowId));
+        authLoadingCellRef.current = null;
+        setAuthLoadingCell(null);
+
+        // 1) animated ✓ inside that cell
+        setAuthSuccessCell({ rowId, fieldName });
+
+        // 2) slide the row out to the right
+        setTimeout(() => {
+          setSlideOutRowIds((prev) => new Set(prev).add(rowId));
+        }, 650);
+
+        // 3) remove the row once the slide-out finishes. Track the id in
+        // deletedRowIds so originalRows (useMemo) permanently excludes it
+        // and it will NOT reappear when the filtering effect re-runs
+        // (e.g. checking a Sr# checkbox).
+        setTimeout(() => {
+          setDeletedRowIds((prev) => {
+            const next = new Set(prev);
+            next.add(rowId);
+            return next;
+          });
+          setFilteredRows((prev) => prev.filter((row) => row.id !== rowId));
+        }, 1100);
+
+        // 4) clear the animation states ONLY after the row is gone — if the
+        // slide-out class came off while the row still existed, the CSS
+        // would snap it back into place and flash it visible again.
+        setTimeout(() => {
+          setAuthSuccessCell(null);
+          setSlideOutRowIds((prev) => {
+            const next = new Set(prev);
+            next.delete(rowId);
+            return next;
+          });
+        }, 1400);
       }
     } catch (err) {
       console.error("DeleteAuth API failed:", err);
     } finally {
+      authLoadingCellRef.current = null;
+      setAuthLoadingCell(null);
       setSelectedDeleteRow(null);
       setSelectedDeleteCol(null);
     }
@@ -2093,10 +2175,23 @@ export default function MainReport({
             formattedRow[colName] = row[key];
           }
         });
+
+        // re-apply locally committed auth input values (icon 4) so the
+        // user's entered data survives All Data refetch / filter rebuilds
+        Object.values(allColumData || {}).forEach((c) => {
+          if (!c?.IsAuthAction || Number(c?.IsAuthActionIcon) !== 4) return;
+          const recId = formattedRow?.[c.IsAuthActionData];
+          if (recId == null || recId === "") return;
+          const key = `${recId}||${c.FieldName}`;
+          if (authInputOverrides.has(key)) {
+            formattedRow[c.FieldName] = authInputOverrides.get(key);
+          }
+        });
+
         return { id: index, ...formattedRow };
       })
       .filter((row) => !deletedRowIds.has(row.id)); // exclude deleted rows
-  }, [allRowData, allColumIdWiseName, allColumData, masterValueMap, deletedRowIds]); // ✅ allColumData here
+  }, [allRowData, allColumIdWiseName, allColumData, masterValueMap, deletedRowIds, authInputOverrides]); // ✅ allColumData here
 
   const isFirstLoad = useRef(true);
   useEffect(() => {
@@ -2901,6 +2996,18 @@ export default function MainReport({
     );
   }
 
+  if (showGridPrintView) {
+    return (
+      <GridPrintView
+        columns={columns}
+        rows={gridPrintData}
+        reportName={reportName}
+        apiRef={apiRef}
+        onClose={() => setShowGridPrintView(false)}
+      />
+    );
+  }
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div
@@ -2923,23 +3030,22 @@ export default function MainReport({
         }}
         ref={gridContainerRef}
       >
-
         <Dialog
           open={deleteModalOpen}
           onClose={() => setDeleteModalOpen(false)}
           maxWidth="xs"
           fullWidth
         >
-          <DialogTitle>Confirm Delete</DialogTitle>
+          <DialogTitle>Confirm {deleteModalOpencheck ? "Delete" : "Restore"}</DialogTitle>
           <DialogContent>
-            Are you sure you want to delete this record?
+            {deleteModalOpencheck ? "Are you sure you want to delete this record?" : "After the quotation is restored, if no process is performed on it during the same day, it will be automatically archived again at midnight."}
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setDeleteModalOpen(false)} color="inherit">
               No
             </Button>
-            <Button variant="contained" color="error" onClick={handleDeleteAuth}>
-              Yes, Delete
+            <Button variant="contained" color={deleteModalOpencheck ? "error" : "success"} onClick={handleDeleteAuth}>
+              {deleteModalOpencheck ? "Yes, Delete" : "Yes, Restore"}
             </Button>
           </DialogActions>
         </Dialog>
@@ -3191,6 +3297,8 @@ export default function MainReport({
             columns={columns}
             setShowPrintView={setShowPrintView}
             setPrintData={setPrintData}
+            setShowGridPrintView={setShowGridPrintView}
+            setGridPrintData={setGridPrintData}
             grupEnChekBoxImage={grupEnChekBoxImage}
             showImageView={showImageView}
             setShowImageView={setShowImageView}
@@ -3348,39 +3456,16 @@ export default function MainReport({
               {pid == 18418 &&
                 <Grid item md={12} xs={12}>
                   <ChartCard>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        gap: 1,
-                        mb: 1,
-                      }}
-                    >
-                      <Button
-                        variant="contained"
-                        size="small"
-                        onClick={handleSaveAreaChart}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={handleMakeNewAreaChart}
-                      >
-                        Make New
-                      </Button>
-                    </Box>
                     <AreaChartView
                       filteredRows={filteredRows}
                       sortModel={sortModel}
                       columns={columns}
                       title="Current Area Chart"
+                      onSave={handleSaveAreaChart}
                     />
                   </ChartCard>
                 </Grid>
               }
-
 
               {pid == 18418 &&
                 savedAreaCharts.map((chart) => (
@@ -3391,6 +3476,7 @@ export default function MainReport({
                         sortModel={sortModel}
                         columns={columns}
                         title={chart.title}
+                        onDelete={() => handleDeleteAreaChart(chart.id)}
                       />
                     </ChartCard>
                   </Grid>
@@ -3464,9 +3550,9 @@ export default function MainReport({
                 rowHeight={37}
                 headerHeight={45}
                 columnHeaderHeight={45}
-                // getRowClassName={(params) =>
-                //   params.row.IsClub === 1 ? "highlight-row" : ""
-                // }
+                getRowClassName={(params) =>
+                  slideOutRowIds.has(params.id) ? "row-slide-out" : ""
+                }
                 sortingOrder={["asc", "desc"]}
                 sortingMode={isMultiSortingEnabled ? "server" : "client"}
                 sortModel={sortModel}

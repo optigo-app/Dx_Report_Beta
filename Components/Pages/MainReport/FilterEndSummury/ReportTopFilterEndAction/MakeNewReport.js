@@ -303,331 +303,332 @@ const MakeNewReport = ({
         open={openSaveModal}
         onClose={() => setOpenSaveModal(false)}
         sx={{
-            borderRadius:'15px'
+          borderRadius: '15px'
         }}
         maxWidth="sm"
         fullWidth
       >
-       <Box
-       sx={{
-        padding:'15px',
-       }}
-       >
-         <Box
+        <Box
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            mb: 2,
+            padding: '15px',
           }}
         >
-          <Box>
-            <Typography
-              sx={{
-                fontSize: "1.05rem",
-                fontWeight: 700,
-                color: "#09090b",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              Save Custom Report
-            </Typography>
-            <Typography
-              sx={{ fontSize: "0.78rem", color: "#71717a", mt: 0.25 }}
-            >
-              Create a saved preset view with your selected column layout.
-            </Typography>
-          </Box>
-          <IconButton
-            size="small"
-            onClick={() => setOpenSaveModal(false)}
-            sx={{
-              color: "#71717a",
-              "&:hover": { backgroundColor: "#f4f4f5", color: "#09090b" },
-            }}
-          >
-            <X size={18} />
-          </IconButton>
-        </Box>
-
-        <Box sx={{ mb: 2.5 }}>
-          <Typography
-            sx={{
-              fontSize: "0.82rem",
-              fontWeight: 650,
-              color: "#09090b",
-              mb: 0.75,
-            }}
-          >
-            Report Name
-          </Typography>
-          <TextField
-            placeholder="e.g. Monthly Collection View"
-            value={subReportName}
-            onChange={(e) => {
-              setSubReportName(e.target.value);
-              setReportNameError("");
-            }}
-            size="small"
-            fullWidth
-            error={Boolean(reportNameError)}
-            helperText={reportNameError}
-            sx={{
-              backgroundColor: "#ffffff",
-              borderRadius: "8px",
-              "& .MuiOutlinedInput-root": {
-                height: "40px",
-                borderRadius: "8px",
-                fontSize: "0.82rem",
-                fontWeight: 500,
-                color: "#09090b",
-                "& .MuiInputBase-input": {
-                  fontSize: "0.82rem",
-                  fontWeight: 500,
-                  color: "#09090b",
-                },
-              },
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#e4e4e7",
-                borderWidth: "1px",
-                transition: "all 0.18s ease",
-              },
-              "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#a1a1aa",
-              },
-              "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#7c6cf0 !important",
-                borderWidth: "1px !important",
-                boxShadow: "0 0 0 2px rgba(124, 108, 240, 0.12)",
-              },
-            }}
-          />
-        </Box>
-
-        <Box sx={{ mb: 2.5 }}>
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              mb: 1,
+              mb: 2,
             }}
           >
-            <Typography
-              sx={{ fontSize: "0.82rem", fontWeight: 650, color: "#09090b" }}
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: "1.05rem",
+                  fontWeight: 700,
+                  color: "#09090b",
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                Save Custom Report
+              </Typography>
+              <Typography
+                sx={{ fontSize: "0.78rem", color: "#71717a", mt: 0.25 }}
+              >
+                Create a saved preset view with your selected column layout.
+              </Typography>
+            </Box>
+            <IconButton
+              size="small"
+              onClick={() => setOpenSaveModal(false)}
+              sx={{
+                color: "#71717a",
+                "&:hover": { backgroundColor: "#f4f4f5", color: "#09090b" },
+              }}
             >
-              Select Columns
+              <X size={18} />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ mb: 2.5 }}>
+            <Typography
+              sx={{
+                fontSize: "0.82rem",
+                fontWeight: 650,
+                color: "#09090b",
+                mb: 0.75,
+              }}
+            >
+              Report Name
             </Typography>
+            <TextField
+              placeholder="e.g. Monthly Collection View"
+              value={subReportName}
+              onChange={(e) => {
+                setSubReportName(e.target.value);
+                setReportNameError("");
+              }}
+              size="small"
+              fullWidth
+              error={Boolean(reportNameError)}
+              helperText={reportNameError}
+              sx={{
+                backgroundColor: "#ffffff",
+                borderRadius: "8px",
+                "& .MuiOutlinedInput-root": {
+                  height: "40px",
+                  borderRadius: "8px",
+                  fontSize: "0.82rem",
+                  fontWeight: 500,
+                  color: "#09090b",
+                  "& .MuiInputBase-input": {
+                    fontSize: "0.82rem",
+                    fontWeight: 500,
+                    color: "#09090b",
+                  },
+                },
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#e4e4e7",
+                  borderWidth: "1px",
+                  transition: "all 0.18s ease",
+                },
+                "&:hover .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#a1a1aa",
+                },
+                "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#7c6cf0 !important",
+                  borderWidth: "1px !important",
+                  boxShadow: "0 0 0 2px rgba(124, 108, 240, 0.12)",
+                },
+              }}
+            />
+          </Box>
+
+          <Box sx={{ mb: 2.5 }}>
             <Box
-              onClick={handleSelectAll}
               sx={{
                 display: "flex",
                 alignItems: "center",
-                gap: 0.75,
-                cursor: "pointer",
-                userSelect: "none",
-                px: 1,
-                py: 0.25,
-                borderRadius: "6px",
-                "&:hover": { backgroundColor: "#f4f4f5" },
-              }}
-            >
-              <Checkbox
-                checked={
-                  selectedColumns.length === allColumDataBack.length &&
-                  allColumDataBack.length > 0
-                }
-                onChange={handleSelectAll}
-                size="small"
-                sx={{
-                  p: 0,
-                  color: "#a1a1aa",
-                  "&.Mui-checked": { color: "#7c6cf0" },
-                }}
-              />
-              <Typography
-                sx={{ fontSize: "0.78rem", fontWeight: 600, color: "#3f3f46" }}
-              >
-                Select All
-              </Typography>
-            </Box>
-          </Box>
-
-          {reportColumSelectError && (
-            <Typography
-              sx={{
-                fontSize: "0.74rem",
-                color: "#ef4444",
-                fontWeight: 500,
+                justifyContent: "space-between",
                 mb: 1,
               }}
             >
-              Please select at least one column
-            </Typography>
-          )}
-
-          <Box
-            sx={{
-              maxHeight: "180px",
-              overflowY: "auto",
-              border: reportColumSelectError
-                ? "1px solid #ef4444"
-                : "1px solid #e4e4e7",
-              borderRadius: "10px",
-              p: 1,
-              backgroundColor: "#fafafa",
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: 0.5,
-            }}
-          >
-            {allColumDataBack?.map((col, index) => {
-              const checked = selectedColumns?.some(
-                (c) => Number(c.ColId) === Number(col.ColId),
-              );
-              return (
-                <Box
-                  key={index}
-                  onClick={() => handleToggleColumn(col)}
+              <Typography
+                sx={{ fontSize: "0.82rem", fontWeight: 650, color: "#09090b" }}
+              >
+                Select Columns
+              </Typography>
+              <Box
+                onClick={handleSelectAll}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.75,
+                  cursor: "pointer",
+                  userSelect: "none",
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: "6px",
+                  "&:hover": { backgroundColor: "#f4f4f5" },
+                }}
+              >
+                <Checkbox
+                  checked={
+                    selectedColumns.length === allColumDataBack.length &&
+                    allColumDataBack.length > 0
+                  }
+                  onChange={handleSelectAll}
+                  size="small"
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    px: 1,
-                    py: 0.5,
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    userSelect: "none",
-                    transition: "all 0.15s ease",
-                    "&:hover": {
-                      backgroundColor: "#ffffff",
-                      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
-                    },
+                    p: 0,
+                    color: "#a1a1aa",
+                    "&.Mui-checked": { color: "#7c6cf0" },
                   }}
+                />
+                <Typography
+                  sx={{ fontSize: "0.78rem", fontWeight: 600, color: "#3f3f46" }}
                 >
-                  <Checkbox
-                    checked={checked}
-                    onChange={() => handleToggleColumn(col)}
-                    size="small"
+                  Select All
+                </Typography>
+              </Box>
+            </Box>
+
+            {reportColumSelectError && (
+              <Typography
+                sx={{
+                  fontSize: "0.74rem",
+                  color: "#ef4444",
+                  fontWeight: 500,
+                  mb: 1,
+                }}
+              >
+                Please select at least one column
+              </Typography>
+            )}
+
+            <Box
+              sx={{
+                maxHeight: "180px",
+                overflowY: "auto",
+                border: reportColumSelectError
+                  ? "1px solid #ef4444"
+                  : "1px solid #e4e4e7",
+                borderRadius: "10px",
+                p: 1,
+                backgroundColor: "#fafafa",
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: 0.5,
+              }}
+            >
+              {allColumDataBack?.map((col, index) => {
+                const checked = selectedColumns?.some(
+                  (c) => Number(c.ColId) === Number(col.ColId),
+                );
+                return (
+                  <Box
+                    key={index}
+                    onClick={() => handleToggleColumn(col)}
                     sx={{
-                      p: 0,
-                      color: "#a1a1aa",
-                      "&.Mui-checked": { color: "#7c6cf0" },
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      userSelect: "none",
+                      transition: "all 0.15s ease",
+                      "&:hover": {
+                        backgroundColor: "#ffffff",
+                        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
+                      },
                     }}
-                  />
-                  <Typography
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onChange={() => handleToggleColumn(col)}
+                      onClick={(e) => e.stopPropagation()}
+                      size="small"
+                      sx={{
+                        p: 0,
+                        color: "#a1a1aa",
+                        "&.Mui-checked": { color: "#7c6cf0" },
+                      }}
+                    />
+                    <Typography
+                      sx={{
+                        fontSize: "0.78rem",
+                        fontWeight: 500,
+                        color: "#18181b",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {col?.HeaderName || col?.FieldName}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+          </Box>
+
+          <Box sx={{ mb: 2 }}>
+            <Typography
+              sx={{
+                fontSize: "0.78rem",
+                fontWeight: 600,
+                color: "#71717a",
+                mb: 1,
+              }}
+            >
+              Selected Columns ({selectedColumns?.length || 0})
+            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 0.75,
+                maxHeight: "90px",
+                overflowY: "auto",
+              }}
+            >
+              {selectedColumns?.length > 0 ? (
+                selectedColumns.map((col, index) => (
+                  <Box
+                    key={index}
                     sx={{
-                      fontSize: "0.78rem",
-                      fontWeight: 500,
+                      backgroundColor: "#f4f4f5",
                       color: "#18181b",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      border: "1px solid #e4e4e7",
+                      px: 1.25,
+                      py: 0.4,
+                      borderRadius: "999px",
+                      fontSize: "0.74rem",
+                      fontWeight: 500,
                     }}
                   >
                     {col?.HeaderName || col?.FieldName}
-                  </Typography>
-                </Box>
-              );
-            })}
-          </Box>
-        </Box>
-
-        <Box sx={{ mb: 2 }}>
-          <Typography
-            sx={{
-              fontSize: "0.78rem",
-              fontWeight: 600,
-              color: "#71717a",
-              mb: 1,
-            }}
-          >
-            Selected Columns ({selectedColumns?.length || 0})
-          </Typography>
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 0.75,
-              maxHeight: "90px",
-              overflowY: "auto",
-            }}
-          >
-            {selectedColumns?.length > 0 ? (
-              selectedColumns.map((col, index) => (
-                <Box
-                  key={index}
+                  </Box>
+                ))
+              ) : (
+                <Typography
                   sx={{
-                    backgroundColor: "#f4f4f5",
-                    color: "#18181b",
-                    border: "1px solid #e4e4e7",
-                    px: 1.25,
-                    py: 0.4,
-                    borderRadius: "999px",
-                    fontSize: "0.74rem",
-                    fontWeight: 500,
+                    fontSize: "0.76rem",
+                    color: "#a1a1aa",
+                    fontStyle: "italic",
                   }}
                 >
-                  {col?.HeaderName || col?.FieldName}
-                </Box>
-              ))
-            ) : (
-              <Typography
-                sx={{
-                  fontSize: "0.76rem",
-                  color: "#a1a1aa",
-                  fontStyle: "italic",
-                }}
-              >
-                No columns selected
-              </Typography>
-            )}
+                  No columns selected
+                </Typography>
+              )}
+            </Box>
           </Box>
-        </Box>
 
-        <DialogActions
-          sx={{ p: 0, pt: 1, borderTop: "1px solid #f4f4f5", gap: 1 }}
-        >
-          <Button
-            variant="outlined"
-            onClick={() => setOpenSaveModal(false)}
-            sx={{
-              borderRadius: "8px",
-              borderColor: "#e4e4e7",
-              color: "#3f3f46",
-              fontSize: "0.78rem",
-              fontWeight: 500,
-              textTransform: "none",
-              px: 2,
-              py: 0.8,
-              "&:hover": { backgroundColor: "#f4f4f5", borderColor: "#a1a1aa" },
-            }}
+          <DialogActions
+            sx={{ p: 0, pt: 1, borderTop: "1px solid #f4f4f5", gap: 1 }}
           >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSaveReport}
-            sx={{
-              borderRadius: "8px",
-              backgroundColor: "#7c6cf0",
-              color: "#ffffff",
-              fontSize: "0.78rem",
-              fontWeight: 650,
-              textTransform: "none",
-              px: 2.5,
-              py: 0.8,
-              boxShadow: "0 2px 8px rgba(124, 108, 240, 0.28)",
-              "&:hover": {
-                backgroundColor: "#6a5ae0",
-                boxShadow: "0 4px 12px rgba(124, 108, 240, 0.38)",
-              },
-            }}
-          >
-            Save Preset
-          </Button>
-        </DialogActions>
-       </Box>
+            <Button
+              variant="outlined"
+              onClick={() => setOpenSaveModal(false)}
+              sx={{
+                borderRadius: "8px",
+                borderColor: "#e4e4e7",
+                color: "#3f3f46",
+                fontSize: "0.78rem",
+                fontWeight: 500,
+                textTransform: "none",
+                px: 2,
+                py: 0.8,
+                "&:hover": { backgroundColor: "#f4f4f5", borderColor: "#a1a1aa" },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleSaveReport}
+              sx={{
+                borderRadius: "8px",
+                backgroundColor: "#7c6cf0",
+                color: "#ffffff",
+                fontSize: "0.78rem",
+                fontWeight: 650,
+                textTransform: "none",
+                px: 2.5,
+                py: 0.8,
+                boxShadow: "0 2px 8px rgba(124, 108, 240, 0.28)",
+                "&:hover": {
+                  backgroundColor: "#6a5ae0",
+                  boxShadow: "0 4px 12px rgba(124, 108, 240, 0.38)",
+                },
+              }}
+            >
+              Save Preset
+            </Button>
+          </DialogActions>
+        </Box>
 
       </Dialog>
       <Box
