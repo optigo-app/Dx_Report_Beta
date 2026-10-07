@@ -67,6 +67,7 @@ export default function ChatWindow({ onClose }) {
     messages,
     isLoading,
     sendMessage,
+    sendAction,
     resetChat,
     cancelRequest,
     sessionId,
@@ -389,6 +390,7 @@ export default function ChatWindow({ onClose }) {
                   blocks={msg.blocks}
                   isLoading={false}
                   onSuggestionClick={handleSend}
+                  onAction={sendAction}
                   raw={msg.raw}
                   sessionId={sessionId}
                   onRegenerate={handleRegenerate}

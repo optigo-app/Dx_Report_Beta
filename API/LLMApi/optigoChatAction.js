@@ -3,21 +3,20 @@ import { postJson } from "./llmFetch";
 const DEFAULT_COMPANY_CODE = "orail25";
 const DEFAULT_RESPONSE_MODE = "wide";
 
-const sendChatMessage = async (req, signal) => {
+// POST /v1/chat/action — resolves an interactive block click server-side
+// against the pending state. Returns a normal ChatResponse.
+const sendChatAction = async (req, signal) => {
   const body = {
-    question: req.question,
+    session_id: req.session_id,
+    action: req.action,
     pid: req.pid,
     company_code: req.company_code || DEFAULT_COMPANY_CODE,
     user_id: req.user_id,
     yearcode: req.yearcode,
-    session_id: req.session_id,
     response_mode: req.response_mode || DEFAULT_RESPONSE_MODE,
-    filters: req.filters,
-    export: req.export,
-    regenerate: req.regenerate === true,
   };
 
-  return postJson("/v1/chat", body, { signal });
+  return postJson("/v1/chat/action", body, { signal });
 };
 
-export default sendChatMessage;
+export default sendChatAction;
