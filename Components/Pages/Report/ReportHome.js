@@ -208,7 +208,8 @@ export default function ReportHome({
   datefilterServerSide,
   popupParamiter,
   reportAlertData,
-  isShowPreFilterModal
+  isShowPreFilterModal,
+  CustomizeUserFirstPanelData
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -935,6 +936,7 @@ export default function ReportHome({
                   onSearchFilter={fetchReportData}
                   reportsExcelRights={reportsExcelRights}
                   reportAlertData={reportAlertData}
+                  CustomizeUserFirstPanelData={CustomizeUserFirstPanelData}
                 />
                 :
                 <MainReport

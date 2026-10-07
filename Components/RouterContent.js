@@ -35,6 +35,7 @@ export default function RouterContent({ newReportId, popupParamiter }) {
   const [isPrintColumn, setIsPrintColumn] = useState(false);
   const [isPrintColumnData, setIsPrintColumnData] = useState(false);
   const [reportsExcelRights, setReportsExcelRights] = useState();
+  const [CustomizeUserFirstPanelData, setCustomizeUserFirstPanelData] = useState();
   const [spliterReportFirstPanel, setSpliterReportFirstPanel] = useState();
   const [datefilterServerSide, setDatefilterServerSide] = useState();
   const [authActionDropdownMaster, setAuthActionDropdownMaster] = useState();
@@ -204,6 +205,7 @@ export default function RouterContent({ newReportId, popupParamiter }) {
           setIsPrintColumnData(data?.MainPrintColumn);
           setOtherPrintOptionShow(data?.otherPrintOptionShow);
           setSpliterReportSecondPanelShowAll(data?.SpliterSecondPanelAll);
+          setCustomizeUserFirstPanelData(data?.CustomizeUserFirstPanelData);
           setSvgIconData(JSON.parse(data.SvgIconFilter));  // New.............
           setSpliterReportFirstPanelFilter(data?.SpliterFirstPanelFilter);  // New.............
           setSpliterReportSecondPanelSecondoption(data?.SpliterSecondPanelSecondData);  // New.............
@@ -317,6 +319,7 @@ export default function RouterContent({ newReportId, popupParamiter }) {
         popupParamiter={popupParamiter}
         reportAlertData={reportAlertData}
         isShowPreFilterModal={isShowPreFilterModal}
+        CustomizeUserFirstPanelData={CustomizeUserFirstPanelData}
      />
     </Suspense>
   );
