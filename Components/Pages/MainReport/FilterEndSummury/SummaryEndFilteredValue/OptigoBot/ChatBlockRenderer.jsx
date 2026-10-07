@@ -1739,10 +1739,39 @@ function BreakdownBlock({ title, columns, rows }) {
   );
 }
 
-function GlossaryBlock({ title, terms }) {
-  const entries =
-    terms && typeof terms === "object" ? Object.entries(terms) : [];
-  if (!entries.length) return null;
+// Normalize every terms variant the API may send:
+// {"ctw": "Carat Total Weight"} | [{"term","definition"}] | [{"ctw":"..."}]
+// | ["ctw: Carat Total Weight"] — plus items/entries as field-name fallbacks.
+const normalizeGlossaryTerms = (block) => {
+  const t = block?.terms ?? block?.items ?? block?.entries;
+  if (t && !Array.isArray(t) && typeof t === "object") {
+    return Object.entries(t);
+  }
+  if (Array.isArray(t)) {
+    return t.flatMap((item) => {
+      if (item && typeof item === "object") {
+        if (item.term != null || item.definition != null) {
+          return [[String(item.term ?? ""), String(item.definition ?? "")]];
+        }
+        return Object.entries(item);
+      }
+      const s = String(item ?? "");
+      const idx = s.indexOf(":");
+      return idx > -1
+        ? [[s.slice(0, idx).trim(), s.slice(idx + 1).trim()]]
+        : [[s, ""]];
+    });
+  }
+  return [];
+};
+
+function GlossaryBlock(props) {
+  const { title } = props;
+  const entries = normalizeGlossaryTerms(props);
+  if (!entries.length) {
+    // Nothing parseable — show the raw content rather than render nothing.
+    return props.content ? <TextBlock content={props.content} /> : null;
+  }
   return (
     <Box
       sx={{
@@ -1852,8 +1881,9 @@ export default function ChatBlockRenderer({ blocks, onSuggestionClick, onAction 
   );
   const visibleBlocks = blocks.filter(
     (b) =>
-      b?.type !== "metric" ||
-      (!hasTable && !metricCardValues.has(b?.raw_value))
+      b?.type !== "glossary" &&
+      (b?.type !== "metric" ||
+        (!hasTable && !metricCardValues.has(b?.raw_value)))
   );
 
   return (
