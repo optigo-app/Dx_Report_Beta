@@ -21,6 +21,8 @@ import {
 } from "@mui/material";
 import { Maximize2, X, Download, Check, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { alpha } from "@mui/material/styles";
 import {
   Chart as ChartJS,
@@ -1501,7 +1503,10 @@ function DateRangeInputBlock({
     },
   };
 
+  // LocalizationProvider is scoped here — the chat drawer sits outside
+  // MainReport's provider tree, so the pickers need their own context.
   return (
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
     <Box
       sx={{
         my: 1,
@@ -1598,6 +1603,7 @@ function DateRangeInputBlock({
         </>
       )}
     </Box>
+    </LocalizationProvider>
   );
 }
 
