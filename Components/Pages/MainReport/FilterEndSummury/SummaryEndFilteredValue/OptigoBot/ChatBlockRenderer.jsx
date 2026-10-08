@@ -1494,11 +1494,67 @@ function DateRangeInputBlock({
   const pickerFieldProps = {
     size: "small",
     sx: {
-      width: 150,
-      "& .MuiInputBase-input": { fontSize: 13 },
-      "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-        borderColor: "var(--primary-btncolor-start)",
-        borderWidth: 1,
+      width: 148,
+      "& .MuiInputBase-input": { fontSize: 13, fontWeight: 500 },
+      "& .MuiOutlinedInput-root": {
+        borderRadius: "12px",
+        backgroundColor: "#f5f3ff",
+        transition: "all 0.2s ease",
+        "& fieldset": { borderColor: "#e9e0ff" },
+        "&:hover fieldset": { borderColor: "#c4b5fd" },
+        "&.Mui-focused fieldset": {
+          borderColor: "var(--primary-btncolor-start)",
+          borderWidth: 1,
+        },
+      },
+      "& .MuiInputAdornment-root .MuiIconButton-root": {
+        color: "var(--primary-btncolor-start)",
+        p: 0.5,
+        mr: -0.25,
+        "&:hover": { backgroundColor: "#ede8ff" },
+      },
+    },
+  };
+
+  // Themed calendar popover — rounded paper, purple selected day,
+  // lavender today ring, matching the chat's soft-radius language.
+  const pickerPopperProps = {
+    sx: {
+      "& .MuiPaper-root": {
+        borderRadius: "14px",
+        border: "1px solid #e9e0ff",
+        boxShadow: "0 8px 24px rgba(15,23,42,0.12), 0 2px 8px rgba(100,0,184,0.08)",
+        overflow: "hidden",
+      },
+      "& .MuiPickersCalendarHeader-root": { px: 1.5, mt: 0.5 },
+      "& .MuiPickersCalendarHeader-label": {
+        fontSize: 13.5,
+        fontWeight: 600,
+        color: "text.primary",
+      },
+      "& .MuiPickersArrowSwitcher-button, & .MuiPickersCalendarHeader-switchViewButton": {
+        color: "var(--primary-btncolor-start)",
+      },
+      "& .MuiDayCalendar-weekDayLabel": {
+        fontSize: 11,
+        fontWeight: 600,
+        color: "text.secondary",
+      },
+      "& .MuiPickersDay-root": {
+        fontSize: 12.5,
+        borderRadius: "10px",
+        transition: "all 0.15s ease",
+        "&:hover": { backgroundColor: "#ede8ff" },
+        "&.Mui-selected": {
+          backgroundColor: "var(--primary-btncolor-start)",
+          color: "common.white",
+          fontWeight: 600,
+          "&:hover, &:focus": { backgroundColor: "#8d0096" },
+        },
+        "&.MuiPickersDay-today": {
+          border: "1px solid #c4b5fd",
+          "&:not(.Mui-selected)": { borderColor: "#c4b5fd" },
+        },
       },
     },
   };
@@ -1562,8 +1618,8 @@ function DateRangeInputBlock({
               value={startDate}
               onChange={(v) => setStartDate(v)}
               maxDate={endDate || undefined}
-              format="YYYY-MM-DD"
-              slotProps={{ textField: pickerFieldProps }}
+              format="DD-MM-YYYY"
+              slotProps={{ textField: pickerFieldProps, popper: pickerPopperProps }}
             />
             <Typography component="span" sx={{ fontSize: 12, color: "text.secondary" }}>
               to
@@ -1572,8 +1628,8 @@ function DateRangeInputBlock({
               value={endDate}
               onChange={(v) => setEndDate(v)}
               minDate={startDate || undefined}
-              format="YYYY-MM-DD"
-              slotProps={{ textField: pickerFieldProps }}
+              format="DD-MM-YYYY"
+              slotProps={{ textField: pickerFieldProps, popper: pickerPopperProps }}
             />
             <Button
               size="small"
