@@ -955,6 +955,9 @@ export default function MainReport({
           onChange={handleChange}
           onBlur={commit}
           onKeyDown={(e) => {
+            // stop the DataGrid from hijacking keys (space = row select /
+            // focus steal, arrows = cell navigation) while typing
+            e.stopPropagation();
             if (e.key === "Enter") {
               e.preventDefault();
               e.target.blur();
@@ -1876,6 +1879,7 @@ export default function MainReport({
             (x) => x.id == svgEntry?.svgname
           );
           const DynamicIcon = matchedIcon?.icon;
+          const iconenew = "./icons/warning.png";
           return (
             <div
               style={{
@@ -1888,12 +1892,15 @@ export default function MainReport({
               }}
             >
               {original}
-              {DynamicIcon && (
-                <DynamicIcon
-                  size={25}
-                  style={{ flexShrink: 0, color: 'white', backgroundColor: '#7367F0', padding: '5px', borderRadius: '50px' }}
-                />
-              )}
+              {matchedIcon?.id == "11" ?
+                <img src={iconenew} style={{ height: '20px' }} />
+                :
+                DynamicIcon && (
+                  <DynamicIcon
+                    size={25}
+                    style={{ flexShrink: 0, color: '#f6b416', backgroundColor: '', padding: '5px', borderRadius: '50px' }}
+                  />
+                )}
             </div>
           );
         },
@@ -3347,6 +3354,7 @@ export default function MainReport({
             hasMoreData={hasMoreData}
             loadingMore={loadingMore}
             clearAllDataSignal={clearAllDataSignal}
+            refreshFunction={refreshFunction}
             sortedRowsForViews={sortedRowsForViews}   // ✅ new
           />
         }
@@ -3451,7 +3459,6 @@ export default function MainReport({
                   </Grid>
                 }
               </Grid>
-
 
               {pid == 18418 &&
                 <Grid item md={12} xs={12}>

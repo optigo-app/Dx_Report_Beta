@@ -25,7 +25,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdExpandMore, MdOutlineFilterAlt } from "react-icons/md";
 import { ArrowRight, ChartNoAxesCombined, FileSpreadsheet, Image, LayoutGrid, Pencil, PrinterCheck, Search, ShieldAlert, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -179,7 +179,8 @@ const ReportTopFilterEndAction = ({
   hasMoreData,
   loadingMore,
   clearAllDataSignal,
-  sortedRowsForViews
+  sortedRowsForViews,
+  refreshFunction
 }) => {
   const searchParams = useSearchParams();
   const pid = searchParams.get("pid");
@@ -2024,8 +2025,24 @@ const ReportTopFilterEndAction = ({
         "*"
       );
     }
-
   }
+
+  useEffect(() => {
+    const handler = (event) => {
+      if (event.data?.type !== "STOCKALERTSAVED") return;
+      if (event.data.action === "list") {
+        console.log('calll list')
+        refreshFunction();
+        setOpenIframeModal(false);
+      } else {
+        console.log('calll add')
+        refreshFunction();
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
   return (
     <div
       style={{
@@ -2686,67 +2703,67 @@ const ReportTopFilterEndAction = ({
 
               {(masterKeyData?.PrintButton == "True" ||
                 masterKeyData?.GridViewPrintButton == "True") && (
-                <>
-                  <Tooltip
-                    title="Print"
-                    isablePortal
-                    PopperProps={{
-                      container: gridContainerRef.current,
-                    }}
-                  >
-                    <IconButton
-                      onClick={handlePrintButtonClick}
-                      sx={{
-                        background: "#e8f5e9",
-                        height: "41px",
-                        width: "41px",
-                        borderRadius: "25px",
-                        backgroundColor: "#dadada",
-                        border: "1px solid #e0e0e0",
-                        color: "#555",
-
-                        transition: "background-color 0.15s ease",
-
-                        "&:hover": {
-                          backgroundColor: "#f4f4f4",
-                        },
+                  <>
+                    <Tooltip
+                      title="Print"
+                      isablePortal
+                      PopperProps={{
+                        container: gridContainerRef.current,
                       }}
-                      size="medium"
                     >
-                      <PrintRoundedIcon />
-                    </IconButton>
-                  </Tooltip>
+                      <IconButton
+                        onClick={handlePrintButtonClick}
+                        sx={{
+                          background: "#e8f5e9",
+                          height: "41px",
+                          width: "41px",
+                          borderRadius: "25px",
+                          backgroundColor: "#dadada",
+                          border: "1px solid #e0e0e0",
+                          color: "#555",
 
-                  <Menu
-                    anchorEl={printMenuAnchor}
-                    open={Boolean(printMenuAnchor)}
-                    onClose={() => setPrintMenuAnchor(null)}
-                    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                    transformOrigin={{ vertical: "top", horizontal: "right" }}
-                  >
-                    {masterKeyData?.PrintButton == "True" && (
-                      <MenuItem
-                        onClick={() => {
-                          setPrintMenuAnchor(null);
-                          handleOpenPrintPreview();
+                          transition: "background-color 0.15s ease",
+
+                          "&:hover": {
+                            backgroundColor: "#f4f4f4",
+                          },
                         }}
+                        size="medium"
                       >
-                        Image View Print
-                      </MenuItem>
-                    )}
-                    {masterKeyData?.GridViewPrintButton == "True" && (
-                      <MenuItem
-                        onClick={() => {
-                          setPrintMenuAnchor(null);
-                          handleOpenGridPrintView();
-                        }}
-                      >
-                        Data Grid View Print
-                      </MenuItem>
-                    )}
-                  </Menu>
-                </>
-              )}
+                        <PrintRoundedIcon />
+                      </IconButton>
+                    </Tooltip>
+
+                    <Menu
+                      anchorEl={printMenuAnchor}
+                      open={Boolean(printMenuAnchor)}
+                      onClose={() => setPrintMenuAnchor(null)}
+                      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                      transformOrigin={{ vertical: "top", horizontal: "right" }}
+                    >
+                      {masterKeyData?.PrintButton == "True" && (
+                        <MenuItem
+                          onClick={() => {
+                            setPrintMenuAnchor(null);
+                            handleOpenPrintPreview();
+                          }}
+                        >
+                          Image View Print
+                        </MenuItem>
+                      )}
+                      {masterKeyData?.GridViewPrintButton == "True" && (
+                        <MenuItem
+                          onClick={() => {
+                            setPrintMenuAnchor(null);
+                            handleOpenGridPrintView();
+                          }}
+                        >
+                          Data Grid View Print
+                        </MenuItem>
+                      )}
+                    </Menu>
+                  </>
+                )}
 
 
               {masterKeyData?.ImageView === "True" &&
