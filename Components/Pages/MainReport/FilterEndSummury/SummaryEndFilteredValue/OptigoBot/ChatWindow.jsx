@@ -89,6 +89,8 @@ export default function ChatWindow({ onClose }) {
     }
   });
   const scrollRef = useRef(null);
+  const inputRef = useRef(null);
+  const wasLoadingRef = useRef(false);
 
   // Report-aware suggested questions from the API; URL-based list is the fallback.
   useEffect(() => {
@@ -121,6 +123,11 @@ export default function ChatWindow({ onClose }) {
         else playReceive();
       }
     }
+    // Response finished → hand focus back to the input.
+    if (wasLoadingRef.current && !isLoading) {
+      inputRef.current?.focus();
+    }
+    wasLoadingRef.current = isLoading;
   }, [messages, isLoading]);
 
   // Show a "scroll to bottom" pill when the user has scrolled up.
@@ -426,6 +433,7 @@ export default function ChatWindow({ onClose }) {
             placeholder="Ask Optigo AI"
             fullWidth
             multiline
+            inputRef={inputRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}

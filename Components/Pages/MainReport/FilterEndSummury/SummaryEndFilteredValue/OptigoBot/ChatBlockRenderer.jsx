@@ -210,8 +210,8 @@ function HeadingBlock({ content }) {
   return (
     <Typography
       sx={{
-        fontSize: 16,
-        fontWeight: 700,
+        fontSize: 15,
+        fontWeight: 500,
         color: "text.primary",
         mt: 0.5,
         mb: 0.75,
