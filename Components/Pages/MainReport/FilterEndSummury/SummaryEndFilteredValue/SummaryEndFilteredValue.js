@@ -28,8 +28,6 @@ const evaluateFormula = (formulaString, totalsMap) => {
 };
 
 const SummaryEndFilteredValue = ({
-  setSummaryColumns,
-  setFinalSummaryColumns,
   columnsHide,
   allColumData,
   filteredRows,
@@ -93,12 +91,6 @@ const SummaryEndFilteredValue = ({
     );
     return String(columnData?.IsUniqueCount).toLowerCase() === "true";
   });
-
-  useEffect(() => {
-    const finalSummaryColumnsC = [...summaryColumns, ...unicSummaryColumns];
-    setSummaryColumns(summaryColumns);
-    setFinalSummaryColumns(finalSummaryColumnsC);
-  }, [columnsHide, allColumData, filteredRows]);
 
   const finalSummaryColumns = [...summaryColumns, ...unicSummaryColumns];
   const totalsMap = {};
@@ -197,11 +189,9 @@ const SummaryEndFilteredValue = ({
 
     return (
       <Box sx={{ padding: { xs: "8px", sm: "12px" }, width: "100%", boxSizing: "border-box", flex: 1 }}>
-        <Grid container spacing={1} rowSpacing={1} alignItems="stretch">
+        <Grid container spacing={1} rowSpacing={1} sx={{ alignItems: "stretch" }}>
           {allItems.map((item) => (
             <Grid
-              item
-              xs={6} sm={4} md={3} lg={1.5}
               key={item.key}
               sx={{ display: "flex", height: cardH, width: cardW }}
             >
@@ -370,7 +360,7 @@ const SummaryEndFilteredValue = ({
               {
 
                 isLoading ?
-                  <Grid item minWidth={212} sx={{ display: "flex", width: "fit-content" }}>
+                  <Grid sx={{ minWidth: 212, display: "flex", width: "fit-content" }}>
                     <div
                       style={{
                         borderRadius: "8px",
@@ -393,7 +383,7 @@ const SummaryEndFilteredValue = ({
                   </Grid>
                   :
 
-                  <Grid item minWidth={212} sx={{ display: "flex", width: 'fit-content' }}>
+                  <Grid sx={{ minWidth: 212, display: "flex", width: 'fit-content' }}>
                     <Card
                       elevation={0}
                       sx={{
@@ -472,7 +462,7 @@ const SummaryEndFilteredValue = ({
             {
 
               isLoading ?
-                <Grid item minWidth={212} sx={{ display: "flex", width: "fit-content" }}>
+                <Grid sx={{ minWidth: 212, display: "flex", width: "fit-content" }}>
                   <div
                     style={{
                       borderRadius: "8px",
@@ -494,7 +484,7 @@ const SummaryEndFilteredValue = ({
                 </Grid>
                 :
                 <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center", gap: '10px' }}>
-                  <Tooltip title="Refresh" disablePortal PopperProps={{ container: gridContainerRef.current }}>
+                  <Tooltip title="Refresh" slotProps={{ popper: { container: gridContainerRef.current } }}>
                     <IconButton
                       onClick={() => {
                         setRotationDeg((prev) => prev - 360);
@@ -523,7 +513,7 @@ const SummaryEndFilteredValue = ({
                   </Tooltip>
 
                   {masterKeyData?.ColumnSettingModel === "True" && (
-                    <Tooltip title="Column Rearrange" disablePortal PopperProps={{ container: gridContainerRef.current }}>
+                    <Tooltip title="Column Rearrange" slotProps={{ popper: { container: gridContainerRef.current } }}>
                       <IconButton
                         onClick={handleClickOpenPoup}
                         sx={{

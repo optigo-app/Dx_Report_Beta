@@ -64,7 +64,6 @@ import AreaChartD from "@/Components/Pages/MainReport/ChartView/Dynamic/AreaChar
 import BarChartD from "@/Components/Pages/MainReport/ChartView/Dynamic/BarChartD";
 import PieChartD from "@/Components/Pages/MainReport/ChartView/Dynamic/PieChartD";
 import PersonWiseDailyCallCountD from "@/Components/Pages/MainReport/ChartView/Dynamic/PersonWiseDailyCallCountD";
-import { GridOverlay } from "@mui/x-data-grid";
 import { IoWarningOutline } from "react-icons/io5";
 import { MdDoNotDisturb } from "react-icons/md";
 import { IoMdAddCircleOutline } from "react-icons/io";
@@ -241,7 +240,6 @@ export default function MainReport({
   const noFoundImg = "./images/noFound.jpg";
   const [isLoading, setIsLoading] = useState(isLoadingChek);
   const [showImageView, setShowImageView] = useState(false);
-  // const [openPopup, setOpenPopup] = useState(false);
   const [columns, setColumns] = useState([]);
   const [columnsHide, setColumnsHide] = useState([]);
   const [allColumData, setAllColumData] = useState();
@@ -273,10 +271,6 @@ export default function MainReport({
   const [navigationPageMaster, setNavigationPageMaster] = useState();
   const [selectedCurrency, setSelectedCurrency] = useState("INR");
   const [draftFilters, setDraftFilters] = useState({});
-  const clientIpAddress =
-    typeof window !== "undefined"
-      ? sessionStorage.getItem("clientIpAddress")
-      : null;
   const [suggestionVisibility, setSuggestionVisibility] = useState({});
   const [highlightedIndex, setHighlightedIndex] = useState({});
   const [preparingPrint, setPreparingPrint] = useState(false);
@@ -285,34 +279,12 @@ export default function MainReport({
   const searchParams = useSearchParams();
   const [isExpanded, setIsExpanded] = useState(false); // Add this state
   const [selectedGroups, setSelectedGroups] = useState(grupEnChekBox);
-  const [summaryColumns, setSummaryColumns] = useState();
-  const [finalSummaryColumns, setFinalSummaryColumns] = useState();
   const [chartView, setChartView] = useState(false);
   const [savedAreaCharts, setSavedAreaCharts] = useState([]);
   const [previewImg, setPreviewImg] = useState(null);
   const [openImgModal, setOpenImgModal] = useState(false);
   const [otherReport, setOtherReport] = useState([]);
-  const gridContainerRef = useRef(null);
-  const fullscreenContainer =
-    gridContainerRef.current ||
-    (typeof document !== "undefined" ? document.body : undefined);
-  const apiRef = useGridApiRef();
-  const printRef = useRef();
-  const gridRef = useRef(null);
-  const defaultSortApplied = useRef(false);
-  const initialSort = useRef(null);
-  const pid = searchParams.get("pid");
-  const firstTimeLoadedRef = useRef(false);
-  const [paginationModel, setPaginationModel] = useState({
-    page: 0,
-    pageSize: 20,
-  });
-  const [filterState, setFilterState] = useState({
-    dateRange: { startDate: null, endDate: null },
-  });
   const [columnWidths, setColumnWidths] = useState({});
-  const startDate = filterState?.dateRange?.startDate;
-  const endDate = filterState?.dateRange?.endDate;
   const [homeType, setHomeType] = useState(null);
   const [currentOpenReport, setCurrentOpenReport] = useState("mainreport");
   const [subReportFilterValue, setSubReportFilterValue] = useState();
@@ -321,17 +293,11 @@ export default function MainReport({
   const [isAskOptigoAiPanelOpen, setIsAskOptigoAiPanelOpen] = useState(false);
   const [optigoPanelWidth, setOptigoPanelWidth] = useState(400);
   const panelSpace = isAskOptigoAiPanelOpen ? `${optigoPanelWidth}px` : "0px";
-
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [selectedAuthRow, setSelectedAuthRow] = useState(null);
   const [selectedAuthCol, setSelectedAuthCol] = useState(null);
   const [authLoadingCell, setAuthLoadingCell] = useState(null); // keep state only
-  const authLoadingCellRef = useRef(null); // keep ref too
-  const sortedFilteredRowsRef = useRef([]);
-  // locally committed auth input (icon 4) values keyed by `recordId||fieldName`
-  // so they survive refetches / filteredRows rebuilds
   const [authInputOverrides, setAuthInputOverrides] = useState(new Map());
-
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteModalOpencheck, setDeleteModalOpenCheck] = useState(false);
   const [selectedDeleteRow, setSelectedDeleteRow] = useState(null);
@@ -339,47 +305,60 @@ export default function MainReport({
   const [slideOutRowIds, setSlideOutRowIds] = useState(() => new Set()); // rows animating out
   const [selectedDeleteCol, setSelectedDeleteCol] = useState(null);
   const [deletedRowIds, setDeletedRowIds] = useState(() => new Set());
+  const [openPopupReport, setOpenPopupReport] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [hoverData, setHoverData] = useState(null);
+  const [openPopupReportid, setOpenPopupReportid] = useState(null);
+  const [iframeModelData, setIframeModelData] = useState();
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMsg, setSnackbarMsg] = useState("");
+  const [openPopupReportParam, setOpenPopupReportParam] = useState(null);
+  const [menuSearch, setMenuSearch] = useState("");
+  const [menuState, setMenuState] = useState({ open: false, x: 0, y: 0, row: null });
+  const firstTimeLoadedRef = useRef(false);
+  const menuSearchRef = useRef(null);
+  const gridContainerRef = useRef(null);
+  const apiRef = useGridApiRef();
+  const printRef = useRef();
+  const isFirstLoad = useRef(true);
+  const grupEnChekBoxRef = useRef(grupEnChekBox);
+  const authLoadingCellRef = useRef(null); // keep ref too
+  const sortedFilteredRowsRef = useRef([]);
+  const gridRef = useRef(null);
+  const defaultSortApplied = useRef(false);
+  const initialSort = useRef(null);
+  const pid = searchParams.get("pid");
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 20,
+  });
+  const [filterState, setFilterState] = useState({
+    dateRange: { startDate: null, endDate: null },
+  });
+  const clientIpAddress =
+    typeof window !== "undefined"
+      ? sessionStorage.getItem("clientIpAddress")
+      : null;
+  const fullscreenContainer =
+    gridContainerRef.current ||
+    (typeof document !== "undefined" ? document.body : undefined);
+  const startDate = filterState?.dateRange?.startDate;
+  const endDate = filterState?.dateRange?.endDate;
+
+  useEffect(() => {
+    if (menuState.open) {
+      setMenuSearch(""); // clear previous search
+      setTimeout(() => menuSearchRef.current?.focus(), 50);
+    }
+  }, [menuState.open]);
+
   useEffect(() => {
     setDeletedRowIds(new Set());
   }, [allRowData]);
-  const [openPopupReport, setOpenPopupReport] = useState(false);
-  const [openPopupReportid, setOpenPopupReportid] = useState(null);
-  const [openPopupReportParam, setOpenPopupReportParam] = useState(null);
-
-  const handleClosePopupReport = () => {
-    setOpenPopupReport(false);
-    setOpenPopupReportid(null);
-    setOpenPopupReportParam(null);
-  };
-
-  const handleSaveAreaChart = (name) => {
-    setSavedAreaCharts((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        title: name,
-        rows: filteredRows ? [...filteredRows] : [],
-      },
-    ]);
-  };
-
-  const handleDeleteAreaChart = (id) => {
-    setSavedAreaCharts((prev) => prev.filter((c) => c.id !== id));
-  };
-
-  const handleMakeNewAreaChart = () => {
-    handleSaveAreaChart();
-  };
 
   useEffect(() => {
     authLoadingCellRef.current = authLoadingCell;
   }, [authLoadingCell]);
-
-
-  const toggleDrawer = (newOpen) => () => {
-    setSideFilterOpen(newOpen);
-  };
-
 
   useEffect(() => {
     setSelectedGroups(grupEnChekBox); // update internal state when prop changes
@@ -579,6 +558,28 @@ export default function MainReport({
     }
   }, [filterState.dateRange, datefilterServerSide]);
 
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.altKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setSideFilterOpen(true);
+      }
+
+      if (e.altKey && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        setSideFilterOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyPress);
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress);
+    };
+  }, []);
+
+  useEffect(() => {
+    getIframeUrlParams();
+  }, []);
+
   const fetchData = async () => {
     try {
       if (OtherKeyData == null) return;
@@ -637,6 +638,32 @@ export default function MainReport({
     fetchData();
   }, [OtherKeyData]);
 
+
+  const handleClosePopupReport = () => {
+    setOpenPopupReport(false);
+    setOpenPopupReportid(null);
+    setOpenPopupReportParam(null);
+  };
+
+  const handleSaveAreaChart = (name) => {
+    setSavedAreaCharts((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        title: name,
+        rows: filteredRows ? [...filteredRows] : [],
+      },
+    ]);
+  };
+
+  const handleDeleteAreaChart = (id) => {
+    setSavedAreaCharts((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const toggleDrawer = (newOpen) => () => {
+    setSideFilterOpen(newOpen);
+  };
+
   const handleGrupEnChekBoxChange = (field, HeaderName) => {
     setFilteredValue((prev = []) =>
       prev.filter((item) => item.name !== HeaderName)
@@ -691,26 +718,6 @@ export default function MainReport({
     setPreviewImg(null);
   };
 
-
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      if (e.altKey && e.key.toLowerCase() === "f") {
-        e.preventDefault();
-        setSideFilterOpen(true);
-      }
-
-      if (e.altKey && e.key.toLowerCase() === "c") {
-        e.preventDefault();
-        setSideFilterOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyPress);
-    return () => {
-      window.removeEventListener("keydown", handleKeyPress);
-    };
-  }, []);
-
-  const [iframeModelData, setIframeModelData] = useState();
   const getIframeUrlParams = async () => {
     const keyPrefix = `${pid}_`;
     const matchingKey = Object.keys(sessionStorage).find((key) =>
@@ -741,17 +748,10 @@ export default function MainReport({
     }
   };
 
-  useEffect(() => {
-    getIframeUrlParams();
-  }, []);
-
   const getSafeImageSrc = (src) => {
     const cleanSrc = String(src ?? "").trim();
     return cleanSrc ? cleanSrc : noFoundImg;
   };
-
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [hoverData, setHoverData] = useState(null);
 
   const handleHoverOpen = (event, row, config) => {
     setAnchorEl(event.currentTarget);
@@ -765,13 +765,10 @@ export default function MainReport({
     setAnchorEl(null);
   };
 
-
-  const [menuState, setMenuState] = useState({ open: false, x: 0, y: 0, row: null });
   const handleMenuClose = () => {
     setMenuState({ open: false, x: 0, y: 0, row: null });
   };
 
-  const grupEnChekBoxRef = useRef(grupEnChekBox);
   useEffect(() => {
     grupEnChekBoxRef.current = grupEnChekBox;
   }, [grupEnChekBox]);
@@ -895,8 +892,6 @@ export default function MainReport({
     }
   };
 
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMsg, setSnackbarMsg] = useState("");
   const AuthCustomInputCell = ({ initialValue, onCommit, regexType }) => {
     const [value, setValue] = useState(initialValue ?? "");
     useEffect(() => {
@@ -2200,7 +2195,6 @@ export default function MainReport({
       .filter((row) => !deletedRowIds.has(row.id)); // exclude deleted rows
   }, [allRowData, allColumIdWiseName, allColumData, masterValueMap, deletedRowIds, authInputOverrides]); // ✅ allColumData here
 
-  const isFirstLoad = useRef(true);
   useEffect(() => {
     if (allColumData) {
       const dateCols = allColumData?.filter((col) => col.ColumnType == "Date");
@@ -2803,66 +2797,6 @@ export default function MainReport({
     });
   };
 
-
-  // const handlePrintNow = (currentPageItems, currentPage) => {
-  //   setPreparingPrint(true);
-  //   setCurrentPrintPage(currentPage);
-
-  //   requestAnimationFrame(() => {
-  //     waitForPrintReady(currentPageItems);
-  //   });
-  // };
-
-  // const waitForPrintReady = (itemsToPrint) => {
-  //   const container = printRef.current;
-  //   if (!container) return;
-
-  //   const images = container.querySelectorAll(".print-content img");
-  //   const imagePromises = Array.from(images).map(
-  //     (img) =>
-  //       new Promise((resolve) => {
-  //         if (img.complete) {
-  //           resolve();
-  //         } else {
-  //           img.onload = () => resolve();
-  //           img.onerror = () => resolve();
-  //         }
-  //       })
-  //   );
-
-  //   Promise.all(imagePromises).then(() => {
-  //     let attempts = 0;
-  //     const maxAttempts = 100;
-
-  //     const checkLayout = () => {
-  //       requestAnimationFrame(() => {
-  //         attempts++;
-  //         const items = container.querySelectorAll(".print-content .col1");
-  //         if (items.length >= itemsToPrint.length || attempts >= maxAttempts) {
-  //           setPreparingPrint(false);
-  //           setTimeout(() => {
-  //             window.print();
-  //           }, 300);
-  //         } else {
-  //           checkLayout();
-  //         }
-  //       });
-  //     };
-
-  //     checkLayout();
-  //   });
-  // };
-
-  const menuSearchRef = useRef(null);
-  const [menuSearch, setMenuSearch] = useState("");
-
-  useEffect(() => {
-    if (menuState.open) {
-      setMenuSearch(""); // clear previous search
-      setTimeout(() => menuSearchRef.current?.focus(), 50);
-    }
-  }, [menuState.open]);
-
   const getMenuPosition = (x, y, menuWidth = 200, menuHeight = 200) => {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
@@ -2945,8 +2879,6 @@ export default function MainReport({
       return filteredRows ?? [];
     }
   };
-
-
 
   if (showPrintView) {
     return (
@@ -3145,7 +3077,6 @@ export default function MainReport({
           />
         </Drawer>
 
-
         <Modal
           open={openPopupReport}
           onClose={handleClosePopupReport}
@@ -3198,6 +3129,7 @@ export default function MainReport({
             </Box>
           </Slide>
         </Modal>
+
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <Dialog
             open={Boolean(activeActionColumn)}
@@ -3216,6 +3148,7 @@ export default function MainReport({
             />
           </Dialog>
         </LocalizationProvider>
+
         {reportAlertData[0]?.ReportAlert && <div>
           <p
             style={{
@@ -3230,10 +3163,9 @@ export default function MainReport({
           </p>
         </div>
         }
+
         <div style={{ flexShrink: 0 }}>
           <SummaryEndFilteredValue
-            setSummaryColumns={setSummaryColumns}
-            setFinalSummaryColumns={setFinalSummaryColumns}
             columnsHide={columnsHide}
             allColumData={allColumData}
             filteredRows={filteredRows}
@@ -3267,6 +3199,7 @@ export default function MainReport({
             isRightBaseColumMaster={isRightBaseColumMaster}
           />
         </div>
+
         {!activeIframeTab &&
           <ReportTopFilterEndAction
             isLoading={isLoading}
@@ -3379,6 +3312,7 @@ export default function MainReport({
             />
           </div>
         ) : null}
+
         <div
           ref={gridRef}
           style={{
@@ -3911,7 +3845,6 @@ export default function MainReport({
             />
           </div>
         </Dialog>
-
 
         <Snackbar
           open={snackbarOpen}

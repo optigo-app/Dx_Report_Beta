@@ -71,10 +71,6 @@ export default function RootLayout({ children }) {
             }
           `}
         </Script>
-        <Script
-          src="/js/flexigrid_advance.js"
-          strategy="afterInteractive"
-        />
 
       </head>
 

@@ -333,17 +333,19 @@ const CustomDualDatePicker = ({
                     placeholder="Select date range"
                     value={displayValue}
                     onClick={handleOpen}
-                    InputProps={{
-                        readOnly: true,
-                        endAdornment: (
-                            <InputAdornment position="end">
-                                {displayValue && (
-                                    <IconButton size="small" onClick={handleClearFilter}>
-                                        <ClearIcon fontSize="small" />
-                                    </IconButton>
-                                )}
-                            </InputAdornment>
-                        ),
+                    slotProps={{
+                        input: {
+                            readOnly: true,
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    {displayValue && (
+                                        <IconButton size="small" onClick={handleClearFilter}>
+                                            <ClearIcon fontSize="small" />
+                                        </IconButton>
+                                    )}
+                                </InputAdornment>
+                            ),
+                        },
                     }}
                     sx={{
                         minWidth: 270,

@@ -151,11 +151,13 @@ export default function GridPrintView({
                         style={{ textAlign: col?.align || "left" }}
                       >
                         {col?.ColumnType === "Number"
-                          ? Number(
-                              (columnTotals[col.field] ?? 0).toFixed(
-                                col.ColumnDecimal ?? 3
+                          ? col.ColumnDecimal && col.ColumnDecimal != 0
+                            ? (columnTotals[col.field] ?? 0).toFixed(
+                                Number(col.ColumnDecimal)
                               )
-                            )
+                            : Number(
+                                (columnTotals[col.field] ?? 0).toFixed(3)
+                              )
                           : ""}
                       </td>
                     ))}

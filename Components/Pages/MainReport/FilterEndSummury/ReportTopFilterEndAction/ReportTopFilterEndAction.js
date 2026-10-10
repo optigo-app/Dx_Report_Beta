@@ -1003,7 +1003,8 @@ const ReportTopFilterEndAction = ({
                           fontWeight: 600,
                           lineHeight: 1,
                           flexShrink: 0,
-                          marginRight: 1
+                          marginRight: 1,
+                          paddingTop: "2px"
                         }}
                       >
                         {multiCount}
@@ -1020,7 +1021,9 @@ const ReportTopFilterEndAction = ({
                     position: "absolute",
                     top: "100%",
                     left: 0,
-                    width: "100%",
+                    width: "max-content",
+                    minWidth: "100%",
+                    maxWidth: "340px",
                     backgroundColor: "#fff",
                     border: "1px solid #ddd",
                     borderTop: "none",
@@ -1078,11 +1081,13 @@ const ReportTopFilterEndAction = ({
                           alignItems: "center",
                           gap: 6,
                           padding: "4px 0",
-                          fontSize: "13px"
+                          fontSize: "13px",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         <input
                           type="checkbox"
+                          style={{ flexShrink: 0 }}
                           checked={(draftFilters[col.field] || []).includes(value)}
                           onChange={(e) => {
                             const checked = e.target.checked;
@@ -1109,7 +1114,16 @@ const ReportTopFilterEndAction = ({
                             });
                           }}
                         />
-                        {value}
+                        <span
+                          style={{
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            maxWidth: "300px",
+                          }}
+                          title={value}
+                        >
+                          {value}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -1155,9 +1169,9 @@ const ReportTopFilterEndAction = ({
                   }));
                 }}
                 style={{ width: "50%" }}
-                InputLabelProps={{
-                  style: {
-                    fontFamily: "Poppins, sans-serif",
+                slotProps={{
+                  inputLabel: {
+                    style: { fontFamily: "Poppins, sans-serif" },
                   },
                 }}
                 sx={{
@@ -1219,9 +1233,9 @@ const ReportTopFilterEndAction = ({
                   }));
                 }}
                 style={{ width: "50%" }}
-                InputLabelProps={{
-                  style: {
-                    fontFamily: "Poppins, sans-serif",
+                slotProps={{
+                  inputLabel: {
+                    style: { fontFamily: "Poppins, sans-serif" },
                   },
                 }}
                 sx={{
@@ -1430,8 +1444,10 @@ const ReportTopFilterEndAction = ({
                       [col.headerNamesingle]: value,
                     }));
                   }}
-                  InputLabelProps={{
-                    style: { fontFamily: "Poppins, sans-serif" },
+                  slotProps={{
+                    inputLabel: {
+                      style: { fontFamily: "Poppins, sans-serif" },
+                    },
                   }}
                   sx={{
                     "& .MuiOutlinedInput-root": {
@@ -1704,10 +1720,10 @@ const ReportTopFilterEndAction = ({
             onKeyDown={handleKeyDown}
             size="small"
             autoComplete="off"
-            InputLabelProps={{
-              style: { fontFamily: "Poppins, sans-serif" },
-            }}
             slotProps={{
+              inputLabel: {
+                style: { fontFamily: "Poppins, sans-serif" },
+              },
               input: {
                 endAdornment: draftFilters[field] ? (
                   <InputAdornment position="end">
@@ -2542,10 +2558,7 @@ const ReportTopFilterEndAction = ({
                         <Tooltip
                           title={data.code}
                           key={index}
-                          disablePortal
-                          PopperProps={{
-                            container: gridContainerRef.current,
-                          }}
+                          slotProps={{ popper: { container: gridContainerRef.current } }}
                         >
                           <div
                             onClick={() => handleColorClick(data.id)}
@@ -2706,10 +2719,7 @@ const ReportTopFilterEndAction = ({
                   <>
                     <Tooltip
                       title="Print"
-                      isablePortal
-                      PopperProps={{
-                        container: gridContainerRef.current,
-                      }}
+                      slotProps={{ popper: { container: gridContainerRef.current } }}
                     >
                       <IconButton
                         onClick={handlePrintButtonClick}
@@ -2781,10 +2791,7 @@ const ReportTopFilterEndAction = ({
                       {showImageView ? (
                         <Tooltip
                           title="Report View"
-                          isablePortal
-                          PopperProps={{
-                            container: gridContainerRef.current,
-                          }}
+                          slotProps={{ popper: { container: gridContainerRef.current } }}
                         >
                           <IconButton
                             onClick={() => setShowImageView(false)}
@@ -2808,10 +2815,7 @@ const ReportTopFilterEndAction = ({
                       ) : (
                         <Tooltip
                           title="Image View"
-                          isablePortal
-                          PopperProps={{
-                            container: gridContainerRef.current,
-                          }}
+                          slotProps={{ popper: { container: gridContainerRef.current } }}
                         >
                           <IconButton
                             onClick={() => setShowImageView(true)}
@@ -2846,10 +2850,7 @@ const ReportTopFilterEndAction = ({
                     {showImageView ? (
                       <Tooltip
                         title="Report View"
-                        isablePortal
-                        PopperProps={{
-                          container: gridContainerRef.current,
-                        }}
+                        slotProps={{ popper: { container: gridContainerRef.current } }}
                       >
                         <IconButton
                           onClick={() => setShowImageView(false)}
@@ -2873,10 +2874,7 @@ const ReportTopFilterEndAction = ({
                     ) : (
                       <Tooltip
                         title="Image View"
-                        isablePortal
-                        PopperProps={{
-                          container: gridContainerRef.current,
-                        }}
+                        slotProps={{ popper: { container: gridContainerRef.current } }}
                       >
                         <IconButton
                           onClick={() => setShowImageView(true)}
@@ -2904,10 +2902,7 @@ const ReportTopFilterEndAction = ({
               {(reportsExcelRights[0]?.IsExcelRight == 1 && reportsExcelRights[0]?.IsReportExcelRights == 1) &&
                 <Tooltip
                   title="Export to Excel"
-                  disablePortal
-                  PopperProps={{
-                    container: gridContainerRef.current,
-                  }}
+                  slotProps={{ popper: { container: gridContainerRef.current } }}
                 >
                   <IconButton
                     onClick={exportToExcel}
@@ -2941,10 +2936,7 @@ const ReportTopFilterEndAction = ({
                   {chartView ? (
                     <Tooltip
                       title="Report View"
-                      isablePortal
-                      PopperProps={{
-                        container: gridContainerRef.current,
-                      }}
+                      slotProps={{ popper: { container: gridContainerRef.current } }}
                     >
                       <IconButton
                         onClick={() => setChartView(false)}
@@ -2968,10 +2960,7 @@ const ReportTopFilterEndAction = ({
                   ) : (
                     <Tooltip
                       title="Chart View"
-                      isablePortal
-                      PopperProps={{
-                        container: gridContainerRef.current,
-                      }}
+                      slotProps={{ popper: { container: gridContainerRef.current } }}
                     >
                       <IconButton
                         onClick={() => setChartView(true)}
@@ -3007,10 +2996,7 @@ const ReportTopFilterEndAction = ({
                   {chartView ? (
                     <Tooltip
                       title="Report View"
-                      isablePortal
-                      PopperProps={{
-                        container: gridContainerRef.current,
-                      }}
+                      slotProps={{ popper: { container: gridContainerRef.current } }}
                     >
                       <IconButton
                         onClick={() => setChartView(false)}
@@ -3034,10 +3020,7 @@ const ReportTopFilterEndAction = ({
                   ) : (
                     <Tooltip
                       title="Chart View"
-                      isablePortal
-                      PopperProps={{
-                        container: gridContainerRef.current,
-                      }}
+                      slotProps={{ popper: { container: gridContainerRef.current } }}
                     >
                       <IconButton
                         onClick={() => setChartView(true)}
@@ -3066,10 +3049,7 @@ const ReportTopFilterEndAction = ({
                 otherPrintOptionShow == "True" &&
                 <Tooltip
                   title="Print"
-                  isablePortal
-                  PopperProps={{
-                    container: gridContainerRef.current,
-                  }}
+                  slotProps={{ popper: { container: gridContainerRef.current } }}
                 >
                   <IconButton
                     onClick={() => setChartView(true)}
@@ -3103,10 +3083,7 @@ const ReportTopFilterEndAction = ({
               {/* {masterKeyData?.FullScreenGridButton == "True" && (
                 <Tooltip
                   title={isFullscreen ? "Exit Full Screen" : "Full Screen Report"}
-                  isablePortal
-                  PopperProps={{
-                    container: gridContainerRef.current,
-                  }}
+                  slotProps={{ popper: { container: gridContainerRef.current } }}
                 >
                   <IconButton
                     onClick={toggleFullScreen}

@@ -346,7 +346,7 @@ function MetricBlock({ content, raw_value, currency, unit, unit_label, label, re
             title={`Exact: ${tooltipText}`}
             placement="top"
             arrow
-            componentsProps={{
+            slotProps={{
               tooltip: {
                 sx: {
                   backgroundColor: "grey.900",

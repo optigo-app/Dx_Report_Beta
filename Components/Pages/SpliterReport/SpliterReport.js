@@ -266,6 +266,19 @@ export default function SpliterReport({
         f: "DynamicReport ( data )",
       };
       const response = await ReportCallApi(body, spNumber);
+
+      // search-by-single-value gate: no records -> go back to the search box
+      if (
+        isSearchByValue &&
+        (response?.rd?.[0]?.stat == 0 ||
+          response?.rd?.[0]?.stat == 2 ||
+          !(response?.rd3?.length > 0))
+      ) {
+        setIsLoading(false);
+        onBack?.();
+        return;
+      }
+
       setSpData(response);
       setDropdownFilteredRd3(null);
       setFirstPanelFilterValue("");

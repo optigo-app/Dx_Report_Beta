@@ -528,6 +528,7 @@ export default function ReportHome({
         setIsPageChanging(false);
         setIsLoading(false);
       }
+      return response;
     } catch (error) {
       console.error("getReportData failed:", error);
       if (isShowPreFilterModal && showPreFilterPanel) preFilterValueRef.current = "";
@@ -535,6 +536,7 @@ export default function ReportHome({
       setLoadingMore(false);
       loadingMoreRef.current = false;
       setIsPageChanging(false);
+      return null;
     }
   };
 
@@ -770,14 +772,30 @@ export default function ReportHome({
     fetchReportData(filters || {}, "0");
   };
 
-  const handleSearchByValueSubmit = () => {
+  const handleSearchByValueSubmit = async () => {
     if (isLoading) return;
     const val = searchByValue.trim();
     searchByValueRef.current = val;
     setCommittedSearchByValue(val);
-    setShowSearchByValuePanel(false);
+    // keep the gate on screen (isLoading shows the loader) — only switch
+    // to the report once we know data exists
     const { filters } = lastFiltersRef.current;
-    fetchReportData(filters || {}, "0");
+    const response = await fetchReportData(filters || {}, "0");
+
+    const stat = response?.rd?.[0]?.stat;
+    const hasRows =
+      Array.isArray(response?.rd3) && response.rd3.length > 0;
+    if (stat == 0 || stat == 2 || !hasRows) {
+      if (stat != 0 && stat != 2) {
+        // empty result without a known stat -> message it ourselves
+        setErrorMessageColor("warning");
+        setErrorMessage("No Records Found");
+        setOpenSnackbar(true);
+      }
+      return; // stay on the search gate
+    }
+
+    setShowSearchByValuePanel(false);
   };
 
   const handleBack = () => {
