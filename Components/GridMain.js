@@ -48,6 +48,7 @@ const GridMain = ({
   reportsExcelRights,
   datefilterServerSide,
   popupParamiter,
+  popupOnClose,
   reportAlertData,
   isShowPreFilterModal,
   CustomizeUserFirstPanelData,
@@ -188,6 +189,7 @@ const GridMain = ({
       reportsExcelRights={reportsExcelRights}
       datefilterServerSide={datefilterServerSide}
       popupParamiter={popupParamiter}
+      popupOnClose={popupOnClose}
       reportAlertData={reportAlertData}
       isShowPreFilterModal={isShowPreFilterModal}
       CustomizeUserFirstPanelData={CustomizeUserFirstPanelData}

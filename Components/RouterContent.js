@@ -17,7 +17,7 @@ const MultiReportPage = lazy(() =>
   import("@/Components/Pages/MultiReport/MultiReportPage")
 );
 
-export default function RouterContent({ newReportId, popupParamiter }) {
+export default function RouterContent({ newReportId, popupParamiter, popupOnClose }) {
   const searchParams = useSearchParams();
   const urlPid = searchParams.get("pid");
   const pid = newReportId || urlPid;
@@ -319,6 +319,7 @@ export default function RouterContent({ newReportId, popupParamiter }) {
         reportsExcelRights={reportsExcelRights}
         datefilterServerSide={datefilterServerSide}
         popupParamiter={popupParamiter}
+        popupOnClose={popupOnClose}
         reportAlertData={reportAlertData}
         isShowPreFilterModal={isShowPreFilterModal}
         CustomizeUserFirstPanelData={CustomizeUserFirstPanelData}

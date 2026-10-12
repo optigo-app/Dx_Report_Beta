@@ -213,6 +213,7 @@ export default function ReportHome({
   reportsExcelRights,
   datefilterServerSide,
   popupParamiter,
+  popupOnClose,
   reportAlertData,
   isShowPreFilterModal,
   CustomizeUserFirstPanelData,
@@ -1061,7 +1062,11 @@ export default function ReportHome({
                 </div>}
             </div>
           ) : (
-            <div ref={reportRef} className="report-container">
+            <div
+              ref={reportRef}
+              className="report-container"
+              style={{ minHeight: popupOnClose ? "90vh" : "100vh" }}
+            >
               {spliterReportShow
                 ?
                 <SpliterReport
@@ -1114,6 +1119,7 @@ export default function ReportHome({
                   CustomizeUserFirstPanelData={CustomizeUserFirstPanelData}
                   IsSearchBySingleValue={IsSearchBySingleValue}
                   searchBySingleValue={committedSearchByValue}
+                  popupOnClose={popupOnClose}
                 />
                 :
                 <MainReport
@@ -1158,6 +1164,7 @@ export default function ReportHome({
                   loadingMore={loadingMore}
                   reportAlertData={reportAlertData}
                   IsSearchBySingleValue={IsSearchBySingleValue}
+                  popupOnClose={popupOnClose}
                 />
               }
             </div>

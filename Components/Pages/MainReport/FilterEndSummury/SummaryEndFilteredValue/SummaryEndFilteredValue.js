@@ -56,7 +56,8 @@ const SummaryEndFilteredValue = ({
   isFormulaBasedSummary,
   summaryViewData,
   isLoading,
-  isRightBaseColumMaster
+  isRightBaseColumMaster,
+  popupOnClose,
 }) => {
   const [openPopup, setOpenPopup] = useState(false);
   const [openAskOptigoAi, setOpenAskOptigoAi] = useState(false);
@@ -458,7 +459,7 @@ const SummaryEndFilteredValue = ({
             }
 
           </div>
-          <div style={{ margin: '10px 10px 0px 0px' }}>
+          <div style={{ margin: '10px 10px 0px 0px', display: "flex", alignItems: "flex-start", gap: "10px" }}>
             {
 
               isLoading ?
@@ -577,6 +578,20 @@ const SummaryEndFilteredValue = ({
                   }
                 </Box>
             }
+            {popupOnClose && (
+              <Tooltip title="Close" slotProps={{ popper: { container: gridContainerRef.current } }}>
+                <IconButton
+                  onClick={popupOnClose}
+                  sx={{
+                    background: "#222", color: "#fff", height: "38px", width: "38px",
+                    borderRadius: 3, transition: "all .2s ease",
+                    "&:hover": { backgroundColor: "#333" },
+                  }}
+                >
+                  <X size={20} />
+                </IconButton>
+              </Tooltip>
+            )}
           </div>
           {masterKeyData?.OptigoChatBotAi == "True" &&
             <OptigoBotDrawer

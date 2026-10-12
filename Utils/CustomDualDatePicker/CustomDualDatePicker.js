@@ -161,7 +161,9 @@ const CustomDualDatePicker = ({
     showReportMaster,
     ShowAllbtn,
     handleAllDataShow,
-    datefilterServerSide
+    datefilterServerSide,
+    validDay,
+    validMonth
 }) => {
     const [anchorEl, setAnchorEl] = useState(null);
     const [anchorElStatus, setAnchorElStatus] = useState(null);
@@ -248,9 +250,14 @@ const CustomDualDatePicker = ({
         //     return;
         // }
 
-        if (!withountDateFilter) {
-            const diffInMs = endDate.getTime() - startDate.getTime();
+        if (validDay) {
+            const diffInMs = new Date(endDate).getTime() - new Date(startDate).getTime();
             const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+            if (diffInDays > validDay) {
+                setError(`You can select a maximum range of ${validMonth} month.`);
+                return;
+            }
         }
 
         setError("");
@@ -268,14 +275,23 @@ const CustomDualDatePicker = ({
         handleClose();
     };
 
-    // Clear icon: also clear the applied filterState so the box empties,
-    // since the closed display reads from filterState.dateRange.
+    // Clear icon: under a month restriction, reset to the default allowed range
+    // (today back by validMonth months) instead of emptying the filter.
     const handleClearFilter = (e) => {
         e?.stopPropagation();
-        setTempRange({ startDate: "", endDate: "", status: "" });
+        let cleared = { startDate: "", endDate: "" };
+        if (validDay) {
+            const endDate = new Date();
+            const startDate = new Date();
+            const dayOfMonth = startDate.getDate();
+            startDate.setMonth(startDate.getMonth() - (Number(validMonth) || 1));
+            if (startDate.getDate() !== dayOfMonth) startDate.setDate(0);
+            cleared = { startDate, endDate };
+        }
+        setTempRange({ ...cleared, status: "" });
         setFilterState((prev) => ({
             ...prev,
-            dateRange: { startDate: "", endDate: "" },
+            dateRange: cleared,
         }));
         handleClose();
     };
@@ -491,7 +507,7 @@ const CustomDualDatePicker = ({
                     />
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px', gap: '8px' }}>
                         {error && (
-                            <p style={{ color: "red", fontSize: "14px", display: 'flex', alignItems: 'center' }}>{error}</p>
+                            <p style={{ color: "red", fontSize: "14px", display: 'flex', alignItems: 'center', margin: '0px' }}>{error}</p>
                         )}
                         <Button onClick={handleClose} color="secondary">
                             Cancel

@@ -2353,6 +2353,13 @@ const ReportTopFilterEndAction = ({
                           ShowAllbtn={masterKeyData?.AllDataButton == "True"}
                           handleAllDataShow={handleAllDataShow}
                           datefilterServerSide={datefilterServerSide}
+                          validDay={
+                            masterKeyData?.IsMainDateFilterMonthRestriction == "True" &&
+                            Number(masterKeyData?.IsMainDateFilterMonthRestrictionCount) > 0
+                              ? Number(masterKeyData.IsMainDateFilterMonthRestrictionCount) * 31
+                              : undefined
+                          }
+                          validMonth={masterKeyData?.IsMainDateFilterMonthRestrictionCount}
                         />
                         :
                         <Button

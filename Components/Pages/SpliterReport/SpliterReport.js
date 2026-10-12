@@ -113,6 +113,7 @@ export default function SpliterReport({
   CustomizeUserFirstPanelData,
   IsSearchBySingleValue,
   searchBySingleValue,
+  popupOnClose,
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -1406,6 +1407,7 @@ export default function SpliterReport({
             reportsExcelRights={reportsExcelRights}
             clearAllDataSignal={clearAllDataSignal}
             reportAlertData={reportAlertData}
+            popupOnClose={popupOnClose}
           />
         </div>
       </Box>
