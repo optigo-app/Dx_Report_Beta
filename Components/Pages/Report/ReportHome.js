@@ -217,7 +217,8 @@ export default function ReportHome({
   reportAlertData,
   isShowPreFilterModal,
   CustomizeUserFirstPanelData,
-  IsSearchBySingleValue
+  IsSearchBySingleValue,
+  spliterReportWithoutDate
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -1120,6 +1121,7 @@ export default function ReportHome({
                   IsSearchBySingleValue={IsSearchBySingleValue}
                   searchBySingleValue={committedSearchByValue}
                   popupOnClose={popupOnClose}
+                  spliterReportWithoutDate={spliterReportWithoutDate}
                 />
                 :
                 <MainReport
