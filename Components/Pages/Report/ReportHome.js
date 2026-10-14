@@ -1066,7 +1066,7 @@ export default function ReportHome({
             <div
               ref={reportRef}
               className="report-container"
-              style={{ minHeight: popupOnClose ? "90vh" : "100vh" }}
+              style={{ minHeight: popupOnClose ? "95vh" : "100vh" }}
             >
               {spliterReportShow
                 ?
