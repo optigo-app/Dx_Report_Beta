@@ -1,4 +1,23 @@
 import { useState } from "react";
+import { formatServerDate } from "../utils/dateUtils";
+
+// PopUpParamiter values for Date columns must go to the backend as
+// `yyyy-mm-dd` (or `yyyy-mm-dd HH:mm:ss` for IsShowDateWithTime) — the row
+// holds the display-formatted value ("14 Oct 2026"), which the API can't read.
+const formatParamValue = (colDef, value) => {
+  if (value == null || value === "") return value ?? "";
+  if (String(colDef?.ColumnType).toLowerCase() !== "date") return value;
+  const dateOnly = formatServerDate(value);
+  if (!dateOnly) return value;
+  if (colDef?.IsShowDateWithTime === "True" || colDef?.IsShowDateWithTime === true) {
+    const d = new Date(value);
+    if (!isNaN(d.getTime())) {
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${dateOnly} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+  }
+  return dateOnly;
+};
 
 /**
  * Small overlays opened from grid cells: image preview, "view" hover card,
@@ -47,12 +66,17 @@ export default function useCellOverlays() {
         .map((f) => f.trim())
         .filter(Boolean);
       if (fieldNames.length > 0) {
+        const allColumns = data.api?.getAllColumns?.() || [];
         const resolvedObj = {};
         fieldNames.forEach((fieldName) => {
           const rowKey = Object.keys(data.row).find(
             (k) => k.toLowerCase() === fieldName.toLowerCase()
           );
-          resolvedObj[fieldName] = rowKey ? data.row[rowKey] ?? "" : "";
+          const raw = rowKey ? data.row[rowKey] ?? "" : "";
+          const colDef = allColumns.find(
+            (c) => (c.FieldName || c.field)?.toLowerCase() === fieldName.toLowerCase()
+          );
+          resolvedObj[fieldName] = formatParamValue(colDef, raw);
         });
         resolvedParamiter = JSON.stringify([resolvedObj]);
       }

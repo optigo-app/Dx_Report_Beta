@@ -12,6 +12,7 @@ import {
   DialogTitle,
   Grid,
   IconButton,
+  MenuItem,
   Skeleton,
   Snackbar,
   TextField,
@@ -147,7 +148,7 @@ const SelectionBox = ({
                     <Checkbox
                       checked={isChecked}
                       onChange={() => setSelected(item)}
-                      sx={{ padding: "2px" }}
+                      sx={{ padding: "2px", color: "rgb(216 216 216 / 60%)" }}
                     />
                     <span>{strValue}</span>
                   </label>
@@ -218,8 +219,12 @@ export default function ReportHome({
   isShowPreFilterModal,
   CustomizeUserFirstPanelData,
   IsSearchBySingleValue,
-  spliterReportWithoutDate
+  spliterReportWithoutDate,
+  multiDatefilterServerSide,
+  multiDatefilterServerSideData
 }) {
+  console.log('multiDatefilterServerSideData: ', multiDatefilterServerSideData);
+  console.log('multiDatefilterServerSide: ', multiDatefilterServerSide);
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
   const [masterData, setMasterData] = useState();
@@ -245,6 +250,7 @@ export default function ReportHome({
   const loadingMoreRef = useRef(false);
   const [showMoreConfirmOpen, setShowMoreConfirmOpen] = useState(false);
   const [showMoreTotalCount, setShowMoreTotalCount] = useState(0);
+  const [selectedDateField, setSelectedDateField] = useState("");
   // IsSearchBySingleValue gate: flag may arrive as boolean or "True" string
   const isSearchByValue =
     IsSearchBySingleValue === true ||
@@ -275,6 +281,16 @@ export default function ReportHome({
     if (isSearchByValue) setShowSearchByValuePanel(true);
   }, [isSearchByValue]);
 
+  const multiDateFields = useMemo(() => {
+    if (!multiDatefilterServerSideData) return [];
+    if (Array.isArray(multiDatefilterServerSideData)) return multiDatefilterServerSideData;
+    try {
+      return JSON.parse(multiDatefilterServerSideData) || [];
+    } catch {
+      return [];
+    }
+  }, [multiDatefilterServerSideData]);
+
   const clearFieldSelections = (fieldKey) => {
     setSelectedValues((prev) => ({
       ...prev,
@@ -297,7 +313,6 @@ export default function ReportHome({
   }, [largeDataTitle]);
 
   useEffect(() => {
-    if (spliterReportShow) return;
     if (!reportId && !spNumber) return;
     const fetchData = async () => {
       // search-by-single-value gate: wait for the user's value first
@@ -407,6 +422,11 @@ export default function ReportHome({
       }),
       ...(filters.FilterEndDate && {
         FilterEndDate: filters.FilterEndDate,
+      }),
+      ...(multiDatefilterServerSide &&
+        selectedDateField &&
+        filters.FilterStartDate && {
+        FilterDateFiedName: selectedDateField,
       }),
       ...(popupParamiter && { OpenPopUpReport: true, PopUpParamiter: popupParamiter }),
     });
@@ -952,7 +972,7 @@ export default function ReportHome({
                   {dateOptionsShow && (
                     <Grid item>
                       <div className="selection-box">
-                        <div
+                        {!multiDatefilterServerSide && <div
                           className="selection-header"
                           style={{
                             minHeight: "50px",
@@ -970,7 +990,35 @@ export default function ReportHome({
                           >
                             Date
                           </p>
-                        </div>
+                        </div>}
+                        {multiDatefilterServerSide && (
+                          <div
+                            className="selection-header"
+                            style={{
+                              minHeight: "50px",
+                              borderBottom: "1px solid #ddd",
+                              padding: "6px",
+                            }}
+                          >
+                            <TextField
+                              select
+                              size="small"
+                              fullWidth
+                              label="Date Field"
+                              value={selectedDateField}
+                              onChange={(e) => setSelectedDateField(e.target.value)}
+                            >
+                              <MenuItem value="">
+                                <em>None</em>
+                              </MenuItem>
+                              {multiDateFields.map((f) => (
+                                <MenuItem key={f.FieldName} value={f.FieldName}>
+                                  {f.HeaderName}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          </div>
+                        )}
                         <div
                           className="master-box"
                           style={{ maxHeight: "310px" }}
@@ -1015,7 +1063,6 @@ export default function ReportHome({
                                         }}
                                       >
                                         <Checkbox
-                                          sx={{ padding: "2px" }}
                                           checked={
                                             selectedDateOption ===
                                             option.DateFrame
@@ -1023,6 +1070,7 @@ export default function ReportHome({
                                           onChange={() =>
                                             handleDateSelection(option.DateFrame)
                                           }
+                                          sx={{ padding: "2px", color: "rgb(216 216 216 / 60%)" }}
                                         />
                                         <span>{option.DateFrame}</span>
                                       </label>
@@ -1047,10 +1095,13 @@ export default function ReportHome({
                         arr.some((item) => item.hasOwnProperty(field))
                       ) || [];
                     if (dataArray.length === 0) return null;
+                    const resolvedTitle =
+                      dataArray.find((i) => i?.MasterType === field)?.FriendlyName ||
+                      title;
                     return (
                       <Grid item key={idx}>
                         <SelectionBox
-                          title={title}
+                          title={resolvedTitle}
                           data={dataArray}
                           selected={selectedValues[field] || []}
                           setSelected={(val) => handleSelection(field, val)}
@@ -1121,6 +1172,7 @@ export default function ReportHome({
                   IsSearchBySingleValue={IsSearchBySingleValue}
                   searchBySingleValue={committedSearchByValue}
                   popupOnClose={popupOnClose}
+                  popupParamiter={popupParamiter}
                   spliterReportWithoutDate={spliterReportWithoutDate}
                 />
                 :

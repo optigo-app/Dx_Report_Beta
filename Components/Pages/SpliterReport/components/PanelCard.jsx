@@ -80,7 +80,7 @@ const PanelCard = ({ label, selected, onClick, summary = {} }) => {
           }}
           title={label}
         >
-          {label ? label  : "No Title Data"}
+          {label ? label : "No Title Data"}
         </Typography>
 
         {selected && (
@@ -102,8 +102,8 @@ const PanelCard = ({ label, selected, onClick, summary = {} }) => {
                         <Typography
                           sx={{
                             fontSize: "0.75rem",
-                            fontWeight: 600,
-                            color: "#1e293b",
+                            fontWeight: 400,
+                            color: "rgb(130,130,130)",
                             letterSpacing: "-0.01em",
                           }}
                         >
@@ -200,8 +200,8 @@ const PanelCard = ({ label, selected, onClick, summary = {} }) => {
                       component="span"
                       sx={{
                         fontSize: "0.71rem",
-                        fontWeight: 500,
-                        color: "#64748b",
+                        fontWeight: 400,
+                        color: "rgb(130,130,130)",
                         whiteSpace: "nowrap",
                         letterSpacing: "0.01em",
                         overflow: "hidden",

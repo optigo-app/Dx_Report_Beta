@@ -38,6 +38,8 @@ export default function RouterContent({ newReportId, popupParamiter, popupOnClos
   const [CustomizeUserFirstPanelData, setCustomizeUserFirstPanelData] = useState();
   const [spliterReportFirstPanel, setSpliterReportFirstPanel] = useState();
   const [datefilterServerSide, setDatefilterServerSide] = useState();
+  const [multiDatefilterServerSide, setMultiDatefilterServerSide] = useState();
+  const [multiDatefilterServerSideData, setMultiDatefilterServerSideData] = useState();
   const [IsSearchBySingleValue, setIsSearchBySingleValue] = useState();
   const [authActionDropdownMaster, setAuthActionDropdownMaster] = useState();
   const [spliterReportFirstPanelFilter, setSpliterReportFirstPanelFilter] = useState();
@@ -182,6 +184,8 @@ export default function RouterContent({ newReportId, popupParamiter, popupOnClos
         setReportsExcelRights(response?.rd8)
         setIsRightBaseColum(response?.rd9);
         setReportAlertData(response?.rd10);
+        setMultiDatefilterServerSideData(response?.rd11);
+
         const masterName = response?.rd?.[0]?.PrintMasterName;
         const matched = response?.rd4?.find(
           (item) => item.PrintMaster === masterName
@@ -197,6 +201,7 @@ export default function RouterContent({ newReportId, popupParamiter, popupOnClos
           setLargeDataShow(data.ServerSideDateWiseFilter);
           setSpliterReportFirstPanel(data.SpliterFirstPanel);
           setDatefilterServerSide(data?.IsDateFilterServerSide);
+          setMultiDatefilterServerSide(data?.FilterPageMultiDateOption);
           setSpliterReportSecondPanel(data.SpliterSecondPanel);
           setIsFormulaBasedSummary(data.IsFormulaBasedSummary);
           setReportName(data.ReportName);
@@ -327,7 +332,9 @@ export default function RouterContent({ newReportId, popupParamiter, popupOnClos
         CustomizeUserFirstPanelData={CustomizeUserFirstPanelData}
         IsSearchBySingleValue={IsSearchBySingleValue}
         spliterReportWithoutDate={spliterReportWithoutDate}
-     />
+        multiDatefilterServerSide={multiDatefilterServerSide}
+        multiDatefilterServerSideData={multiDatefilterServerSideData}
+      />
     </Suspense>
   );
 }

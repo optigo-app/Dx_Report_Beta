@@ -114,6 +114,7 @@ export default function SpliterReport({
   IsSearchBySingleValue,
   searchBySingleValue,
   popupOnClose,
+  popupParamiter,
   spliterReportWithoutDate
 }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -193,6 +194,7 @@ export default function SpliterReport({
         if (spliterReportShow) {
           setSpData(OtherKeyData);
           setFilteredReportData(OtherKeyData);
+          setIsLoading(false);
           return;
         }
         try {
@@ -208,7 +210,9 @@ export default function SpliterReport({
               if (k.startsWith("rd") && Array.isArray(response[k])) fields[k] = response[k];
             });
           }
-        } finally { }
+        } finally {
+          setIsLoading(false);
+        }
       } else {
         fetchReportData({}, "0");
       }
@@ -255,8 +259,11 @@ export default function SpliterReport({
         p: JSON.stringify({
           ReportId: reportId,
           IsMaster: Master,
-          FilterStartDate: allData ? "" : formatToYYYYMMDD(startDate),
-          FilterEndDate: allData ? "" : formatToYYYYMMDD(endDate),
+          // spliter report without a date filter → don't send dates at all
+          ...(!spliterReportWithoutDate && {
+            FilterStartDate: allData ? "" : formatToYYYYMMDD(startDate),
+            FilterEndDate: allData ? "" : formatToYYYYMMDD(endDate),
+          }),
           ...(filters.FilterHeader && { FilterHeader: filters.FilterHeader }),
           ...(filters.FilterValue && { FilterValue: filters.FilterValue }),
           ...(ServerFilterHeader && { ServerFilterHeader }),
@@ -264,6 +271,7 @@ export default function SpliterReport({
           ...(isSearchByValue && searchBySingleValue && {
             IsSearchBySingleValue: searchBySingleValue,
           }),
+          ...(popupParamiter && { OpenPopUpReport: true, PopUpParamiter: popupParamiter }),
         }),
         f: "DynamicReport ( data )",
       };

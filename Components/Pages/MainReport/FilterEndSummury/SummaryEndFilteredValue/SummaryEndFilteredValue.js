@@ -108,7 +108,7 @@ const SummaryEndFilteredValue = ({
   // ─── renderSummary: column + formula cards in ONE list, sorted by display order ───
   const renderSummary = () => {
     const isCompact = finalSummaryColumns?.length > 16;
-    const cardH = isCompact ? "55px" : "62px";
+    const cardH = isCompact ? "55px" : "55px";
     const cardW = isCompact ? "140px" : "180px";
 
     // order > 0 => valid order, otherwise "no order" (goes to the end)
@@ -209,7 +209,7 @@ const SummaryEndFilteredValue = ({
                 <Box sx={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "space-between", width: "100%" }}>
                   <Typography
                     sx={{
-                      fontSize: isCompact ? "10px" : "11px", fontWeight: 600, color: "#6B7280",
+                      fontSize: isCompact ? "10px" : "11px", fontWeight: 400, color: "rgb(130,130,130)",
                       textTransform: "uppercase", letterSpacing: "0.5px",
                       whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                     }}
