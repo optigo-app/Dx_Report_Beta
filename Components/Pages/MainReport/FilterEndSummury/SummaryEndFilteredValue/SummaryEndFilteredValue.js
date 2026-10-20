@@ -490,7 +490,6 @@ const SummaryEndFilteredValue = ({
                       onClick={() => {
                         setRotationDeg((prev) => prev - 360);
                         refreshFunction();
-                        setFilteredValue();
                       }}
                       // sx={{
                       //   background: "#ffffff", color: "#09090b", height: "38px", width: "38px",

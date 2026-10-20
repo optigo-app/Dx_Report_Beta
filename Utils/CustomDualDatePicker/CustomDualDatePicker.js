@@ -209,12 +209,17 @@ const CustomDualDatePicker = ({
 
     // Modified: Update from filterState when not a blank master report,
     // or always when datefilterServerSide so the applied range stays visible.
+    // A master report WITH a real applied range (not the 1990 all-data
+    // sentinel) also syncs, so the picker reopens on the selected range.
     useEffect(() => {
-        if (!showReportMaster || datefilterServerSide) {
+        const dr = filterState?.dateRange;
+        const hasRealRange =
+            dr?.startDate && dr?.endDate && dr.startDate?.getFullYear?.() !== 1990;
+        if (!showReportMaster || datefilterServerSide || hasRealRange) {
             setTempRange((prev) => ({
                 ...prev,
-                startDate: filterState?.dateRange.startDate || "",
-                endDate: filterState?.dateRange.endDate || "",
+                startDate: dr?.startDate || "",
+                endDate: dr?.endDate || "",
             }));
         }
     }, [value, showReportMaster, filterState, datefilterServerSide]);
@@ -308,16 +313,19 @@ const CustomDualDatePicker = ({
             ? `${formatDate(r.startDate)} - ${formatDate(r.endDate)}`
             : "";
 
-    // Master reports (without server-side date filter) stay blank until the user
-    // selects a range. For all other reports the APPLIED filterState.dateRange is
-    // the source of truth so the value stays visible after clicking Apply; while the
-    // picker is open we show the live tempRange selection.
-    const displayValue =
-        showReportMaster && !datefilterServerSide
-            ? formatRange(tempRange)
-            : open
-                ? formatRange(tempRange)
-                : formatRange(filterState?.dateRange);
+    // The APPLIED filterState.dateRange is always the source of truth when the
+    // picker is closed — the toolbar unmounts during refresh, which resets
+    // tempRange and would blank the box even though the filter still applies.
+    // Master reports without a chosen range (the 1990 all-data sentinel or an
+    // empty range) stay blank. While the picker is open we show the live
+    // tempRange selection.
+    const appliedRange = filterState?.dateRange;
+    const appliedIsAllData = appliedRange?.startDate?.getFullYear?.() === 1990;
+    const displayValue = open
+        ? formatRange(tempRange)
+        : appliedIsAllData
+            ? ""
+            : formatRange(appliedRange);
 
 
     return (

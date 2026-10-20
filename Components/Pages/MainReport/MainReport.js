@@ -96,9 +96,16 @@ export default function MainReport({
   clearAllDataSignal,
   reportAlertData,
   popupOnClose,
+  appliedDateRange,
 }) {
   const searchParams = useSearchParams();
   const pid = searchParams.get("pid");
+  // Shell page the report is running inside — Home1.do needs a taller bottom
+  // margin than Home.do ("/home.do" never matches inside "/home1.do").
+  const shellUrl =
+    typeof window !== "undefined" ? window.location.href.toLowerCase() : "";
+  const isHome1Shell = shellUrl.includes("/home1.do");
+  const isHomeShell = isHome1Shell || shellUrl.includes("/home.do");
   const apiRef = useGridApiRef();
   const gridContainerRef = useRef(null);
   const gridRef = useRef(null);
@@ -188,14 +195,27 @@ export default function MainReport({
   const { sortModel, setSortModel, multiSortModel, setMultiSortModel } =
     useDefaultSort(dataColumns);
 
-  const { filterState, setFilterState, startDate, endDate } = useDateRangeFilter({
-    defaultShowAllData,
-    datefilterServerSide,
-    showReportMaster,
-    serverSideData,
-    onSearchFilter,
-    onClientRangeChange: syncFromSource,
-  });
+  const { filterState, setFilterState, syncDateRange, startDate, endDate } =
+    useDateRangeFilter({
+      defaultShowAllData,
+      datefilterServerSide,
+      showReportMaster,
+      serverSideData,
+      appliedDateRange,
+      onSearchFilter,
+      onClientRangeChange: syncFromSource,
+    });
+
+  // Keep the date box in step with the range chosen on the report-option page
+  // (set into the payload via lastFiltersRef) — display only, no refetch.
+  useEffect(() => {
+    if (appliedDateRange) {
+      syncDateRange({
+        startDate: appliedDateRange.startDate || "",
+        endDate: appliedDateRange.endDate || "",
+      });
+    }
+  }, [appliedDateRange, syncDateRange]);
 
   const filtering = useReportFilters({
     originalRows,
@@ -677,7 +697,13 @@ export default function MainReport({
             ref={gridRef}
             style={{
               height: "100%",
-              margin: popupOnClose ? "5px" : "5px 5px 50px 5px",
+              margin: popupOnClose
+                ? "5px"
+                : isHome1Shell
+                  ? "5px 5px 45px"
+                  : isHomeShell
+                    ? "5px 5px 5px"
+                    : "5px 5px 50px 5px",
               overflow: "auto",
               transition: "opacity 0.3s",
               opacity: isPageChanging ? 0.5 : 1,

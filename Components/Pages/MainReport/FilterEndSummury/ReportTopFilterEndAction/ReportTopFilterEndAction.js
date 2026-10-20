@@ -208,8 +208,6 @@ const ReportTopFilterEndAction = ({
     }
   }, []);
 
-
-
   const handleAllDataShow = () => {
     setIsPageChanging(true);
     setTimeout(() => setIsPageChanging(false), 400);

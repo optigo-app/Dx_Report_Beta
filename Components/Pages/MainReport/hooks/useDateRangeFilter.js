@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { formatServerDate } from "../utils/dateUtils";
 
 const ALL_DATA_START = new Date("1990-01-01T18:30:00.000Z");
@@ -8,7 +8,14 @@ const getInitialDateRange = ({
   datefilterServerSide,
   showReportMaster,
   serverSideData,
+  appliedDateRange,
 }) => {
+  if (appliedDateRange) {
+    return {
+      startDate: appliedDateRange.startDate || "",
+      endDate: appliedDateRange.endDate || "",
+    };
+  }
   if (defaultShowAllData == true) return { startDate: "", endDate: "" };
   const now = new Date();
   if (!datefilterServerSide && (showReportMaster || serverSideData == true)) {
@@ -27,6 +34,7 @@ export default function useDateRangeFilter({
   datefilterServerSide,
   showReportMaster,
   serverSideData,
+  appliedDateRange,
   onSearchFilter,
   onClientRangeChange,
 }) {
@@ -36,6 +44,7 @@ export default function useDateRangeFilter({
       datefilterServerSide,
       showReportMaster,
       serverSideData,
+      appliedDateRange,
     }),
   }));
   const isInitialRange = useRef(true);
@@ -65,9 +74,17 @@ export default function useDateRangeFilter({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterState.dateRange, datefilterServerSide]);
 
+  // Syncs the displayed range without triggering a fetch — used when the
+  // option page already applied the dates to the server-side payload.
+  const syncDateRange = useCallback((range) => {
+    isInitialRange.current = true;
+    setFilterState((prev) => ({ ...prev, dateRange: range }));
+  }, []);
+
   return {
     filterState,
     setFilterState,
+    syncDateRange,
     startDate: filterState?.dateRange?.startDate,
     endDate: filterState?.dateRange?.endDate,
   };

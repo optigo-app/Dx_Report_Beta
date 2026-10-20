@@ -26,6 +26,7 @@ import MainReport from "@/Components/Pages/MainReport/MainReport";
 import { ReportCallApi } from "@/API/ReportCommonAPI/ReportCallApi";
 import SpliterReport from "@/Components/Pages/SpliterReport/SpliterReport";
 import SummaryCards from "@/Components/Pages/Report/SummaryCards/SummaryCards"
+import CustomDualDatePicker from "@/Utils/CustomDualDatePicker/CustomDualDatePicker";
 import sampleData from './SampleDataAPI.json';
 
 const SelectionBox = ({
@@ -242,6 +243,34 @@ export default function ReportHome({
   const [errorMessageColor, setErrorMessageColor] = useState("error");
   const [filteredValue, setFilteredValue] = useState();
   const [selectedDateOption, setSelectedDateOption] = useState("");
+  const [customDateRange, setCustomDateRange] = useState({ start: "", end: "" });
+  const [appliedDateRange, setAppliedDateRange] = useState(null);
+  const customDateOption = React.useMemo(
+    () =>
+      dateOptions?.find((o) => o.IsOn && o.DateFrame === "Custom Date Filter"),
+    [dateOptions]
+  );
+  const toYMD = (d) => {
+    if (!d) return "";
+    const dt = d instanceof Date ? d : new Date(d);
+    return isNaN(dt)
+      ? ""
+      : `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+  };
+  const customPickerFilterState = {
+    dateRange: {
+      startDate: customDateRange.start,
+      endDate: customDateRange.end,
+      status: "",
+    },
+  };
+  const handleCustomPickerState = (next) => {
+    const resolved =
+      typeof next === "function" ? next(customPickerFilterState) : next;
+    const r = resolved?.dateRange || {};
+    setCustomDateRange({ start: toYMD(r.startDate), end: toYMD(r.endDate) });
+    setSelectedDateOption("");
+  };
   const clientIpAddress = sessionStorage.getItem("clientIpAddress");
   const [isPageChanging, setIsPageChanging] = useState(false);
   const [tableNumber, setTableNumber] = useState(1);
@@ -290,6 +319,18 @@ export default function ReportHome({
       return [];
     }
   }, [multiDatefilterServerSideData]);
+
+  // Default the date-field select to the first field and keep it valid when
+  // the field list changes — there is no "None" option anymore.
+  useEffect(() => {
+    if (!multiDateFields.length) {
+      if (selectedDateField) setSelectedDateField("");
+      return;
+    }
+    if (!multiDateFields.some((f) => f.FieldName === selectedDateField)) {
+      setSelectedDateField(multiDateFields[0].FieldName);
+    }
+  }, [multiDateFields, selectedDateField]);
 
   const clearFieldSelections = (fieldKey) => {
     setSelectedValues((prev) => ({
@@ -612,6 +653,7 @@ export default function ReportHome({
   };
 
   const handleDateSelection = (option) => {
+    setCustomDateRange({ start: "", end: "" });
     setSelectedDateOption((prev) => (prev === option ? "" : option));
   };
 
@@ -716,7 +758,8 @@ export default function ReportHome({
       ([, v]) => Array.isArray(v) && v.length > 0
     );
 
-    if (!activeSelections.length && !selectedDateOption) {
+    const hasCustomRange = !!(customDateRange.start && customDateRange.end);
+    if (!activeSelections.length && !selectedDateOption && !hasCustomRange) {
       alert("Please select at least one filter.");
       return;
     }
@@ -762,15 +805,29 @@ export default function ReportHome({
         value: displayValues.join(","),
       });
     });
-    const dateFilters = getDateRange(selectedDateOption);
+    let dateFilters = getDateRange(selectedDateOption);
+    if (hasCustomRange) {
+      dateFilters = {
+        FilterStartDate: customDateRange.start,
+        FilterEndDate: customDateRange.end,
+      };
+    }
+    setAppliedDateRange(
+      dateFilters?.FilterStartDate && dateFilters?.FilterEndDate
+        ? {
+            startDate: new Date(dateFilters.FilterStartDate + "T00:00:00"),
+            endDate: new Date(dateFilters.FilterEndDate + "T00:00:00"),
+          }
+        : { startDate: "", endDate: "" }
+    );
     if (
-      selectedDateOption &&
+      (selectedDateOption || hasCustomRange) &&
       dateFilters?.FilterStartDate &&
       dateFilters?.FilterEndDate
     ) {
       formattedSelections.push({
         name: "Date",
-        value: `${selectedDateOption} (${dateFilters.FilterStartDate} → ${dateFilters.FilterEndDate})`,
+        value: `${hasCustomRange ? "Custom Date" : selectedDateOption} (${dateFilters.FilterStartDate} → ${dateFilters.FilterEndDate})`,
       });
     }
 
@@ -974,19 +1031,9 @@ export default function ReportHome({
                       <div className="selection-box">
                         {!multiDatefilterServerSide && <div
                           className="selection-header"
-                          style={{
-                            minHeight: "50px",
-                            borderBottom: " 1px solid #ddd",
-                            padding: "6px 6px 10px 6px",
-                          }}
                         >
                           <p
                             className="selection-title"
-                            style={{
-                              width: "100%",
-                              maxWidth: "100%",
-                              textAlign: "center",
-                            }}
                           >
                             Date
                           </p>
@@ -995,9 +1042,7 @@ export default function ReportHome({
                           <div
                             className="selection-header"
                             style={{
-                              minHeight: "50px",
-                              borderBottom: "1px solid #ddd",
-                              padding: "6px",
+                              padding: "2px 0 8px",
                             }}
                           >
                             <TextField
@@ -1007,10 +1052,16 @@ export default function ReportHome({
                               label="Date Field"
                               value={selectedDateField}
                               onChange={(e) => setSelectedDateField(e.target.value)}
+                              sx={{
+                                "& .MuiOutlinedInput-root": {
+                                  borderRadius: "8px",
+                                  fontSize: "13px",
+                                },
+                                "& .MuiInputLabel-root": {
+                                  fontSize: "13px",
+                                },
+                              }}
                             >
-                              <MenuItem value="">
-                                <em>None</em>
-                              </MenuItem>
                               {multiDateFields.map((f) => (
                                 <MenuItem key={f.FieldName} value={f.FieldName}>
                                   {f.HeaderName}
@@ -1048,33 +1099,59 @@ export default function ReportHome({
                           ) : (
                             <div className="dateOption">
                               <div>
-                                {dateOptions.filter((option) => option.IsOn)
-                                  .length > 0 ? (
-                                  dateOptions
-                                    .filter((option) => option.IsOn)
-                                    .map((option) => (
-                                      <label
-                                        key={option.DateFrameId}
-                                        className="master-item"
-                                        style={{
-                                          cursor: "pointer",
-                                          display: "flex",
-                                          alignItems: "center",
-                                        }}
-                                      >
-                                        <Checkbox
-                                          checked={
-                                            selectedDateOption ===
-                                            option.DateFrame
-                                          }
-                                          onChange={() =>
-                                            handleDateSelection(option.DateFrame)
-                                          }
-                                          sx={{ padding: "2px", color: "rgb(216 216 216 / 60%)" }}
+                                {dateOptions.filter(
+                                  (option) =>
+                                    option.IsOn &&
+                                    option.DateFrame !== "Custom Date Filter"
+                                ).length > 0 || customDateOption ? (
+                                  <>
+                                    {customDateOption && (
+                                      <div className="custom-date-filter-box">
+                                        <CustomDualDatePicker
+                                          value={{}}
+                                          dateColumnOptions={[]}
+                                          filterState={customPickerFilterState}
+                                          setFilterState={handleCustomPickerState}
+                                          setSelectedDateColumn={() => {}}
+                                          dateTypeShow="False"
+                                          showReportMaster={showReportMaster}
+                                          datefilterServerSide={true}
                                         />
-                                        <span>{option.DateFrame}</span>
-                                      </label>
-                                    ))
+                                      </div>
+                                    )}
+                                    {dateOptions
+                                      .filter(
+                                        (option) =>
+                                          option.IsOn &&
+                                          option.DateFrame !==
+                                            "Custom Date Filter"
+                                      )
+                                      .map((option) => (
+                                        <label
+                                          key={option.DateFrameId}
+                                          className="master-item"
+                                          style={{
+                                            cursor: "pointer",
+                                            display: "flex",
+                                            alignItems: "center",
+                                          }}
+                                        >
+                                          <Checkbox
+                                            checked={
+                                              selectedDateOption ===
+                                              option.DateFrame
+                                            }
+                                            onChange={() =>
+                                              handleDateSelection(
+                                                option.DateFrame
+                                              )
+                                            }
+                                            sx={{ padding: "4px", color: "rgb(216 216 216 / 60%)" }}
+                                          />
+                                          <span>{option.DateFrame}</span>
+                                        </label>
+                                      ))}
+                                  </>
                                 ) : (
                                   <p
                                     style={{ textAlign: "center", color: "#888" }}
@@ -1174,6 +1251,7 @@ export default function ReportHome({
                   popupOnClose={popupOnClose}
                   popupParamiter={popupParamiter}
                   spliterReportWithoutDate={spliterReportWithoutDate}
+                  appliedDateRange={appliedDateRange}
                 />
                 :
                 <MainReport
@@ -1219,6 +1297,7 @@ export default function ReportHome({
                   reportAlertData={reportAlertData}
                   IsSearchBySingleValue={IsSearchBySingleValue}
                   popupOnClose={popupOnClose}
+                  appliedDateRange={appliedDateRange}
                 />
               }
             </div>

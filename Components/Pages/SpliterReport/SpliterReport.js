@@ -115,7 +115,8 @@ export default function SpliterReport({
   searchBySingleValue,
   popupOnClose,
   popupParamiter,
-  spliterReportWithoutDate
+  spliterReportWithoutDate,
+  appliedDateRange
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
@@ -183,6 +184,18 @@ export default function SpliterReport({
     const today = new Date();
     setFilterState({ dateRange: { startDate: today, endDate: today } });
   }, []);
+
+  // Reflect the option-page date selection in the spliter date box.
+  useEffect(() => {
+    if (appliedDateRange?.startDate && appliedDateRange?.endDate) {
+      setFilterState({
+        dateRange: {
+          startDate: appliedDateRange.startDate,
+          endDate: appliedDateRange.endDate,
+        },
+      });
+    }
+  }, [appliedDateRange]);
 
   useEffect(() => {
     if ((!reportId && !spNumber) || !filterState.dateRange.startDate) return;
