@@ -411,34 +411,67 @@ const SummaryEndFilteredValue = ({
                         }}
                       >
                         {filteredValueState && filteredValueState.length > 0 ? (
-                          filteredValueState.map((data, i) => (
-                            <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 0.75, borderRadius: "999px" }}>
-                              <Typography variant="caption" className="fontFamily"
-                                sx={{ fontWeight: 500, color: "#71717A", fontSize: "13px", letterSpacing: "-0.01em", display: 'flex', gap: '5px', alignItems: 'center' }}>
-                                <span
-                                  role="button"
-                                  tabIndex={0}
-                                  className="removebtn"
-                                  title="Remove filter"
-                                  onClick={() => handleRemoveFilter(data)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") {
-                                      e.preventDefault();
-                                      handleRemoveFilter(data);
-                                    }
-                                  }}
+                          filteredValueState.map((data, i) => {
+                            const valueParts = (Array.isArray(data.value)
+                              ? data.value
+                              : String(data.value ?? "").split(",")
+                            )
+                              .map((v) => String(v).trim())
+                              .filter(Boolean);
+                            const shownValues = valueParts.slice(0, 2).join(", ");
+                            const extraCount = valueParts.length - 2;
+                            return (
+                              <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 0.75, borderRadius: "999px" }}>
+                                <Typography variant="caption" className="fontFamily"
+                                  sx={{ fontWeight: 500, color: "#71717A", fontSize: "13px", letterSpacing: "-0.01em", display: 'flex', gap: '5px', alignItems: 'center' }}>
+                                  {!data.fromOptionPage && (
+                                    <span
+                                      role="button"
+                                      tabIndex={0}
+                                      className="removebtn"
+                                      title="Remove filter"
+                                      onClick={() => handleRemoveFilter(data)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                          e.preventDefault();
+                                          handleRemoveFilter(data);
+                                        }
+                                      }}
+                                    >
+                                      <X size={11} />
+                                    </span>
+                                  )}
+                                  {data.name}
+                                </Typography>
+                                <Box sx={{ width: "3px", height: "3px", borderRadius: "50%", bgcolor: "#D4D4D8" }} />
+                                <Tooltip
+                                  title={valueParts.join(", ")}
+                                  arrow
+                                  slotProps={{ popper: { container: gridContainerRef?.current } }}
                                 >
-                                  <X size={11} />
-                                </span>
-                                {data.name}
-                              </Typography>
-                              <Box sx={{ width: "3px", height: "3px", borderRadius: "50%", bgcolor: "#D4D4D8" }} />
-                              <Typography variant="caption" className="fontFamily"
-                                sx={{ fontWeight: 600, color: "#18181B", fontSize: "13px", letterSpacing: "-0.01em" }}>
-                                {Array.isArray(data.value) ? data.value.join(", ") : data.value}
-                              </Typography>
-                            </Box>
-                          ))
+                                  <Typography variant="caption" className="fontFamily"
+                                    sx={{ fontWeight: 600, color: "#18181B", fontSize: "13px", letterSpacing: "-0.01em", display: "flex", alignItems: "center", gap: "4px" }}>
+                                    {shownValues}
+                                    {extraCount > 0 && (
+                                      <span
+                                        style={{
+                                          backgroundColor: "#EDEBFF",
+                                          color: "#6F53FF",
+                                          borderRadius: "999px",
+                                          padding: "0px 6px",
+                                          fontSize: "11px",
+                                          fontWeight: 700,
+                                          lineHeight: "16px",
+                                        }}
+                                      >
+                                        +{extraCount}
+                                      </span>
+                                    )}
+                                  </Typography>
+                                </Tooltip>
+                              </Box>
+                            );
+                          })
                         ) : (
                           <Typography variant="body2" className="fontFamily"
                             sx={{ color: "#A1A1AA", fontSize: "13px", fontWeight: 500 }}>

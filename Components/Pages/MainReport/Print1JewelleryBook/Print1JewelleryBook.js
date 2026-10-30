@@ -16,7 +16,6 @@ export default function Print1JewelleryBook({
   printViewData,
   selectionModel, // ✅ new
 }) {
-  console.log('visibleItemsMain: ', visibleItemsMain);
   const img = "./images/noFound.jpg";
   const [msg, setMsg] = useState("");
   const [loader, setLoader] = useState(false);
@@ -527,7 +526,7 @@ export default function Print1JewelleryBook({
                       py: 0.5,
                     }}
                   >
-                    <FormControlLabel
+                    {/* <FormControlLabel
                       sx={{ m: 0, width: "100%" }}
                       control={
                         <Checkbox
@@ -538,7 +537,7 @@ export default function Print1JewelleryBook({
                         />
                       }
                       label="Select All"
-                    />
+                    /> */}
                     <Box sx={{ display: "flex", gap: 1, pb: 0.5 }}>
                       <Button size="small" onClick={handleSelectAll} sx={{ textTransform: "none" }}>
                         Select All

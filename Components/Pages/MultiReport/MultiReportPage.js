@@ -20,7 +20,6 @@ import { useSearchParams } from "next/navigation";
 const MultiReportPage = () => {
   const searchParams = useSearchParams();
   const [reportList, setReportList] = useState([]);
-  console.log('reportList: ', reportList);
   const [loading, setLoading] = useState(false);
   const [openReports, setOpenReports] = useState([]); // { id, pid, name, url }
   const [activeTabId, setActiveTabId] = useState(null);

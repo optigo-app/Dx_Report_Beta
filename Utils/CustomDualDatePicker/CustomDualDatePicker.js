@@ -163,7 +163,8 @@ const CustomDualDatePicker = ({
     handleAllDataShow,
     datefilterServerSide,
     validDay,
-    validMonth
+    validMonth,
+    reportHome = false
 }) => {
     const [anchorEl, setAnchorEl] = useState(null);
     const [anchorElStatus, setAnchorElStatus] = useState(null);
@@ -326,11 +327,9 @@ const CustomDualDatePicker = ({
         : appliedIsAllData
             ? ""
             : formatRange(appliedRange);
-
-
     return (
         <ThemeProvider theme={Datetheme} className="DatePickerView">
-            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: reportHome ? "flex" : 'inline-flex', flexWrap: reportHome ? 'nowrap' : 'wrap', alignItems: 'center', gap: 1 }}>
                 {dateTypeShow == "True" && (
                     <Box sx={{ padding: '0px 0px 0px 10px' }}>
                         <Chip

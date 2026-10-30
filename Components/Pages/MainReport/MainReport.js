@@ -9,6 +9,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { Alert, Dialog, Drawer, Snackbar } from "@mui/material";
 import { DragDropContext } from "@hello-pangea/dnd";
 import { useSearchParams } from "next/navigation";
+import { ChevronUp } from "lucide-react";
 import Warper from "@/Components/warper";
 import GridPrintView from "@/Components/Pages/MainReport/GridPrintView/GridPrintView";
 import { CustomPagination } from "@/Utils/globalFunc";
@@ -97,13 +98,25 @@ export default function MainReport({
   reportAlertData,
   popupOnClose,
   appliedDateRange,
+  appliedFilterPayload,
 }) {
   const searchParams = useSearchParams();
   const pid = searchParams.get("pid");
-  // Shell page the report is running inside — Home1.do needs a taller bottom
-  // margin than Home.do ("/home.do" never matches inside "/home1.do").
-  const shellUrl =
-    typeof window !== "undefined" ? window.location.href.toLowerCase() : "";
+  // Shell page the report is running inside — the app is embedded in an
+  // iframe, so window.location is the iframe src; the Home.do / Home1.do
+  // URL lives on window.top (referrer fallback when cross-origin).
+  const getShellUrl = () => {
+    if (typeof window === "undefined") return "";
+    try {
+      return (
+        window.top?.location?.href ||
+        window.location.href
+      ).toLowerCase();
+    } catch {
+      return (document.referrer || window.location.href).toLowerCase();
+    }
+  };
+  const shellUrl = getShellUrl();
   const isHome1Shell = shellUrl.includes("/home1.do");
   const isHomeShell = isHome1Shell || shellUrl.includes("/home.do");
   const apiRef = useGridApiRef();
@@ -118,6 +131,7 @@ export default function MainReport({
   const [showImageView, setShowImageView] = useState(false);
   const [chartView, setChartView] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const [sideFilterOpen, setSideFilterOpen] = useState(false);
   const [activeIframeTab] = useState(null);
   const [isAskOptigoAiPanelOpen, setIsAskOptigoAiPanelOpen] = useState(false);
@@ -196,16 +210,15 @@ export default function MainReport({
     useDefaultSort(dataColumns);
 
   const { filterState, setFilterState, syncDateRange, startDate, endDate } =
-    useDateRangeFilter({
-      defaultShowAllData,
-      datefilterServerSide,
-      showReportMaster,
-      serverSideData,
-      appliedDateRange,
-      onSearchFilter,
-      onClientRangeChange: syncFromSource,
-    });
-
+  useDateRangeFilter({
+    defaultShowAllData,
+    datefilterServerSide,
+    showReportMaster,
+    serverSideData,
+    appliedDateRange,
+    onSearchFilter,
+    onClientRangeChange: syncFromSource,
+  });
   // Keep the date box in step with the range chosen on the report-option page
   // (set into the payload via lastFiltersRef) — display only, no refetch.
   useEffect(() => {
@@ -556,38 +569,66 @@ export default function MainReport({
 
           <ReportAlertBanner alert={reportAlertData?.[0]} />
 
-          <div style={{ flexShrink: 0 }}>
-            <SummaryEndFilteredValue
-              columnsHide={columnsHide}
-              allColumData={allColumData}
-              filteredRows={filteredRows}
-              showReportMaster={showReportMaster}
-              onBack={onBack}
-              filteredValueState={filteredValueState}
-              masterKeyData={masterKeyData}
-              gridContainerRef={gridContainerRef}
-              reportName={reportName}
-              setAllColumData={setAllColumData}
-              tempColumns={tempColumns}
-              setTempColumns={setTempColumns}
-              currentOpenReport={currentOpenReport}
-              otherReport={otherReport}
-              setOtherReprot={setOtherReport}
-              refreshFunction={refreshFunction}
-              setFilteredValue={setFilteredValue}
-              setFiltersShow={setFiltersShow}
-              setFilters={setFilters}
-              setDraftFilters={setDraftFilters}
-              setFiltersShowDraf={setFiltersShowDraf}
-              onAskOptigoAiPanelToggle={handleAskOptigoAiPanelToggle}
-              optigoPanelWidth={optigoPanelWidth}
-              onOptigoPanelWidthChange={setOptigoPanelWidth}
-              isFormulaBasedSummary={isFormulaBasedSummary}
-              summaryViewData={summaryViewData}
-              isLoading={isLoading}
-              isRightBaseColumMaster={isRightBaseColumMaster}
-              popupOnClose={popupOnClose}
-            />
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <div
+              className="summary-collapse-wrap"
+              style={{
+                display: "grid",
+                gridTemplateRows: summaryCollapsed ? "0fr" : "1fr",
+                opacity: summaryCollapsed ? 0 : 1,
+              }}
+            >
+              <div style={{ overflow: "hidden", minHeight: 0 }}>
+                <SummaryEndFilteredValue
+                  columnsHide={columnsHide}
+                  allColumData={allColumData}
+                  filteredRows={filteredRows}
+                  showReportMaster={showReportMaster}
+                  onBack={onBack}
+                  filteredValueState={filteredValueState}
+                  masterKeyData={masterKeyData}
+                  gridContainerRef={gridContainerRef}
+                  reportName={reportName}
+                  setAllColumData={setAllColumData}
+                  tempColumns={tempColumns}
+                  setTempColumns={setTempColumns}
+                  currentOpenReport={currentOpenReport}
+                  otherReport={otherReport}
+                  setOtherReprot={setOtherReport}
+                  refreshFunction={refreshFunction}
+                  setFilteredValue={setFilteredValue}
+                  setFiltersShow={setFiltersShow}
+                  setFilters={setFilters}
+                  setDraftFilters={setDraftFilters}
+                  setFiltersShowDraf={setFiltersShowDraf}
+                  onAskOptigoAiPanelToggle={handleAskOptigoAiPanelToggle}
+                  optigoPanelWidth={optigoPanelWidth}
+                  onOptigoPanelWidthChange={setOptigoPanelWidth}
+                  isFormulaBasedSummary={isFormulaBasedSummary}
+                  summaryViewData={summaryViewData}
+                  isLoading={isLoading}
+                  isRightBaseColumMaster={isRightBaseColumMaster}
+                  popupOnClose={popupOnClose}
+                />
+              </div>
+            </div>
+
+            {(!isLoading && masterKeyData?.SummaryCollapseButton == "True") &&
+              <button
+                type="button"
+                className="summary-toggle-btn"
+                onClick={() => setSummaryCollapsed((v) => !v)}
+                title={summaryCollapsed ? "Show summary" : "Hide summary"}
+              >
+                <ChevronUp
+                  size={15}
+                  style={{
+                    transform: summaryCollapsed ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.3s ease",
+                  }}
+                />
+              </button>
+            }
           </div>
 
           {!activeIframeTab && (
@@ -679,6 +720,7 @@ export default function MainReport({
               clearAllDataSignal={clearAllDataSignal}
               refreshFunction={refreshFunction}
               sortedRowsForViews={sortedRowsForViews}
+              appliedFilterPayload={appliedFilterPayload}
             />
           )}
 

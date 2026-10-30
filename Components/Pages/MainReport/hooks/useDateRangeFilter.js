@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatServerDate } from "../utils/dateUtils";
+import { useSearchParams } from "next/navigation";
 
 const ALL_DATA_START = new Date("1990-01-01T18:30:00.000Z");
 
@@ -38,15 +39,31 @@ export default function useDateRangeFilter({
   onSearchFilter,
   onClientRangeChange,
 }) {
-  const [filterState, setFilterState] = useState(() => ({
-    dateRange: getInitialDateRange({
+  const searchParams = useSearchParams();
+  const [filterState, setFilterState] = useState(() => {
+    const parseDate = (value) => {
+      const match = value?.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (!match) return null;
+      const [, day, month, year] = match.map(Number);
+      const date = new Date(year, month - 1, day);
+      return date.getFullYear() === year &&
+        date.getMonth() === month - 1 && date.getDate() === day
+        ? date
+        : null;
+    };
+    const startDate = parseDate(searchParams.get("NaviagteStartDate"));
+    const endDate = parseDate(searchParams.get("NaviagteEndDate"));
+    if (startDate && endDate && startDate <= endDate) {
+      return { dateRange: { startDate, endDate } };
+    }
+    return { dateRange: getInitialDateRange({
       defaultShowAllData,
       datefilterServerSide,
       showReportMaster,
       serverSideData,
       appliedDateRange,
-    }),
-  }));
+    }) };
+  });
   const isInitialRange = useRef(true);
 
   useEffect(() => {

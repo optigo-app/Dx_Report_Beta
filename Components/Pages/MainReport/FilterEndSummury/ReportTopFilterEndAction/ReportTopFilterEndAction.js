@@ -180,7 +180,8 @@ const ReportTopFilterEndAction = ({
   loadingMore,
   clearAllDataSignal,
   sortedRowsForViews,
-  refreshFunction
+  refreshFunction,
+  appliedFilterPayload
 }) => {
   const searchParams = useSearchParams();
   const pid = searchParams.get("pid");
@@ -1979,6 +1980,63 @@ const ReportTopFilterEndAction = ({
           ?.join("/")
       )
       ?.join(",");
+
+    const { startDate, endDate } = filterState?.dateRange || {};
+    const isAllDataStart = startDate?.getFullYear?.() === 1990;
+    const toPrintYMD = (d) => {
+      if (!d) return "";
+      const dt = d instanceof Date ? d : new Date(d);
+      return isNaN(dt)
+        ? ""
+        : `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+    };
+    // Applied filters (option-page FilterHeader/FilterValue/dates) come from
+    // the parent payload; on-screen server filters come from serverFiltersRef.
+    const applied =
+      Array.isArray(appliedFilterPayload)
+        ? Object.assign(
+          {},
+          ...appliedFilterPayload.filter(
+            (f) => f && typeof f === "object" && !Array.isArray(f)
+          )
+        )
+        : appliedFilterPayload || {};
+    const printStart =
+      applied.FilterStartDate || (isAllDataStart ? "" : toPrintYMD(startDate));
+    const printEnd =
+      applied.FilterEndDate || (isAllDataStart ? "" : toPrintYMD(endDate));
+    const parts = buildFilterStrings();
+
+    // Client-side filters (on-screen dropdowns, normal filters, ranges) live
+    // in `filters` — they never hit the server, so append them to the
+    // FilterHeader/FilterValue pair so print filters match the screen.
+    const clientKeys = Object.keys(filters || {}).filter(
+      (k) =>
+        filters[k] !== "" &&
+        filters[k] != null &&
+        !(Array.isArray(filters[k]) && filters[k].length === 0)
+    );
+    const clientValues = clientKeys.map((k) =>
+      Array.isArray(filters[k])
+        ? filters[k].join(",")
+        : typeof filters[k] === "object"
+          ? JSON.stringify(filters[k])
+          : String(filters[k])
+    );
+
+    const printFilterHeader = [
+      applied.FilterHeader || parts.FilterHeader,
+      ...clientKeys,
+    ]
+      .filter(Boolean)
+      .join("#");
+    const printFilterValue = [
+      applied.FilterValue || parts.FilterValue,
+      ...clientValues,
+    ]
+      .filter(Boolean)
+      .join("#");
+
     let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
     const body = {
       con: JSON.stringify({
@@ -1990,7 +2048,17 @@ const ReportTopFilterEndAction = ({
       }),
 
       p: JSON.stringify({
-        ActionIds: actionIds
+        ActionIds: actionIds,
+        ...(printStart && { FilterStartDate: printStart }),
+        ...(printEnd && { FilterEndDate: printEnd }),
+        ...(printFilterHeader && { FilterHeader: printFilterHeader }),
+        ...(printFilterValue && { FilterValue: printFilterValue }),
+        ...(parts.ServerFilterHeader && {
+          ServerFilterHeader: parts.ServerFilterHeader,
+        }),
+        ...(parts.ServerFilterValue && {
+          ServerFilterValue: parts.ServerFilterValue,
+        }),
       }),
 
       f: "FGSalePrint"
@@ -2045,11 +2113,9 @@ const ReportTopFilterEndAction = ({
     const handler = (event) => {
       if (event.data?.type !== "STOCKALERTSAVED") return;
       if (event.data.action === "list") {
-        console.log('calll list')
         refreshFunction();
         setOpenIframeModal(false);
       } else {
-        console.log('calll add')
         refreshFunction();
       }
     };
@@ -2256,7 +2322,7 @@ const ReportTopFilterEndAction = ({
         </div>
 
         {/* first part */}
-        <div style={{ width: '100%', justifyContent: 'space-between', display: 'flex' }}>
+        <div className="datefilteroptions" style={{ width: '100%', justifyContent: 'space-between', display: 'flex' }}>
           {isLoading
             ?
             <div style={{ display: 'flex' }}>
@@ -2569,7 +2635,6 @@ const ReportTopFilterEndAction = ({
                             onClick={() => handleColorClick(data.id)}
                             style={{
                               backgroundColor: alpha(data.colorcode, 0.75),
-
                               height: isSelected ? 28 : 30,
                               width: isSelected ? 28 : 30,
                               borderRadius: 15,
@@ -2589,7 +2654,6 @@ const ReportTopFilterEndAction = ({
                             }}
                           />
                         </Tooltip>
-
                       );
                     })}
                 </div>

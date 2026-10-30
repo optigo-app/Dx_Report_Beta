@@ -224,8 +224,6 @@ export default function ReportHome({
   multiDatefilterServerSide,
   multiDatefilterServerSideData
 }) {
-  console.log('multiDatefilterServerSideData: ', multiDatefilterServerSideData);
-  console.log('multiDatefilterServerSide: ', multiDatefilterServerSide);
   const [isLoading, setIsLoading] = useState(false);
   const [spData, setSpData] = useState(null);
   const [masterData, setMasterData] = useState();
@@ -292,6 +290,7 @@ export default function ReportHome({
   const [committedSearchByValue, setCommittedSearchByValue] = useState("");
   const searchValueRef = useRef(null);
   const lastFiltersRef = useRef({ filters: {}, Master: "0" });
+  const [appliedFilterPayload, setAppliedFilterPayload] = useState({});
   const preFilterValueRef = useRef("");          // clicked card value ("" = first call)
   const preFilterRef = useRef(null);
   const [preFilterData, setPreFilterData] = useState(null); // cards data (first call ka response)
@@ -393,6 +392,13 @@ export default function ReportHome({
           setLoadingMaster(false);
         }
       } else {
+        // Splitter reports fetch their own dated data (SpliterReport's
+        // filterState.dateRange → FilterStartDate/FilterEndDate) — the undated
+        // TableNumber:1 prefetch here would just be a duplicate call.
+        if (spliterReportShow) {
+          setIsLoading(false);
+          return;
+        }
         if (datefilterServerSide && defaultShowAllData != true) {
           const todayStr = formatDate(new Date());
           fetchReportData(
@@ -411,7 +417,7 @@ export default function ReportHome({
       }
     };
     fetchData();
-  }, [pid, reportId, largeData, isSearchByValue]);
+  }, [pid, reportId, largeData, isSearchByValue, spliterReportShow]);
 
   // builds the `p` payload + serialized filter strings shared by the
   // normal report fetch and the Show-More count-check (TableNumber -1)
@@ -489,6 +495,23 @@ export default function ReportHome({
         setHasMoreData(true);
       }
       lastFiltersRef.current = { filters, Master };
+      // Merge into the accumulated payload instead of replacing — a date-only
+      // or server-filter-only fetch must not drop the option-page FilterHeader.
+      setAppliedFilterPayload((prev) => {
+        const incoming = Array.isArray(filters)
+          ? Object.assign(
+              {},
+              ...filters.filter((f) => f && typeof f === "object" && !Array.isArray(f))
+            )
+          : filters || {};
+        const merged = { ...prev, ...incoming };
+        if (Array.isArray(filters)) {
+          // server-filter submit carries the full server pair — replace wholesale
+          merged.ServerFilterHeader = incoming.ServerFilterHeader || "";
+          merged.ServerFilterValue = incoming.ServerFilterValue || "";
+        }
+        return merged;
+      });
       const preFilterValue = preFilterValueRef.current;
       let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
       const masterDataBody = {
@@ -803,6 +826,7 @@ export default function ReportHome({
       formattedSelections.push({
         name: friendlyName?.trim() || header,
         value: displayValues.join(","),
+        fromOptionPage: true,
       });
     });
     let dateFilters = getDateRange(selectedDateOption);
@@ -828,6 +852,7 @@ export default function ReportHome({
       formattedSelections.push({
         name: "Date",
         value: `${hasCustomRange ? "Custom Date" : selectedDateOption} (${dateFilters.FilterStartDate} → ${dateFilters.FilterEndDate})`,
+        fromOptionPage: true,
       });
     }
 
@@ -1029,7 +1054,7 @@ export default function ReportHome({
                   {dateOptionsShow && (
                     <Grid item>
                       <div className="selection-box">
-                        {!multiDatefilterServerSide && <div
+                        {!(multiDatefilterServerSide && !customDateOption) && <div
                           className="selection-header"
                         >
                           <p
@@ -1038,7 +1063,7 @@ export default function ReportHome({
                             Date
                           </p>
                         </div>}
-                        {multiDatefilterServerSide && (
+                        {multiDatefilterServerSide && !customDateOption && (
                           <div
                             className="selection-header"
                             style={{
@@ -1109,13 +1134,20 @@ export default function ReportHome({
                                       <div className="custom-date-filter-box">
                                         <CustomDualDatePicker
                                           value={{}}
-                                          dateColumnOptions={[]}
+                                          dateColumnOptions={multiDateFields.map(
+                                            (f) => ({
+                                              field: f.FieldName,
+                                              label: f.HeaderName,
+                                            })
+                                          )}
                                           filterState={customPickerFilterState}
                                           setFilterState={handleCustomPickerState}
-                                          setSelectedDateColumn={() => {}}
-                                          dateTypeShow="False"
+                                          setSelectedDateColumn={setSelectedDateField}
+                                          selectedDateColumn={selectedDateField}
+                                          dateTypeShow={multiDatefilterServerSide ? "True" : "False"}
                                           showReportMaster={showReportMaster}
                                           datefilterServerSide={true}
+                                          reportHome={true}
                                         />
                                       </div>
                                     )}
@@ -1298,6 +1330,7 @@ export default function ReportHome({
                   IsSearchBySingleValue={IsSearchBySingleValue}
                   popupOnClose={popupOnClose}
                   appliedDateRange={appliedDateRange}
+                  appliedFilterPayload={appliedFilterPayload}
                 />
               }
             </div>

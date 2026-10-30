@@ -77,7 +77,7 @@
 .custom-date-filter-box {
   border: 1px solid #e4e6f0;
   border-radius: 8px;
-  padding: 8px;
+  padding: 0px 0px 0px 4px;
   margin: 4px 4px 8px;
   background: #fbfbfe;
 
@@ -86,8 +86,30 @@
     width: 100%;
   }
 
+  // smaller left-aligned text so the full "dd/mm/yyyy - dd/mm/yyyy" range
+  // always fits the narrow card (page container centers text by default)
+  .MuiOutlinedInput-input {
+    font-size: 12px;
+    letter-spacing: normal;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 8px 0 9px 6px;
+  }
+
+  // the picker's inline-flex row (Date-Field chip + range box) — wrap the
+  // chip onto its own row inside the narrow card
   > div {
     width: 100%;
+    gap: 0px;
+    justify-content: flex-start;
+
+    // chip container: drop the left pad and left-align (page centers by default)
+    > div:first-child {
+      padding-left: 0;
+      text-align: left;
+    }
   }
 }
 
