@@ -13,8 +13,10 @@ const evaluateFormula = (formulaString, totalsMap) => {
   const fieldNames = Object.keys(totalsMap).sort((a, b) => b.length - a.length);
   let expr = formulaString;
   fieldNames.forEach((field) => {
-    const regex = new RegExp(`\\b${field}\\b`, "g");
-    expr = expr.replace(regex, totalsMap[field] ?? 0);
+    if (!field) return;
+    // literal replace — field names can contain spaces/brackets like
+    // "NetWt (F+M)" which break a regex /\b...\b/ approach
+    expr = expr.split(field).join(String(totalsMap[field] ?? 0));
   });
   if (!/^[\d\s\+\-\*\/\(\)\.]+$/.test(expr)) return 0;
   try {

@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import { DragDropContext } from "@hello-pangea/dnd";
-import { Box, Button, CircularProgress, FormControl, InputLabel, MenuItem, Select, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, FormControl, Grid, InputLabel, MenuItem, Select, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import "./SpliterReport.scss";
 import { ReportCallApi } from "@/API/ReportCommonAPI/ReportCallApi";
 import MainReport from "../MainReport/MainReport";
@@ -20,6 +20,78 @@ import UnfoldMoreRoundedIcon from '@mui/icons-material/UnfoldMoreRounded';
 import CheckIcon from '@mui/icons-material/Check';
 
 const isTrueFlag = (v) => v === true || String(v).toLowerCase() === "true";
+
+// Non-clickable totals strip shown at the top of a panel in server mode —
+// the "ALL" entry is summary-only there, not a selectable card.
+const ServerSummaryStrip = ({ label = "TOTAL SUMMARY", summary = {} }) => (
+  <Box
+    sx={{
+      borderRadius: "8px",
+      px: "7px",
+      pt: "6px",
+      pb: "7px",
+      mb: "6px",
+      background: "#ebebeb",
+      boxShadow: "0 2px 8px rgba(124, 108, 240, 0.25)",
+      userSelect: "none",
+      flexShrink: 0,
+    }}
+  >
+    <Typography
+      sx={{
+        fontSize: "0.7rem",
+        fontWeight: 700,
+        color: "#7c6cf0",
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+        pl: "3px",
+        mb: "6px",
+      }}
+    >
+      {label}
+    </Typography>
+    <Grid container spacing={0.45}>
+      {Object.entries(summary).map(([k, v]) => (
+        <Grid item xs={6} key={k}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "4px",
+              px: "7px",
+              py: "4px",
+              borderRadius: "5px",
+              backgroundColor: "rgba(255, 255, 255, 0.95)",
+              border: "1px solid rgba(255, 255, 255, 0.6)",
+              lineHeight: 1,
+            }}
+          >
+            <Typography
+              component="span"
+              sx={{
+                fontSize: "0.71rem",
+                color: "#5b54b8",
+                fontWeight: 500,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {k}
+            </Typography>
+            <Typography
+              component="span"
+              sx={{ fontSize: "0.73rem", fontWeight: 700, color: "#4338ca", whiteSpace: "nowrap" }}
+            >
+              {v}
+            </Typography>
+          </Box>
+        </Grid>
+      ))}
+    </Grid>
+  </Box>
+);
 
 const SplitterWithToggle = ({ index, onDrag, isCollapsed, onToggle, isDragging }) => (
   <div style={{ position: "relative", width: 0, zIndex: 100, display: "flex", alignItems: "center", flexShrink: 0 }}>
@@ -426,8 +498,17 @@ export default function SpliterReport({
   }, [spData, uniqueValuesForFirstPanel, selectedFirstPanelKey, activeRd3, isSpliterServerSide]);
 
   useEffect(() => {
-    // server mode: second panel fills on first-panel click, selects on user click
-    if (isSpliterServerSide) return;
+    if (isSpliterServerSide) {
+      // click on panel 1 fills panel 2 → auto-select its first item → side 3
+      if (
+        isSpliterSecondPanelOn &&
+        uniqueValuesForSecondPanel.length > 0 &&
+        selectedSecondPanelKey == null
+      ) {
+        handleSecondPanelSelection(uniqueValuesForSecondPanel[0]);
+      }
+      return;
+    }
     if (activeSecondPanelField && uniqueValuesForSecondPanel.length > 0 && selectedSecondPanelKey == null) {
       if (spliterReportSecondPanelShowAll) {
         handleSecondPanelSelection("__ALL__");
@@ -435,7 +516,7 @@ export default function SpliterReport({
         handleSecondPanelSelection(uniqueValuesForSecondPanel[0]);
       }
     }
-  }, [uniqueValuesForSecondPanel, activeSecondPanelField, selectedSecondPanelKey, isSpliterServerSide]);
+  }, [uniqueValuesForSecondPanel, activeSecondPanelField, selectedSecondPanelKey, isSpliterServerSide, isSpliterSecondPanelOn]);
 
   // ─── Reset second panel selection when user switches tab ─────────────────
   useEffect(() => {
@@ -457,8 +538,10 @@ export default function SpliterReport({
     const fieldNames = Object.keys(totalsMap).sort((a, b) => b.length - a.length);
     let expr = formulaString;
     fieldNames.forEach((field) => {
-      const regex = new RegExp(`\\b${field}\\b`, "g");
-      expr = expr.replace(regex, totalsMap[field] ?? 0);
+      if (!field) return;
+      // literal replace — field names can contain spaces/brackets like
+      // "NetWt (F+M)" which break a regex /\b...\b/ approach
+      expr = expr.split(field).join(String(totalsMap[field] ?? 0));
     });
     if (!/^[\d\s\+\-\*\/\(\)\.]+$/.test(expr)) return 0;
     try {
@@ -1320,10 +1403,18 @@ export default function SpliterReport({
                 </Box>
               )}
 
+              {/* Fixed totals strip — stays pinned while the card list scrolls */}
+              {isSpliterServerSide && spliterReportFirstPanelShowAll && hasFirstPanelData && (
+                <ServerSummaryStrip
+                  label="Total Summary"
+                  summary={getSummaryForValue("__ALL__")}
+                />
+              )}
+
               {/* Card list */}
               <Box
                 className="spliter1_maindiv"
-                sx={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 1, pr: 0.5 }}
+                sx={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 1, pr: 0.5, pt: 0.5 }}
               >
                 {hasFirstPanelData ? (
                   <>
@@ -1481,14 +1572,22 @@ export default function SpliterReport({
                     </Box>
                   )}
 
+                  {/* Fixed totals strip — stays pinned while the card list scrolls */}
+                  {isSpliterServerSide && spliterReportSecondPanelShowAll && hasSecondPanelData && (
+                    <ServerSummaryStrip
+                      label="Total Summary"
+                      summary={getSecondPanelSummary("__ALL__")}
+                    />
+                  )}
+
                   {/* Card list */}
                   <Box
                     className="spliter2_maindiv"
-                    sx={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 1, pr: 0.5 }}
+                    sx={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 1, pr: 0.5, pt: 0.5 }}
                   >
                     {hasSecondPanelData ? (
                       <>
-                        {spliterReportSecondPanelShowAll && (
+                        {spliterReportSecondPanelShowAll && !isSpliterServerSide && (
                           <PanelCard
                             label="ALL"
                             selected={selectedSecondPanelKey === "__ALL__"}
