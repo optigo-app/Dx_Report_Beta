@@ -221,6 +221,8 @@ export default function ReportHome({
   CustomizeUserFirstPanelData,
   IsSearchBySingleValue,
   spliterReportWithoutDate,
+  spliterServerSide,
+  spliterSecondPanelOn,
   multiDatefilterServerSide,
   multiDatefilterServerSideData
 }) {
@@ -1283,6 +1285,8 @@ export default function ReportHome({
                   popupOnClose={popupOnClose}
                   popupParamiter={popupParamiter}
                   spliterReportWithoutDate={spliterReportWithoutDate}
+                  spliterServerSide={spliterServerSide}
+                  spliterSecondPanelOn={spliterSecondPanelOn}
                   appliedDateRange={appliedDateRange}
                 />
                 :

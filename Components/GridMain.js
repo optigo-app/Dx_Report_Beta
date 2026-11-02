@@ -54,6 +54,8 @@ const GridMain = ({
   CustomizeUserFirstPanelData,
   IsSearchBySingleValue,
   spliterReportWithoutDate,
+  spliterServerSide,
+  spliterSecondPanelOn,
   multiDatefilterServerSideData,
   multiDatefilterServerSide
 }) => {
@@ -198,6 +200,8 @@ const GridMain = ({
       CustomizeUserFirstPanelData={CustomizeUserFirstPanelData}
       IsSearchBySingleValue={IsSearchBySingleValue}
       spliterReportWithoutDate={spliterReportWithoutDate}
+      spliterServerSide={spliterServerSide}
+      spliterSecondPanelOn={spliterSecondPanelOn}
       multiDatefilterServerSide={multiDatefilterServerSide}
       multiDatefilterServerSideData={multiDatefilterServerSideData}
     />

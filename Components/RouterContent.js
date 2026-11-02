@@ -64,6 +64,8 @@ export default function RouterContent({ newReportId, popupParamiter, popupOnClos
   const [otherSpliterSideData1, setOtherSpliterSideData1] = useState();
   const [otherSpliterSideData2, setOtherSpliterSideData2] = useState();
   const [spliterReportWithoutDate, setSpliterReportWithoutDate] = useState();
+  const [spliterServerSide, setSpliterServerSide] = useState();
+  const [spliterSecondPanelOn, setSpliterSecondPanelOn] = useState();
   const [currencyMaster, setCurrencyMaster] = useState();
   const [printMasterData, setPrintMasterData] = useState();
   const [dateOptions, setDateOptions] = useState();
@@ -221,6 +223,8 @@ export default function RouterContent({ newReportId, popupParamiter, popupOnClos
           setOtherSpliterSideData1(JSON?.parse(data.otherSpliterSideData1));
           setOtherSpliterSideData2(JSON.parse(data.otherSpliterSideData2));
           setSpliterReportWithoutDate(data?.SpliterReportWithoutDate)
+          setSpliterServerSide(data?.IsSpliterServerSide);
+          setSpliterSecondPanelOn(data?.IsSpliterSecondPanelOn);
           setImageViewData(JSON.parse(data.ImageDataArray));
           setPrintViewData(JSON.parse(data.PrintDataArray));
           setSummuaryViewData(JSON.parse(data.SummaryFormulaArray));
@@ -332,6 +336,8 @@ export default function RouterContent({ newReportId, popupParamiter, popupOnClos
         CustomizeUserFirstPanelData={CustomizeUserFirstPanelData}
         IsSearchBySingleValue={IsSearchBySingleValue}
         spliterReportWithoutDate={spliterReportWithoutDate}
+        spliterServerSide={spliterServerSide}
+        spliterSecondPanelOn={spliterSecondPanelOn}
         multiDatefilterServerSide={multiDatefilterServerSide}
         multiDatefilterServerSideData={multiDatefilterServerSideData}
       />

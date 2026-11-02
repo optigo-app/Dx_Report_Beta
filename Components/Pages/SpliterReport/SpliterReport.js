@@ -19,6 +19,8 @@ import PanelHeader from './components/PanelHeader';
 import UnfoldMoreRoundedIcon from '@mui/icons-material/UnfoldMoreRounded';
 import CheckIcon from '@mui/icons-material/Check';
 
+const isTrueFlag = (v) => v === true || String(v).toLowerCase() === "true";
+
 const SplitterWithToggle = ({ index, onDrag, isCollapsed, onToggle, isDragging }) => (
   <div style={{ position: "relative", width: 0, zIndex: 100, display: "flex", alignItems: "center", flexShrink: 0 }}>
     {/* Drag zone */}
@@ -116,6 +118,8 @@ export default function SpliterReport({
   popupOnClose,
   popupParamiter,
   spliterReportWithoutDate,
+  spliterServerSide,
+  spliterSecondPanelOn,
   appliedDateRange
 }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -132,8 +136,14 @@ export default function SpliterReport({
   });
   const [firstPanelSummary, setFirstPanelSummary] = useState({});
   const pid = searchParams.get("pid");
+  const isSpliterServerSide = isTrueFlag(spliterServerSide);
+  const isSpliterSecondPanelOn = isTrueFlag(spliterSecondPanelOn);
+  // server mode → IsSpliterSecondPanelOn decides 2-panel vs single splitter
+  const showSecondPanel = isSpliterServerSide
+    ? isSpliterSecondPanelOn
+    : !!spliterReportSecondPanel;
   const [paneWidths, setPaneWidths] = useState(
-    spliterReportSecondPanel ? ["18%", "18%", "64%"] : ["18%", "82%"]
+    showSecondPanel ? ["18%", "18%", "64%"] : ["18%", "82%"]
   );
   const containerRef = useRef();
   const firstTimeLoadedRef = useRef(false);
@@ -144,12 +154,14 @@ export default function SpliterReport({
   const clientIpAddress = sessionStorage.getItem("clientIpAddress");
   const [IsDragging, setIsDragging] = useState(false);
   const [collapsed, setCollapsed] = useState([false, false]);
-  const savedWidths = useRef(spliterReportSecondPanel ? [18, 18] : [18]);
+  const savedWidths = useRef(showSecondPanel ? [18, 18] : [18]);
   const COLLAPSED_W = 38;
   const [clearAllDataSignal, setClearAllDataSignal] = useState(0);
   const isSearchByValue =
     IsSearchBySingleValue === true ||
     String(IsSearchBySingleValue).toLowerCase() === "true";
+  const [firstPanelServerData, setFirstPanelServerData] = useState([]);
+  const [secondPanelServerData, setSecondPanelServerData] = useState([]);
 
   // ─── NEW: active second-panel field (first or second option) ──────────────
   // "first"  → use spliterReportSecondPanel  (e.g. "Department")
@@ -233,18 +245,21 @@ export default function SpliterReport({
     fetchData();
   }, [pid, reportId, largeData, filterState.dateRange]);
 
-  const fetchReportData = async (filters = {}, Master, allData = false, dateOverride = null) => {
+  const fetchReportData = async (filters = {}, Master, allData = false, dateOverride = null, spliterSideNumber = 1, spliterSideValue = null) => {
     setIsLoading(true);
     try {
       let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
 
-      const masterDataBody = {
-        con: JSON.stringify({ id: "", mode: "GetFullMaster", appuserid: AllData?.LUId, IPAddress: clientIpAddress }),
-        p: JSON.stringify({ ReportId: reportId }),
-        f: "DynamicReport ( get sp list )",
-      };
-      const responseMaster = await ReportCallApi(masterDataBody, spNumber);
-      if (responseMaster) setMasterData(responseMaster);
+      // master list is only needed once — skip it on panel/side follow-up calls
+      if (spliterSideNumber === 1 || !masterData) {
+        const masterDataBody = {
+          con: JSON.stringify({ id: "", mode: "GetFullMaster", appuserid: AllData?.LUId, IPAddress: clientIpAddress }),
+          p: JSON.stringify({ ReportId: reportId }),
+          f: "DynamicReport ( get sp list )",
+        };
+        const responseMaster = await ReportCallApi(masterDataBody, spNumber);
+        if (responseMaster) setMasterData(responseMaster);
+      }
 
       const startDate = dateOverride?.startDate ?? filterState.dateRange.startDate;
       const endDate = dateOverride?.endDate ?? filterState.dateRange.endDate;
@@ -284,11 +299,37 @@ export default function SpliterReport({
           ...(isSearchByValue && searchBySingleValue && {
             IsSearchBySingleValue: searchBySingleValue,
           }),
+          // server-side splitter: each call fetches one side — 1 = first panel
+          ...(isSpliterServerSide && {
+            IsSpliterServerSide: true,
+            SpliterSideNumber: spliterSideNumber,
+            ...(spliterSideValue != null &&
+              spliterSideValue !== "" && { SpliterSideValue: spliterSideValue }),
+          }),
           ...(popupParamiter && { OpenPopUpReport: true, PopUpParamiter: popupParamiter }),
         }),
         f: "DynamicReport ( data )",
       };
       const response = await ReportCallApi(body, spNumber);
+
+      // server-side splitter: rd[0] carries JSON strings per panel
+      // (FirstSplitterData / SecondSplitterData) — parse into panel state.
+      if (isSpliterServerSide) {
+        const parseSplit = (json) => {
+          try {
+            return JSON.parse(json) || [];
+          } catch {
+            return [];
+          }
+        };
+        const d = response?.rd?.[0] || {};
+        if (d.FirstSplitterData != null) {
+          setFirstPanelServerData(parseSplit(d.FirstSplitterData));
+        }
+        if (d.SecondSplitterData != null) {
+          setSecondPanelServerData(parseSplit(d.SecondSplitterData));
+        }
+      }
 
       // search-by-single-value gate: no records -> go back to the search box
       if (
@@ -305,9 +346,17 @@ export default function SpliterReport({
       setSpData(response);
       setDropdownFilteredRd3(null);
       setFirstPanelFilterValue("");
-      setFilteredReportData(response);
-      setSelectedFirstPanelKey(null);
-      setSelectedSecondPanelKey(null);
+      // server-side: side-2/3 responses carry panel data, not grid rows —
+      // keep the previous filtered data instead of blanking the grid.
+      if (!isSpliterServerSide || response?.rd3) {
+        setFilteredReportData(response);
+      }
+      // only a full (side-1) reload clears selections — panel-click fetches
+      // must keep the chosen keys or the auto-select effect refires forever
+      if (!isSpliterServerSide || spliterSideNumber === 1) {
+        setSelectedFirstPanelKey(null);
+        setSelectedSecondPanelKey(null);
+      }
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
@@ -338,13 +387,18 @@ export default function SpliterReport({
     return groups;
   }, [activeRd3, firstPanelKey]);
 
-  const uniqueValuesForFirstPanel = useMemo(
-    () => [...firstPanelGroups.keys()],
-    [firstPanelGroups]
-  );
+  const uniqueValuesForFirstPanel = useMemo(() => {
+    if (isSpliterServerSide) {
+      return firstPanelServerData.map((it) => it?.title ?? "");
+    }
+    return [...firstPanelGroups.keys()];
+  }, [isSpliterServerSide, firstPanelServerData, firstPanelGroups]);
 
   // ─── UPDATED: use activeSecondPanelField instead of spliterReportSecondPanel ──
   const uniqueValuesForSecondPanel = useMemo(() => {
+    if (isSpliterServerSide) {
+      return secondPanelServerData.map((it) => it?.title ?? "");
+    }
     if (!activeSecondPanelField || !spData?.rd2 || !activeRd3.length) return [];
     const map = spData.rd2[0];
     const secondKey = Object.keys(map).find((k) => map[k] === activeSecondPanelField);
@@ -356,10 +410,12 @@ export default function SpliterReport({
     if (selectedFirstPanelKey == null) return [];
     const rows = firstPanelGroups.get(selectedFirstPanelKey) || [];
     return [...new Set(rows.map((r) => r[secondKey]))];
-  }, [activeRd3, spData, activeSecondPanelField, selectedFirstPanelKey, firstPanelKey, firstPanelGroups]);
+  }, [isSpliterServerSide, secondPanelServerData, activeRd3, spData, activeSecondPanelField, selectedFirstPanelKey, firstPanelKey, firstPanelGroups]);
   // ────────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
+    // server mode: no default select — items only fetch when the user clicks
+    if (isSpliterServerSide) return;
     if (spData && uniqueValuesForFirstPanel.length > 0 && selectedFirstPanelKey == null) {
       if (spliterReportFirstPanelShowAll) {
         handleFirstPanelSelection("__ALL__", activeRd3);
@@ -367,9 +423,11 @@ export default function SpliterReport({
         handleFirstPanelSelection(uniqueValuesForFirstPanel[0], activeRd3);
       }
     }
-  }, [spData, uniqueValuesForFirstPanel, selectedFirstPanelKey, activeRd3]);
+  }, [spData, uniqueValuesForFirstPanel, selectedFirstPanelKey, activeRd3, isSpliterServerSide]);
 
   useEffect(() => {
+    // server mode: second panel fills on first-panel click, selects on user click
+    if (isSpliterServerSide) return;
     if (activeSecondPanelField && uniqueValuesForSecondPanel.length > 0 && selectedSecondPanelKey == null) {
       if (spliterReportSecondPanelShowAll) {
         handleSecondPanelSelection("__ALL__");
@@ -377,7 +435,7 @@ export default function SpliterReport({
         handleSecondPanelSelection(uniqueValuesForSecondPanel[0]);
       }
     }
-  }, [uniqueValuesForSecondPanel, activeSecondPanelField, selectedSecondPanelKey]);
+  }, [uniqueValuesForSecondPanel, activeSecondPanelField, selectedSecondPanelKey, isSpliterServerSide]);
 
   // ─── Reset second panel selection when user switches tab ─────────────────
   useEffect(() => {
@@ -456,6 +514,15 @@ export default function SpliterReport({
 
 
   const handleFirstPanelSelection = (value, rd3Override = null) => {
+    // server-side mode: selection fetches the next side instead of filtering rows
+    if (isSpliterServerSide) {
+      if (selectedFirstPanelKey === value) return;
+      setSelectedFirstPanelKey(value);
+      setSelectedSecondPanelKey(null);
+      setSecondPanelServerData([]);
+      fetchReportData({}, "0", false, null, 2, value === "__ALL__" ? null : value);
+      return;
+    }
     const base = rd3Override ?? activeRd3;
     setSelectedFirstPanelKey(value);
     setSelectedSecondPanelKey(spliterReportSecondPanelShowAll ? "__ALL__" : null);
@@ -473,6 +540,15 @@ export default function SpliterReport({
   };
 
   const handleSecondPanelSelection = (value) => {
+    // server-side mode: side 3 = main grid rows for the chosen pair
+    if (isSpliterServerSide) {
+      if (selectedSecondPanelKey === value) return;
+      setSelectedSecondPanelKey(value);
+      const first = selectedFirstPanelKey === "__ALL__" ? "" : selectedFirstPanelKey;
+      const second = value === "__ALL__" ? "" : value;
+      fetchReportData({}, "0", false, null, 3, `${first}#${second}`);
+      return;
+    }
     setSelectedSecondPanelKey(value);
 
     const map = spData?.rd2?.[0] || {};
@@ -570,6 +646,7 @@ export default function SpliterReport({
   );
 
   const getDisplayValue = (rawValue, columnName) => {
+    if (isSpliterServerSide) return rawValue; // server items' title IS the label
     if (!masterData || !rawValue) return rawValue;
     const masterInfo =
       spData?.rd1?.find((c) => c.FieldName === columnName) ||
@@ -591,9 +668,30 @@ export default function SpliterReport({
   // ────────────────────────────────────────────────────────────────────────────
 
   const getSummaryForValue = (value) => {
+    if (isSpliterServerSide) {
+      if (value === "__ALL__") return aggregateServerSummary(firstPanelServerData);
+      return formatServerSummary(serverFirstItemByTitle.get(value)?.value);
+    }
     if (!activeRd3.length || !activeFirstPanelField) return {};
     if (value === "__ALL__") return calculateSummaryForFirstPanel(activeRd3);
     return calculateSummaryForFirstPanel(firstPanelGroups.get(value) || []);
+  };
+
+  // second-panel card summary — server items carry their own metrics
+  const getSecondPanelSummary = (value) => {
+    if (isSpliterServerSide) {
+      if (value === "__ALL__") return aggregateServerSummary(secondPanelServerData);
+      return formatServerSummary(serverSecondItemByTitle.get(value)?.value);
+    }
+    const firstFiltered =
+      selectedFirstPanelKey === "__ALL__"
+        ? activeRd3
+        : activeRd3.filter((r) => r[firstKey] === selectedFirstPanelKey);
+    const rows =
+      value === "__ALL__"
+        ? firstFiltered
+        : firstFiltered.filter((r) => r[secondKey] === value);
+    return calculateSummaryForSecondPanel(rows);
   };
 
   const calculateSummaryForSecondPanel = (rows) => {
@@ -664,17 +762,56 @@ export default function SpliterReport({
     setFirstPanelSummary({});
   };
 
+  // ─── Server-side splitter items (rd[0].FirstSplitterData / SecondSplitterData)
+  // Normalised into the same shapes the client-side flow uses so both modes
+  // share one render/selection path.
+  const serverFirstItemByTitle = useMemo(() => {
+    const m = new Map();
+    firstPanelServerData.forEach((it) => m.set(it?.title ?? "", it));
+    return m;
+  }, [firstPanelServerData]);
+
+  const serverSecondItemByTitle = useMemo(() => {
+    const m = new Map();
+    secondPanelServerData.forEach((it) => m.set(it?.title ?? "", it));
+    return m;
+  }, [secondPanelServerData]);
+
+  // value object → PanelCard summary chips (numbers fixed to 3 decimals)
+  const formatServerSummary = (value) => {
+    const out = {};
+    Object.entries(value || {}).forEach(([k, v]) => {
+      const n = Number(v);
+      out[k] = isNaN(n) ? String(v) : n.toFixed(3);
+    });
+    return out;
+  };
+
+  // "ALL" card — sum every metric across the server items
+  const aggregateServerSummary = (items) => {
+    const totals = {};
+    (items || []).forEach((it) =>
+      Object.entries(it?.value || {}).forEach(([k, v]) => {
+        totals[k] = (totals[k] || 0) + (Number(v) || 0);
+      })
+    );
+    return formatServerSummary(totals);
+  };
+
   const hasFirstPanelData = useMemo(() => {
     return Array.isArray(uniqueValuesForFirstPanel) && uniqueValuesForFirstPanel.length > 0;
   }, [uniqueValuesForFirstPanel]);
 
   const hasSecondPanelData = useMemo(() => {
+    if (isSpliterServerSide) {
+      return Array.isArray(uniqueValuesForSecondPanel) && uniqueValuesForSecondPanel.length > 0;
+    }
     return (
       activeSecondPanelField &&
       Array.isArray(uniqueValuesForSecondPanel) &&
       uniqueValuesForSecondPanel.length > 0
     );
-  }, [activeSecondPanelField, uniqueValuesForSecondPanel]);
+  }, [isSpliterServerSide, activeSecondPanelField, uniqueValuesForSecondPanel]);
 
   useEffect(() => {
     if (!hasSecondPanelData) {
@@ -1120,11 +1257,11 @@ export default function SpliterReport({
               )}
 
               {/* Panel header */}
-              <PanelHeader
+              {!spliterServerSide && <PanelHeader
                 title={Array.isArray(filteredColumns) && filteredColumns[0]?.HeaderName}
                 count={filteredFirstPanelValues?.length}
                 tooltipText={`Select ${Array.isArray(filteredColumns) && filteredColumns[0]?.HeaderName || "item"} to filter report data`}
-              />
+              />}
 
               {/* Group-by column dropdown */}
               {CustomizeUserFirstPanelData && firstPanelFieldOptions.length > 0 && (
@@ -1190,7 +1327,7 @@ export default function SpliterReport({
               >
                 {hasFirstPanelData ? (
                   <>
-                    {spliterReportFirstPanelShowAll && (
+                    {spliterReportFirstPanelShowAll && !isSpliterServerSide && (
                       <PanelCard
                         label="ALL"
                         selected={selectedFirstPanelKey === "__ALL__"}
@@ -1198,9 +1335,9 @@ export default function SpliterReport({
                         summary={getSummaryForValue("__ALL__")}
                       />
                     )}
-                    {visibleFirstPanelValues.map((v) => (
+                    {visibleFirstPanelValues.map((v, idx) => (
                       <PanelCard
-                        key={String(v)}
+                        key={`${String(v)}_${idx}`}
                         label={getDisplayValue(v, activeFirstPanelField)}
                         selected={selectedFirstPanelKey === v}
                         onClick={() => handleFirstPanelSelection(v)}
@@ -1237,7 +1374,7 @@ export default function SpliterReport({
         />
 
         {/* ── SECOND PANEL ── */}
-        {spliterReportSecondPanel && (
+        {showSecondPanel && (
           <>
             <div
               className="pane"
@@ -1320,7 +1457,7 @@ export default function SpliterReport({
                   <SecondPanelOptionToggle />
 
                   {/* Panel header for single-option mode */}
-                  {!spliterReportSecondPanelSecondoption && (
+                  {!spliterReportSecondPanelSecondoption && !spliterServerSide && (
                     <PanelHeader
                       title={
                         Array.isArray(filteredColumns2) && filteredColumns2.length > 0
@@ -1356,30 +1493,18 @@ export default function SpliterReport({
                             label="ALL"
                             selected={selectedSecondPanelKey === "__ALL__"}
                             onClick={() => handleSecondPanelSelection("__ALL__")}
-                            summary={(() => {
-                              const firstFiltered =
-                                selectedFirstPanelKey === "__ALL__"
-                                  ? spData.rd3
-                                  : spData.rd3.filter((r) => r[firstKey] === selectedFirstPanelKey);
-                              return calculateSummaryForSecondPanel(firstFiltered);
-                            })()}
+                            summary={getSecondPanelSummary("__ALL__")}
                           />
                         )}
-                        {filteredSecondPanelValues?.map((v) => {
-                          const rows =
-                            selectedFirstPanelKey === "__ALL__"
-                              ? activeRd3.filter((r) => r[secondKey] === v)
-                              : activeRd3.filter((r) => r[firstKey] === selectedFirstPanelKey && r[secondKey] === v);
-                          return (
-                            <PanelCard
-                              key={v}
-                              label={getDisplayValue(v, activeSecondPanelField)}
-                              selected={selectedSecondPanelKey === v}
-                              onClick={() => handleSecondPanelSelection(v)}
-                              summary={calculateSummaryForSecondPanel(rows)}
-                            />
-                          );
-                        })}
+                        {filteredSecondPanelValues?.map((v, idx) => (
+                          <PanelCard
+                            key={`${String(v)}_${idx}`}
+                            label={getDisplayValue(v, activeSecondPanelField)}
+                            selected={selectedSecondPanelKey === v}
+                            onClick={() => handleSecondPanelSelection(v)}
+                            summary={getSecondPanelSummary(v)}
+                          />
+                        ))}
                       </>
                     ) : (
                       <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: "0.78rem" }}>
