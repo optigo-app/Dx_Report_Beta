@@ -395,10 +395,10 @@ export default function SpliterReport({
           }
         };
         const d = response?.rd?.[0] || {};
-        if (d.FirstSplitterData != null) {
+        if ("FirstSplitterData" in d) {
           setFirstPanelServerData(parseSplit(d.FirstSplitterData));
         }
-        if (d.SecondSplitterData != null) {
+        if ("SecondSplitterData" in d) {
           setSecondPanelServerData(parseSplit(d.SecondSplitterData));
         }
       }
@@ -418,16 +418,22 @@ export default function SpliterReport({
       setSpData(response);
       setDropdownFilteredRd3(null);
       setFirstPanelFilterValue("");
-      // server-side: side-2/3 responses carry panel data, not grid rows —
-      // keep the previous filtered data instead of blanking the grid.
-      if (!isSpliterServerSide || response?.rd3) {
-        setFilteredReportData(response);
-      }
       // only a full (side-1) reload clears selections — panel-click fetches
       // must keep the chosen keys or the auto-select effect refires forever
       if (!isSpliterServerSide || spliterSideNumber === 1) {
         setSelectedFirstPanelKey(null);
         setSelectedSecondPanelKey(null);
+      }
+      // server-side side-1 reload (date change / refresh): downstream panel
+      // and grid data belong to the old selection — clear them too.
+      if (isSpliterServerSide && spliterSideNumber === 1) {
+        setSecondPanelServerData([]);
+        setFilteredReportData(null);
+      }
+      // server-side: side-2/3 responses carry panel data, not grid rows —
+      // keep the previous filtered data instead of blanking the grid.
+      if (!isSpliterServerSide || response?.rd3) {
+        setFilteredReportData(response);
       }
       setIsLoading(false);
     } catch (error) {

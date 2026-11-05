@@ -1,22 +1,23 @@
 import { useState } from "react";
 import { formatServerDate } from "../utils/dateUtils";
 
-// PopUpParamiter values for Date columns must go to the backend as
-// `yyyy-mm-dd` (or `yyyy-mm-dd HH:mm:ss` for IsShowDateWithTime) — the row
-// holds the display-formatted value ("14 Oct 2026"), which the API can't read.
+// PopUpParamiter values for Date columns go to the backend as `yyyy-mm-dd`;
+// for IsShowDateWithTime they keep the same format plus the UTC time the cell
+// displays — "2026-10-31 18:08:32" (getUTC* — local getHours() shifts +5:30).
 const formatParamValue = (colDef, value) => {
   if (value == null || value === "") return value ?? "";
   if (String(colDef?.ColumnType).toLowerCase() !== "date") return value;
-  const dateOnly = formatServerDate(value);
-  if (!dateOnly) return value;
   if (colDef?.IsShowDateWithTime === "True" || colDef?.IsShowDateWithTime === true) {
     const d = new Date(value);
     if (!isNaN(d.getTime())) {
       const pad = (n) => String(n).padStart(2, "0");
-      return `${dateOnly} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      const ymd = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+      return `${ymd} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
     }
+    return value;
   }
-  return dateOnly;
+  const dateOnly = formatServerDate(value);
+  return dateOnly || value;
 };
 
 /**
